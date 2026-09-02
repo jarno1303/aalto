@@ -1,4 +1,4 @@
-# AGENTS.md — Aalto Engineering Constitution
+﻿# AGENTS.md — Aalto Engineering Constitution
 
 **Project:** Aalto Android internet radio  
 **Package:** `fi.aalto.radio`  
@@ -10,6 +10,38 @@
 ## 0. PRIME DIRECTIVE
 
 Aalto is not trying to win by feature count.
+### PRODUCT EVOLUTION LAW
+
+**A new version should not add user work. It should remove it.**
+
+Aalto does not measure progress by how many features are added.
+
+A release is better when the user can accomplish the same or greater value with:
+- fewer taps
+- fewer decisions
+- less waiting
+- less configuration
+- less visible complexity
+- less need to understand how the software works
+
+Prefer removing friction over adding capability.
+
+Prefer making an existing workflow dramatically better over creating a new workflow.
+
+Feature deletion is a valid product improvement.
+
+Before adding a feature, ask:
+
+1. Does this remove friction?
+2. Does this improve fluidity, speed, reliability, or calm?
+3. Do users genuinely need it?
+4. Can it exist without complicating the primary listening path?
+5. If this feature disappeared, would users actually miss it?
+
+If the answers are weak, do not build it.
+
+**Less friction. More fluidity.**
+
 
 Aalto wins by making radio feel unusually fast, calm, reliable, and effortless.
 
@@ -1120,3 +1152,4 @@ In the car → Aalto behaves like a radio, not a dashboard.
 > **Less friction. More fluidity.**
 
 > **This just works.**
+

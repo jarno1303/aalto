@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
@@ -894,7 +895,7 @@ private fun SyncSettingsDialog(
 @Composable
 @Suppress("DEPRECATION")
 private fun NightScreenSystemBars(active: Boolean) {
-    val activity = LocalContext.current as? ComponentActivity ?: return
+    val activity = LocalActivity.current ?: return
 
     DisposableEffect(activity, active) {
         val window = activity.window

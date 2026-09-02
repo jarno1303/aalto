@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "852735079852",
+    "project_id": "aaltodev-9d599",
+    "storage_bucket": "aaltodev-9d599.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:852735079852:android:538fe0ea05bbc46eb1b609",
+        "android_client_info": {
+          "package_name": "fi.aalto.radio"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "852735079852-9em9sn9v1ferll2dtgcdloev8678860k.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "fi.aalto.radio",
+            "certificate_hash": "3d9ef8f656695190c1853a3d6f7c07870b2565ab"
+          }
+        },
+        {
+          "client_id": "852735079852-i3a9uejtqn0nc6855sjfouaeqa4m918q.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDx9c5wQjxxUAftKxuCHEQY1U3YuBAMTec"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "852735079852-i3a9uejtqn0nc6855sjfouaeqa4m918q.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

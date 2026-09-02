@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function owner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function boundedString(value, max) {
+      return value is string && value.size() <= max;
+    }
+
+    match /users/{userId}/sync_meta/{document} {
+      allow read, write: if owner(userId);
+    }
+
+    match /users/{userId}/favorites/{stationId} {
+      allow read: if owner(userId);
+      allow write: if owner(userId)
+        && boundedString(stationId, 200)
+        && request.resource.data.stationId == stationId;
+    }
+
+    match /users/{userId}/favorite_order/{document} {
+      allow read: if owner(userId);
+      allow write: if owner(userId)
+        && request.resource.data.orderedStationIds is list
+        && request.resource.data.orderedStationIds.size() <= 500;
+    }
+
+    match /users/{userId}/sync_mutations/{mutationId} {
+      allow read: if owner(userId);
+      allow write: if owner(userId)
+        && boundedString(mutationId, 200)
+        && request.resource.data.mutationId == mutationId
+        && (!request.resource.data.keys().hasAll(['payload'])
+          || request.resource.data.payload == null
+          || request.resource.data.payload.size() <= 10000);
+    }
+  }
+}

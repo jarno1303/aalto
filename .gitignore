@@ -1,0 +1,50 @@
+﻿.gradle/
+.idea/
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+local.properties
+*.iml
+
+# ===== Aalto local development artifacts =====
+.kotlin/
+backups/
+
+# Debug / diagnostic logs
+aalto-*.txt
+favorite-delete-test.txt
+*.log
+
+# Android / Gradle generated output
+.gradle/
+**/build/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Android Studio local state
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/shelf/
+.idea/caches/
+.idea/deploymentTargetSelector.xml
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Secrets / signing material
+*.jks
+*.keystore
+*.pem
+*.p12
+*.pfx
+.env
+.env.*
+service-account*.json
+*serviceAccount*.json
+
+# Temporary AGENTS safety copies
+AGENTS.backup-*.md

@@ -1,5 +1,6 @@
 package fi.aalto.radio
 
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -7,6 +8,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -14,11 +16,14 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,6 +51,7 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Radio
 import androidx.compose.material.icons.outlined.Settings
@@ -58,6 +64,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -83,27 +90,63 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.core.view.WindowCompat
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
+import java.net.HttpURLConnection
+import java.net.URL
+import java.util.Collections
+import java.util.concurrent.ConcurrentHashMap
 
 private val AaltoBlue = Color(0xFF1769FF)
 private val AaltoBackground = Color(0xFFF4F6F8)
+private val AaltoSurface = Color(0xFFFBFCFD)
+private val AaltoSurfaceQuiet = Color(0xFFF7F9FB)
+private val AaltoLine = Color(0xFFE1E7ED)
+private val AaltoSelectedSurface = Color(0xFFEAF2FF)
 private val AaltoText = Color(0xFF101317)
-private val AaltoMuted = Color(0xFF6D7680)
+private val AaltoMuted = Color(0xFF68727D)
+private val AaltoHeroStart = Color(0xFF111A24)
+private val AaltoHeroEnd = Color(0xFF1B2B3C)
+private val AaltoHeroSoft = Color(0xFF253D57)
+private val AaltoLogoSurface = Color(0xFFF0F3F6)
 private val AaltoNightBlack = Color(0xFF000000)
+private val AaltoScreenHorizontalPadding = 18.dp
+private val AaltoScreenTopPadding = 14.dp
+private val AaltoScreenBottomPadding = 24.dp
+private val AaltoRowSpacing = 10.dp
+private val AaltoHeroRadius = 22.dp
+private val AaltoCardRadius = 14.dp
+private val AaltoLogoRadius = 13.dp
+private const val STATION_LOGO_CONNECT_TIMEOUT_MS = 2_000
+private const val STATION_LOGO_READ_TIMEOUT_MS = 2_500
+private const val STATION_LOGO_MAX_BYTES = 512 * 1024
+
+private val stationLogoMemoryCache = ConcurrentHashMap<String, ImageBitmap>()
+private val stationLogoFailedUrls = Collections.newSetFromMap(ConcurrentHashMap<String, Boolean>())
 
 private data class FavoriteDragSession(
     val stationId: String,
@@ -252,43 +295,10 @@ private fun AaltoApp() {
         Scaffold(
             containerColor = AaltoBackground,
             bottomBar = {
-                NavigationBar(containerColor = Color.White) {
-                    NavigationBarItem(
-                        selected = selectedTab == 0,
-                        onClick = { selectedTab = 0 },
-                        icon = {
-                            Icon(
-                                imageVector = Icons.Outlined.Home,
-                                contentDescription = "Radio"
-                            )
-                        },
-                        label = { Text("Radio") }
-                    )
-
-                    NavigationBarItem(
-                        selected = selectedTab == 1,
-                        onClick = { selectedTab = 1 },
-                        icon = {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = "Hae"
-                            )
-                        },
-                        label = { Text("Hae") }
-                    )
-
-                    NavigationBarItem(
-                        selected = selectedTab == 2,
-                        onClick = { selectedTab = 2 },
-                        icon = {
-                            Icon(
-                                imageVector = Icons.Outlined.FavoriteBorder,
-                                contentDescription = "Suosikit"
-                            )
-                        },
-                        label = { Text("Suosikit") }
-                    )
-                }
+                AaltoBottomNavigation(
+                    selectedTab = selectedTab,
+                    onTabSelected = { selectedTab = it }
+                )
             }
         ) { paddingValues ->
             when (selectedTab) {
@@ -393,29 +403,15 @@ private fun RadioScreen(
             .fillMaxSize()
             .padding(paddingValues),
         contentPadding = PaddingValues(
-            start = 18.dp,
-            end = 18.dp,
-            top = 20.dp,
-            bottom = 24.dp
+            start = AaltoScreenHorizontalPadding,
+            end = AaltoScreenHorizontalPadding,
+            top = AaltoScreenTopPadding,
+            bottom = AaltoScreenBottomPadding
         ),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(AaltoRowSpacing)
     ) {
         item {
             TopBar(onOpenSync)
-        }
-
-        item {
-            Text(
-                text = "Nopea radio. Selkea autossa.",
-                color = AaltoMuted,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(
-                    start = 4.dp,
-                    top = 6.dp,
-                    bottom = 4.dp
-                )
-            )
         }
 
         item {
@@ -469,19 +465,19 @@ private fun SearchScreen(
             .fillMaxSize()
             .padding(paddingValues),
         contentPadding = PaddingValues(
-            start = 18.dp,
-            end = 18.dp,
-            top = 20.dp,
-            bottom = 24.dp
+            start = AaltoScreenHorizontalPadding,
+            end = AaltoScreenHorizontalPadding,
+            top = AaltoScreenTopPadding,
+            bottom = AaltoScreenBottomPadding
         ),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(AaltoRowSpacing)
     ) {
         item {
             Text(
                 text = "Hae",
                 color = AaltoText,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold
+                fontSize = 21.sp,
+                fontWeight = FontWeight.SemiBold
             )
         }
 
@@ -500,13 +496,13 @@ private fun SearchScreen(
                     )
                 },
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(AaltoCardRadius),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    disabledContainerColor = Color.White,
+                    focusedContainerColor = AaltoSurface,
+                    unfocusedContainerColor = AaltoSurface,
+                    disabledContainerColor = AaltoSurface,
                     focusedBorderColor = AaltoBlue,
-                    unfocusedBorderColor = Color.Transparent
+                    unfocusedBorderColor = AaltoLine
                 )
             )
         }
@@ -675,19 +671,19 @@ private fun FavoritesScreen(
             .padding(paddingValues)
             .onSizeChanged { listHeightPx = it.height },
         contentPadding = PaddingValues(
-            start = 18.dp,
-            end = 18.dp,
-            top = 20.dp,
-            bottom = 24.dp
+            start = AaltoScreenHorizontalPadding,
+            end = AaltoScreenHorizontalPadding,
+            top = AaltoScreenTopPadding,
+            bottom = AaltoScreenBottomPadding
         ),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(AaltoRowSpacing)
     ) {
         item {
             Text(
                 text = "Suosikit",
                 color = AaltoText,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold
+                fontSize = 21.sp,
+                fontWeight = FontWeight.SemiBold
             )
         }
 
@@ -824,15 +820,97 @@ private fun favoriteAutoScrollDeltaPx(
 }
 
 @Composable
+private fun AaltoBottomNavigation(
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit
+) {
+    val itemColors = NavigationBarItemDefaults.colors(
+        selectedIconColor = AaltoBlue,
+        selectedTextColor = AaltoText,
+        indicatorColor = AaltoBlue.copy(alpha = 0.10f),
+        unselectedIconColor = AaltoMuted,
+        unselectedTextColor = AaltoMuted
+    )
+
+    NavigationBar(
+        modifier = Modifier.height(72.dp),
+        containerColor = AaltoSurface,
+        tonalElevation = 0.dp
+    ) {
+        NavigationBarItem(
+            selected = selectedTab == 0,
+            onClick = { onTabSelected(0) },
+            colors = itemColors,
+            icon = {
+                Icon(
+                    imageVector = Icons.Outlined.Home,
+                    contentDescription = "Radio",
+                    modifier = Modifier.size(22.dp)
+                )
+            },
+            label = {
+                Text(
+                    text = "Radio",
+                    fontSize = 11.sp,
+                    fontWeight = if (selectedTab == 0) FontWeight.SemiBold else FontWeight.Medium
+                )
+            }
+        )
+
+        NavigationBarItem(
+            selected = selectedTab == 1,
+            onClick = { onTabSelected(1) },
+            colors = itemColors,
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Hae",
+                    modifier = Modifier.size(22.dp)
+                )
+            },
+            label = {
+                Text(
+                    text = "Hae",
+                    fontSize = 11.sp,
+                    fontWeight = if (selectedTab == 1) FontWeight.SemiBold else FontWeight.Medium
+                )
+            }
+        )
+
+        NavigationBarItem(
+            selected = selectedTab == 2,
+            onClick = { onTabSelected(2) },
+            colors = itemColors,
+            icon = {
+                Icon(
+                    imageVector = Icons.Outlined.FavoriteBorder,
+                    contentDescription = "Suosikit",
+                    modifier = Modifier.size(22.dp)
+                )
+            },
+            label = {
+                Text(
+                    text = "Suosikit",
+                    fontSize = 11.sp,
+                    fontWeight = if (selectedTab == 2) FontWeight.SemiBold else FontWeight.Medium
+                )
+            }
+        )
+    }
+}
+
+@Composable
 private fun TopBar(onOpenSync: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 44.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(32.dp)
-                .clip(RoundedCornerShape(10.dp))
+                .size(30.dp)
+                .clip(RoundedCornerShape(9.dp))
                 .background(AaltoBlue),
             contentAlignment = Alignment.Center
         ) {
@@ -840,16 +918,16 @@ private fun TopBar(onOpenSync: () -> Unit) {
                 imageVector = Icons.Outlined.Radio,
                 contentDescription = null,
                 tint = Color.White,
-                modifier = Modifier.size(19.dp)
+                modifier = Modifier.size(18.dp)
             )
         }
 
-        Spacer(modifier = Modifier.width(9.dp))
+        Spacer(modifier = Modifier.width(10.dp))
 
         Text(
             text = "Aalto",
             color = AaltoText,
-            fontSize = 19.sp,
+            fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
         )
 
@@ -995,6 +1073,140 @@ private fun NightScreen(
 }
 
 @Composable
+private fun StationLogo(
+    station: RadioStation,
+    size: Dp,
+    cornerRadius: Dp,
+    hero: Boolean = false
+) {
+    val logo = rememberStationLogo(station.faviconUrl)
+    val stationColor = Color(station.logoColorArgb)
+    val shape = RoundedCornerShape(cornerRadius)
+    val fallbackTextColor = if (stationColor.luminance() > 0.58f) {
+        AaltoText
+    } else {
+        stationColor
+    }
+
+    Surface(
+        modifier = Modifier.size(size),
+        shape = shape,
+        color = if (hero) Color.White.copy(alpha = 0.94f) else AaltoLogoSurface,
+        border = BorderStroke(
+            width = 1.dp,
+            color = if (hero) Color.White.copy(alpha = 0.20f) else AaltoLine
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(if (hero) 9.dp else 6.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            if (logo != null) {
+                Image(
+                    bitmap = logo,
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                Text(
+                    text = station.initials,
+                    color = fallbackTextColor,
+                    fontSize = if (hero) 16.sp else 10.sp,
+                    lineHeight = if (hero) 18.sp else 11.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun rememberStationLogo(faviconUrl: String?): ImageBitmap? {
+    val logoUrl = remember(faviconUrl) { normalizedLogoUrl(faviconUrl) }
+    var logo by remember(logoUrl) {
+        mutableStateOf(logoUrl?.let(stationLogoMemoryCache::get))
+    }
+
+    LaunchedEffect(logoUrl) {
+        if (logoUrl == null || logo != null || stationLogoFailedUrls.contains(logoUrl)) {
+            return@LaunchedEffect
+        }
+
+        val cachedLogo = stationLogoMemoryCache[logoUrl]
+        if (cachedLogo != null) {
+            logo = cachedLogo
+            return@LaunchedEffect
+        }
+
+        val loadedLogo = loadStationLogo(logoUrl)
+        if (loadedLogo != null) {
+            stationLogoMemoryCache[logoUrl] = loadedLogo
+            logo = loadedLogo
+        } else {
+            stationLogoFailedUrls.add(logoUrl)
+        }
+    }
+
+    return logo
+}
+
+private fun normalizedLogoUrl(faviconUrl: String?): String? {
+    val value = faviconUrl?.trim().orEmpty()
+    if (value.isBlank()) return null
+    return if (value.startsWith("https://") || value.startsWith("http://")) value else null
+}
+
+private suspend fun loadStationLogo(url: String): ImageBitmap? = withContext(Dispatchers.IO) {
+    var connection: HttpURLConnection? = null
+
+    try {
+        connection = URL(url).openConnection() as? HttpURLConnection ?: return@withContext null
+        connection.connectTimeout = STATION_LOGO_CONNECT_TIMEOUT_MS
+        connection.readTimeout = STATION_LOGO_READ_TIMEOUT_MS
+        connection.instanceFollowRedirects = true
+
+        if (connection.responseCode !in 200..299) {
+            return@withContext null
+        }
+
+        val bytes = connection.inputStream.use { inputStream ->
+            readLogoBytes(inputStream)
+        } ?: return@withContext null
+
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+    } catch (_: Exception) {
+        null
+    } finally {
+        connection?.disconnect()
+    }
+}
+
+private fun readLogoBytes(inputStream: InputStream): ByteArray? {
+    val outputStream = ByteArrayOutputStream()
+    val buffer = ByteArray(8 * 1024)
+    var totalBytes = 0
+
+    while (true) {
+        val readBytes = inputStream.read(buffer)
+        if (readBytes < 0) break
+
+        totalBytes += readBytes
+        if (totalBytes > STATION_LOGO_MAX_BYTES) {
+            return null
+        }
+
+        outputStream.write(buffer, 0, readBytes)
+    }
+
+    return outputStream.toByteArray()
+}
+
+@Composable
 private fun NowPlayingCard(
     station: RadioStation,
     isPlaying: Boolean,
@@ -1004,111 +1216,46 @@ private fun NowPlayingCard(
     onFavorite: () -> Unit,
     onNightScreen: () -> Unit
 ) {
+    val detailText = if (playbackError == null) {
+        station.description.trim()
+    } else {
+        "Toisto keskeytynyt"
+    }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(236.dp)
-            .clip(RoundedCornerShape(18.dp))
+            .height(194.dp)
+            .clip(RoundedCornerShape(AaltoHeroRadius))
             .background(
                 brush = Brush.linearGradient(
                     colors = listOf(
-                        Color(0xFF10233C),
-                        Color(0xFF1B4F83),
-                        Color(0xFF5D9FE5)
+                        AaltoHeroStart,
+                        AaltoHeroEnd,
+                        AaltoHeroSoft
                     )
                 )
             )
-            .padding(20.dp)
+            .padding(16.dp)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF65E2B3))
-                    )
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    Text(
-                        text = "NYT SOIVA",
-                        color = Color.White.copy(alpha = 0.78f),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                PlaybackStatusChip(
+                    isPlaying = isPlaying,
+                    playbackError = playbackError
+                )
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                Box(
-                    modifier = Modifier
-                        .heightIn(min = 48.dp)
-                        .clickable(
-                            onClickLabel = "Pimennä näyttö",
-                            onClick = onNightScreen
-                        )
-                        .padding(horizontal = 8.dp),
-                    contentAlignment = Alignment.Center
+                IconButton(
+                    onClick = onFavorite,
+                    modifier = Modifier.size(48.dp)
                 ) {
-                    Text(
-                        text = "Pimennä näyttö",
-                        color = Color.White.copy(alpha = 0.68f),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            Box(
-                modifier = Modifier
-                    .size(72.dp)
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(Color(0xFFF5F7F4)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = station.initials,
-                    color = Color(station.logoColorArgb),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.ExtraBold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(13.dp))
-
-            Text(
-                text = station.name,
-                color = Color.White,
-                fontSize = 25.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            Text(
-                text = playbackError ?: station.description,
-                color = if (playbackError == null) {
-                    Color.White.copy(alpha = 0.72f)
-                } else {
-                    Color(0xFFFFD8D8)
-                },
-                fontSize = 13.sp,
-                modifier = Modifier.padding(top = 3.dp)
-            )
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                IconButton(onClick = onFavorite) {
                     Icon(
                         imageVector = if (isFavorite) {
                             Icons.Filled.Favorite
@@ -1120,17 +1267,79 @@ private fun NowPlayingCard(
                         } else {
                             "Lisaa suosikki"
                         },
-                        tint = Color.White
+                        tint = if (isFavorite) {
+                            Color.White.copy(alpha = 0.94f)
+                        } else {
+                            Color.White.copy(alpha = 0.60f)
+                        },
+                        modifier = Modifier.size(22.dp)
                     )
                 }
 
+                NightScreenTrigger(onNightScreen = onNightScreen)
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                StationLogo(
+                    station = station,
+                    size = 78.dp,
+                    cornerRadius = 20.dp,
+                    hero = true
+                )
+
+                Spacer(modifier = Modifier.width(14.dp))
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = station.name,
+                        color = Color.White,
+                        fontSize = 23.sp,
+                        lineHeight = 27.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    if (detailText.isNotBlank()) {
+                        Text(
+                            text = detailText,
+                            color = if (playbackError == null) {
+                                Color.White.copy(alpha = 0.68f)
+                            } else {
+                                Color(0xFFFFD8D8).copy(alpha = 0.88f)
+                            },
+                            fontSize = 13.sp,
+                            lineHeight = 17.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(10.dp))
+
                 Surface(
                     modifier = Modifier
-                        .size(56.dp)
+                        .size(54.dp)
                         .clip(CircleShape)
-                        .clickable { onPlayPause() },
+                        .clickable(
+                            onClickLabel = if (isPlaying) "Tauko" else "Jatka",
+                            role = Role.Button,
+                            onClick = onPlayPause
+                        ),
                     color = Color.White,
-                    shape = CircleShape
+                    shape = CircleShape,
+                    shadowElevation = 0.dp
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
@@ -1155,6 +1364,105 @@ private fun NowPlayingCard(
 }
 
 @Composable
+private fun PlaybackStatusChip(
+    isPlaying: Boolean,
+    playbackError: String?
+) {
+    val label = when {
+        playbackError != null -> "HAIRIO"
+        isPlaying -> "NYT SOI"
+        else -> "TAUKO"
+    }
+    val contentColor = when {
+        playbackError != null -> Color(0xFFFFD8D8)
+        isPlaying -> Color(0xFFC9F7DE)
+        else -> Color.White.copy(alpha = 0.70f)
+    }
+
+    Surface(
+        shape = RoundedCornerShape(50),
+        color = Color.White.copy(alpha = 0.08f),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.11f))
+    ) {
+        Text(
+            text = label,
+            color = contentColor,
+            fontSize = 11.sp,
+            lineHeight = 13.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)
+        )
+    }
+}
+
+@Composable
+private fun NightScreenTrigger(onNightScreen: () -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val hapticFeedback = LocalHapticFeedback.current
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.975f else 1f,
+        animationSpec = tween(durationMillis = 120),
+        label = "nightScreenTriggerScale"
+    )
+    val surfaceAlpha by animateFloatAsState(
+        targetValue = if (pressed) 0.18f else 0.08f,
+        animationSpec = tween(durationMillis = 120),
+        label = "nightScreenTriggerSurface"
+    )
+    val iconAlpha by animateFloatAsState(
+        targetValue = if (pressed) 0.96f else 0.78f,
+        animationSpec = tween(durationMillis = 120),
+        label = "nightScreenTriggerIconAlpha"
+    )
+    val iconRotation by animateFloatAsState(
+        targetValue = if (pressed) -6f else 0f,
+        animationSpec = tween(durationMillis = 140),
+        label = "nightScreenTriggerIcon"
+    )
+
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClickLabel = "Pimennä näyttö",
+                role = Role.Button,
+                onClick = {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onNightScreen()
+                }
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = surfaceAlpha)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.DarkMode,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = iconAlpha),
+                modifier = Modifier
+                    .size(19.dp)
+                    .graphicsLayer {
+                        rotationZ = iconRotation
+                        translationY = if (pressed) 0.6f else 0f
+                    }
+            )
+        }
+    }
+}
+
+@Composable
 private fun SectionHeader(
     title: String,
     action: String?,
@@ -1165,8 +1473,8 @@ private fun SectionHeader(
             .fillMaxWidth()
             .padding(
                 start = 4.dp,
-                top = 10.dp,
-                bottom = 1.dp
+                top = 12.dp,
+                bottom = 0.dp
             ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
@@ -1175,19 +1483,30 @@ private fun SectionHeader(
             text = title,
             color = AaltoText,
             fontSize = 16.sp,
-            fontWeight = FontWeight.Bold
+            lineHeight = 19.sp,
+            fontWeight = FontWeight.SemiBold
         )
 
         if (action != null && onAction != null) {
-            Text(
-                text = action,
-                color = AaltoBlue,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.clickable {
-                    onAction()
-                }
-            )
+            Box(
+                modifier = Modifier
+                    .heightIn(min = 40.dp)
+                    .clickable(
+                        onClickLabel = action,
+                        role = Role.Button,
+                        onClick = onAction
+                    )
+                    .padding(horizontal = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = action,
+                    color = AaltoBlue,
+                    fontSize = 13.sp,
+                    lineHeight = 15.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
     }
 }
@@ -1218,6 +1537,16 @@ private fun StationRow(
         ),
         label = "stationRowElevation"
     )
+    val containerColor by animateColorAsState(
+        targetValue = if (isSelected) AaltoSelectedSurface else AaltoSurface,
+        animationSpec = tween(durationMillis = 160),
+        label = "stationRowContainer"
+    )
+    val borderColor by animateColorAsState(
+        targetValue = if (isSelected) AaltoBlue.copy(alpha = 0.28f) else AaltoLine,
+        animationSpec = tween(durationMillis = 160),
+        label = "stationRowBorder"
+    )
 
     Card(
         modifier = modifier
@@ -1226,40 +1555,31 @@ private fun StationRow(
                 scaleX = scale
                 scaleY = scale
             }
-            .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
+            .clickable(
+                onClickLabel = "Toista ${station.name}",
+                onClick = onClick
+            ),
+        shape = RoundedCornerShape(AaltoCardRadius),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = containerColor
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = elevation
-        )
+        ),
+        border = BorderStroke(1.dp, borderColor)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 68.dp)
-                .padding(10.dp),
+                .padding(horizontal = 11.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(13.dp))
-                    .background(Color(station.logoColorArgb)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = station.initials,
-                    color = if (station.id == "yle-radio-suomi") {
-                        Color(0xFF4B3412)
-                    } else {
-                        Color.White
-                    },
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.ExtraBold
-                )
-            }
+            StationLogo(
+                station = station,
+                size = 46.dp,
+                cornerRadius = AaltoLogoRadius
+            )
 
             Spacer(modifier = Modifier.width(12.dp))
 
@@ -1267,27 +1587,33 @@ private fun StationRow(
                 Text(
                     text = station.name,
                     color = AaltoText,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold
+                    fontSize = 15.sp,
+                    lineHeight = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
 
-                Text(
-                    text = station.description,
-                    color = AaltoMuted,
-                    fontSize = 12.sp,
-                    modifier = Modifier.padding(top = 3.dp)
-                )
+                if (station.description.isNotBlank()) {
+                    Text(
+                        text = station.description,
+                        color = AaltoMuted,
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
             }
 
             if (isSelected) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF168463))
-                )
-
                 Spacer(modifier = Modifier.width(8.dp))
+
+                PlayingMiniChip()
+
+                Spacer(modifier = Modifier.width(2.dp))
             }
 
             IconButton(
@@ -1309,10 +1635,29 @@ private fun StationRow(
                         AaltoBlue
                     } else {
                         AaltoMuted
-                    }
+                    },
+                    modifier = Modifier.size(22.dp)
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun PlayingMiniChip() {
+    Surface(
+        shape = RoundedCornerShape(50),
+        color = AaltoBlue.copy(alpha = 0.10f),
+        border = BorderStroke(1.dp, AaltoBlue.copy(alpha = 0.16f))
+    ) {
+        Text(
+            text = "SOI",
+            color = AaltoBlue,
+            fontSize = 10.sp,
+            lineHeight = 11.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp)
+        )
     }
 }
 

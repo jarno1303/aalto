@@ -117,6 +117,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -143,9 +144,11 @@ internal fun FavoritesScreen(
     paddingValues: PaddingValues,
     favoriteStations: List<RadioStation>,
     selectedStation: RadioStation,
+    isPlaying: Boolean,
     onStationClick: (RadioStation) -> Unit,
     onStationFavoriteClick: (RadioStation) -> Unit,
-    onReorder: (List<String>) -> Unit
+    onReorder: (List<String>) -> Unit,
+    onFind: () -> Unit
 ) {
     val favoriteStationIds = favoriteStations.map { it.id }
     var workingOrder by remember(favoriteStationIds) {
@@ -284,22 +287,60 @@ internal fun FavoritesScreen(
         verticalArrangement = Arrangement.spacedBy(AaltoRowSpacing)
     ) {
         item {
-            Text(
-                text = stringResource(R.string.tab_favorites),
-                color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 21.sp,
-                fontWeight = FontWeight.SemiBold
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(AaltoSpaceXs)) {
+                Text(
+                    text = stringResource(R.string.tab_favorites),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    style = MaterialTheme.typography.titleLarge
+                )
+                if (favoriteStations.size > 1) {
+                    Text(
+                        text = stringResource(R.string.favorites_reorder_hint),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
         }
 
         if (favoriteStations.isEmpty()) {
             item {
-                Text(
-                    text = stringResource(R.string.favorites_empty),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 13.sp,
-                    modifier = Modifier.padding(start = AaltoSpaceXs, bottom = AaltoSpaceXs)
-                )
+                // Calm empty state with one clear next step instead of onboarding.
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = AaltoSpaceXxl),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(AaltoSpaceS)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.FavoriteBorder,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(40.dp)
+                    )
+                    Text(
+                        text = stringResource(R.string.favorites_empty),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        text = stringResource(R.string.favorites_empty_hint),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(AaltoSpaceS))
+                    Button(onClick = onFind) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(AaltoSpaceS))
+                        Text(stringResource(R.string.action_find_stations))
+                    }
+                }
             }
         } else {
             items(
@@ -369,6 +410,7 @@ internal fun FavoritesScreen(
                 StationRow(
                     station = station,
                     isSelected = station.id == selectedStation.id,
+                    isPlaying = isPlaying,
                     isFavorite = true,
                     onClick = {
                         if (dragSession == null && suppressedClickStationId != station.id) {

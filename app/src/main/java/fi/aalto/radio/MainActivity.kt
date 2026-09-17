@@ -1,142 +1,66 @@
 package fi.aalto.radio
 
+import android.graphics.Color as AndroidColor
 import android.os.Bundle
-import android.util.Log
-import fi.aalto.radio.catalog.CatalogFreshness
-import fi.aalto.radio.catalog.CatalogReadResult
-import fi.aalto.radio.catalog.CatalogStation
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.gestures.scrollBy
-import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.DarkMode
-import androidx.compose.material.icons.outlined.Radio
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import androidx.core.view.WindowCompat
-import androidx.compose.foundation.isSystemInDarkTheme
+import fi.aalto.radio.catalog.CatalogFreshness
+import fi.aalto.radio.catalog.CatalogReadResult
+import fi.aalto.radio.catalog.CatalogResult
+import fi.aalto.radio.catalog.CatalogStation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.net.URI
-import java.util.Locale
+
+private const val TAB_RADIO = 0
+private const val TAB_SEARCH = 1
+private const val TAB_FAVORITES = 2
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         AaltoPerf.markAppStart()
         super.onCreate(savedInstanceState)
-        // System bar icons follow the light/dark theme; content draws behind the bars.
+        AaltoThemePreferences.load(this)
         enableEdgeToEdge()
         setContent {
-            AaltoTheme {
+            val darkTheme = AaltoThemePreferences.mode.isDark()
+
+            // Content draws behind the system bars; bar icons follow the app theme,
+            // including when the user overrides the system light/dark setting.
+            LaunchedEffect(darkTheme) {
+                val style = if (darkTheme) {
+                    SystemBarStyle.dark(AndroidColor.TRANSPARENT)
+                } else {
+                    SystemBarStyle.light(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT)
+                }
+                enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
+            }
+
+            AaltoTheme(darkTheme = darkTheme) {
                 AaltoApp()
             }
         }
@@ -166,12 +90,14 @@ private fun AaltoApp() {
     val radioPlayer = rememberRadioPlayer()
     val syncCoordinator = remember(context) { AaltoAppContainer.syncCoordinator(context) }
     val syncState by syncCoordinator.state.collectAsState()
-    var showSyncSettings by rememberSaveable { mutableStateOf(false) }
-    var nightScreenActive by remember { mutableStateOf(false) }
+    var showSettings by rememberSaveable { mutableStateOf(false) }
+    // Saveable so the Night Screen survives rotation (e.g. mounting the phone in a car holder).
+    var nightScreenActive by rememberSaveable { mutableStateOf(false) }
     var catalogStations by remember { mutableStateOf<List<CatalogStation>>(emptyList()) }
     var catalogSearchStations by remember { mutableStateOf<List<CatalogStation>>(emptyList()) }
     var catalogLoading by remember { mutableStateOf(false) }
     var catalogError by remember { mutableStateOf<String?>(null) }
+    var recentStations by remember { mutableStateOf<List<RadioStation>>(emptyList()) }
 
     var selectedStationId by rememberSaveable {
         mutableStateOf(StationCatalog.DEFAULT_STATION_ID)
@@ -186,7 +112,7 @@ private fun AaltoApp() {
     }
 
     var selectedTab by rememberSaveable {
-        mutableStateOf(0)
+        mutableStateOf(TAB_RADIO)
     }
 
     var searchQuery by rememberSaveable {
@@ -207,10 +133,10 @@ private fun AaltoApp() {
                 catalogStations = result.snapshot.stations
                 if (result.snapshot.freshness == CatalogFreshness.STALE) {
                     when (val refresh = catalogRepository.refreshCountry(radioCountryCode, limit = 100)) {
-                        is fi.aalto.radio.catalog.CatalogResult.Success -> {
+                        is CatalogResult.Success -> {
                             catalogStations = refresh.value
                         }
-                        is fi.aalto.radio.catalog.CatalogResult.Failure -> Unit
+                        is CatalogResult.Failure -> Unit
                     }
                 }
             }
@@ -265,8 +191,13 @@ private fun AaltoApp() {
         stations = favoriteStations + stations,
         selectedStation = selectedStation
     )
-    val radioHomeStations = remember(radioStations, selectedStation) {
+    val popularStations = remember(radioStations, selectedStation) {
         stationsForRadioHome(radioStations, selectedStation, maxCount = 10)
+    }
+
+    // Recently played, refreshed whenever the playing station changes.
+    LaunchedEffect(repository, selectedStationId) {
+        recentStations = runCatching { repository.recentStations() }.getOrDefault(emptyList())
     }
 
     LaunchedEffect(Unit) {
@@ -301,7 +232,7 @@ private fun AaltoApp() {
         stationTrace("ui_current_state_after_click", station)
 
         if (openNowPlaying) {
-            selectedTab = 0
+            selectedTab = TAB_RADIO
         }
 
         coroutineScope.launch {
@@ -310,6 +241,21 @@ private fun AaltoApp() {
             }
         }
     }
+
+    // Previous/next follow the user's own station order (preset mental model).
+    val canStepPresets = favoriteStations.size >= 2
+    fun stepPreset(direction: Int) {
+        if (favoriteStations.size < 2) return
+        val currentIndex = favoriteStations.indexOfFirst { it.stableId == selectedStation.stableId }
+        val nextIndex = if (currentIndex < 0) {
+            if (direction > 0) 0 else favoriteStations.lastIndex
+        } else {
+            Math.floorMod(currentIndex + direction, favoriteStations.size)
+        }
+        playStation(favoriteStations[nextIndex], openNowPlaying = false)
+    }
+    val onPrevious: (() -> Unit)? = if (canStepPresets) ({ stepPreset(-1) }) else null
+    val onNext: (() -> Unit)? = if (canStepPresets) ({ stepPreset(1) }) else null
 
     fun toggleFavorite(station: RadioStation) {
         val previousFavoriteIds = favoriteIds
@@ -348,7 +294,7 @@ private fun AaltoApp() {
             bottomBar = {
                 Column {
                     AnimatedVisibility(
-                        visible = selectedTab != 0,
+                        visible = selectedTab != TAB_RADIO,
                         enter = fadeIn(animationSpec = tween(durationMillis = 140)),
                         exit = fadeOut(animationSpec = tween(durationMillis = 100))
                     ) {
@@ -358,7 +304,7 @@ private fun AaltoApp() {
                             isConnecting = radioPlayer.isConnecting,
                             hasError = radioPlayer.playbackError != null,
                             onPlayPause = { radioPlayer.toggle(selectedStation) },
-                            onOpen = { selectedTab = 0 }
+                            onOpen = { selectedTab = TAB_RADIO }
                         )
                     }
                     AaltoBottomNavigation(
@@ -369,34 +315,39 @@ private fun AaltoApp() {
             }
         ) { paddingValues ->
             when (selectedTab) {
-                0 -> RadioScreen(
+                TAB_RADIO -> RadioScreen(
                     paddingValues = paddingValues,
                     selectedStation = selectedStation,
                     isPlaying = radioPlayer.isPlaying,
                     isConnecting = radioPlayer.isConnecting,
                     playbackError = radioPlayer.playbackError,
                     favoriteIds = favoriteIds,
-                    stations = radioHomeStations,
+                    favoriteStations = favoriteStations,
+                    popularStations = popularStations,
                     onPlayPause = { radioPlayer.toggle(selectedStation) },
                     onRetry = { playStation(selectedStation, openNowPlaying = false) },
                     onFavorite = { toggleFavorite(selectedStation) },
-                    onFind = { selectedTab = 1 },
+                    onFind = { selectedTab = TAB_SEARCH },
                     onStationClick = { station ->
                         playStation(station, openNowPlaying = false)
                     },
                     onStationFavoriteClick = ::toggleFavorite,
-                    onOpenSync = { showSyncSettings = true },
-                    onNightScreen = { nightScreenActive = true }
+                    onOpenSettings = { showSettings = true },
+                    onNightScreen = { nightScreenActive = true },
+                    onPrevious = onPrevious,
+                    onNext = onNext
                 )
 
-                1 -> SearchScreen(
+                TAB_SEARCH -> SearchScreen(
                     paddingValues = paddingValues,
                     searchQuery = searchQuery,
                     onSearchQueryChange = { searchQuery = it },
                     stations = stations,
+                    recentStations = recentStations,
                     radioCountryCode = radioCountryCode,
                     onRadioCountryChange = { radioCountryCode = it },
                     selectedStation = selectedStation,
+                    isPlaying = radioPlayer.isPlaying,
                     favoriteIds = favoriteIds,
                     catalogStations = catalogStations,
                     catalogLoading = catalogLoading,
@@ -413,10 +364,11 @@ private fun AaltoApp() {
                     onStationFavoriteClick = ::toggleFavorite
                 )
 
-                2 -> FavoritesScreen(
+                TAB_FAVORITES -> FavoritesScreen(
                     paddingValues = paddingValues,
                     favoriteStations = favoriteStations,
                     selectedStation = selectedStation,
+                    isPlaying = radioPlayer.isPlaying,
                     onStationClick = { station ->
                         playStation(station, openNowPlaying = false)
                     },
@@ -426,7 +378,8 @@ private fun AaltoApp() {
                             val committed = runCatching { repository.reorderFavorites(orderedIds) }.getOrDefault(false)
                             if (committed) syncCoordinator.requestSync()
                         }
-                    }
+                    },
+                    onFind = { selectedTab = TAB_SEARCH }
                 )
             }
         }
@@ -442,22 +395,28 @@ private fun AaltoApp() {
             NightScreen(
                 station = selectedStation,
                 isPlaying = radioPlayer.isPlaying,
+                isConnecting = radioPlayer.isConnecting,
                 playbackError = radioPlayer.playbackError,
+                onPlayPause = { radioPlayer.toggle(selectedStation) },
+                onPrevious = onPrevious,
+                onNext = onNext,
                 onExit = { nightScreenActive = false }
             )
         }
     }
 
-    if (showSyncSettings) {
-        SyncSettingsDialog(
-            state = syncState,
+    if (showSettings) {
+        SettingsDialog(
+            themeMode = AaltoThemePreferences.mode,
+            onThemeModeChange = { mode -> AaltoThemePreferences.update(context, mode) },
+            syncState = syncState,
             onSignIn = {
                 (context as? ComponentActivity)?.let { activity ->
                     coroutineScope.launch { syncCoordinator.signIn(activity) }
                 }
             },
             onSignOut = syncCoordinator::signOut,
-            onDismiss = { showSyncSettings = false }
+            onDismiss = { showSettings = false }
         )
     }
 }

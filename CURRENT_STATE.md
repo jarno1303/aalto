@@ -50,3 +50,28 @@ Before risky sync/architecture work:
 ## Verification discipline
 CODE PASS and PHYSICAL PASS are different states.
 Never claim physical acceptance unless it has actually been tested on a device.
+
+## UI/UX polish (branch `ui-ux-polish`, 2026-09-17)
+
+State: CODE WRITTEN. NOT YET BUILT, UNIT-TESTED OR PHYSICALLY VERIFIED.
+The session that wrote it had no Android SDK, so compile and device checks are still open.
+
+Changes:
+- connecting state ("Yhdistetään…") and retry after playback error
+- RadioPlayer: prepare again when retrying the same stream; toggle() compares preferredStreamUrl
+- edge-to-edge with bar icons following the app theme; theme choice (System/Light/Dark)
+- mini player on Search and Favorites; playing from a list no longer switches tab
+- home shows "Omat asemat" (favorites); popular stations only when there are no favorites
+- previous/next own station: buttons, swipe on logo, Night Screen controls
+- Night Screen: tap reveals controls, low brightness, keep screen on
+- static playing halo (no infinite pulse), typography scale, non-colour playing indicator
+- search: clear button, IME search, recent stations, loading skeleton
+- MainActivity.kt split into screen/component/theme files
+- adaptive launcher icon; all UI strings in strings.xml
+
+Not changed (protected): SyncEngine, SyncModel, AaltoSyncCoordinator, FirestoreRemoteSyncTransport, PlaybackService.
+Open: MediaSession next/previous for steering wheel / Android Auto needs PlaybackService work and physical testing.
+
+Physical checks needed: tap-to-play feedback, retry, pause on catalog stations, mini player,
+favorite drag-and-drop (unchanged logic, new row styling), Night Screen controls and brightness,
+landscape layout, light/dark/system theme switching and system bar icons.

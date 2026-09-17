@@ -1,134 +1,39 @@
 package fi.aalto.radio
 
-import android.os.Bundle
-import android.util.Log
-import fi.aalto.radio.catalog.CatalogFreshness
-import fi.aalto.radio.catalog.CatalogReadResult
-import fi.aalto.radio.catalog.CatalogStation
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.BackHandler
-import androidx.activity.compose.LocalActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.DarkMode
-import androidx.compose.material.icons.outlined.Radio
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
-import androidx.core.view.WindowCompat
-import androidx.compose.foundation.isSystemInDarkTheme
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import java.net.URI
-import java.util.Locale
+import androidx.compose.foundation.lazy.grid.items as gridItems
 
+/**
+ * Radio home: Now Playing and the user's own stations ("Omat asemat").
+ *
+ * Omat asemat is the user's quiet space (AGENTS.md §4). Popular stations are
+ * shown only while the user has no favorites yet.
+ *
+ * Wide landscape screens (car head units, tablets) show Now Playing and the
+ * station grid side by side.
+ */
 @Composable
 internal fun RadioScreen(
     paddingValues: PaddingValues,
@@ -137,17 +42,25 @@ internal fun RadioScreen(
     isConnecting: Boolean,
     playbackError: String?,
     favoriteIds: Set<String>,
-    stations: List<RadioStation>,
+    favoriteStations: List<RadioStation>,
+    popularStations: List<RadioStation>,
     onPlayPause: () -> Unit,
     onRetry: () -> Unit,
     onFavorite: () -> Unit,
     onFind: () -> Unit,
     onStationClick: (RadioStation) -> Unit,
     onStationFavoriteClick: (RadioStation) -> Unit,
-    onOpenSync: () -> Unit,
-    onNightScreen: () -> Unit
+    onOpenSettings: () -> Unit,
+    onNightScreen: () -> Unit,
+    onPrevious: (() -> Unit)?,
+    onNext: (() -> Unit)?
 ) {
-    Column(
+    val showOwnStations = favoriteStations.isNotEmpty()
+    val shelfStations = (if (showOwnStations) favoriteStations else popularStations)
+        .distinctBy { it.stableId }
+    val shelfTitle = stringResource(if (showOwnStations) R.string.home_mine else R.string.home_popular)
+
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .padding(paddingValues)
@@ -156,54 +69,137 @@ internal fun RadioScreen(
                 end = AaltoScreenHorizontalPadding,
                 top = AaltoScreenTopPadding,
                 bottom = AaltoScreenBottomPadding
-            ),
-        verticalArrangement = Arrangement.spacedBy(AaltoSpaceS)
+            )
     ) {
-        TopBar(onOpenSync)
+        val wideLandscape = maxWidth > maxHeight && maxWidth >= 600.dp
 
-        NowPlaying(
-            station = selectedStation,
-            isPlaying = isPlaying,
-            isFavorite = selectedStation.stableId in favoriteIds,
-            isConnecting = isConnecting,
-            playbackError = playbackError,
-            onPlayPause = onPlayPause,
-            onRetry = onRetry,
-            onFavorite = onFavorite,
-            onNightScreen = onNightScreen,
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-        )
+        val nowPlaying: @Composable (Modifier) -> Unit = { modifier ->
+            NowPlaying(
+                station = selectedStation,
+                isPlaying = isPlaying,
+                isFavorite = selectedStation.stableId in favoriteIds,
+                isConnecting = isConnecting,
+                playbackError = playbackError,
+                onPlayPause = onPlayPause,
+                onRetry = onRetry,
+                onFavorite = onFavorite,
+                onNightScreen = onNightScreen,
+                onPrevious = onPrevious,
+                onNext = onNext,
+                modifier = modifier
+            )
+        }
 
-        SectionHeader(
-            title = stringResource(R.string.home_popular),
-            action = stringResource(R.string.tab_search),
-            onAction = onFind
-        )
+        if (wideLandscape) {
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.spacedBy(AaltoSpaceXl)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                ) {
+                    TopBar(onOpenSettings)
+                    nowPlaying(Modifier.fillMaxWidth().weight(1f))
+                }
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                ) {
+                    SectionHeader(
+                        title = shelfTitle,
+                        action = stringResource(R.string.tab_search),
+                        onAction = onFind
+                    )
+                    if (!showOwnStations) {
+                        OwnStationsHint()
+                    }
+                    Spacer(modifier = Modifier.height(AaltoSpaceXs))
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(minSize = 120.dp),
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(vertical = AaltoSpaceS),
+                        horizontalArrangement = Arrangement.spacedBy(AaltoSpaceS),
+                        verticalArrangement = Arrangement.spacedBy(AaltoSpaceS)
+                    ) {
+                        gridItems(
+                            items = shelfStations,
+                            key = { it.stableId },
+                            contentType = { "station-card" }
+                        ) { station ->
+                            StationCard(
+                                station = station,
+                                isSelected = station.stableId == selectedStation.stableId,
+                                isPlaying = isPlaying,
+                                isFavorite = station.stableId in favoriteIds,
+                                onClick = { onStationClick(station) },
+                                onFavoriteClick = { onStationFavoriteClick(station) },
+                                width = 120.dp
+                            )
+                        }
+                    }
+                }
+            }
+        } else {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(AaltoSpaceS)
+            ) {
+                TopBar(onOpenSettings)
 
-        val carouselState = rememberLazyListState()
-        val snapFlingBehavior = rememberSnapFlingBehavior(carouselState)
-        LazyRow(
-            state = carouselState,
-            flingBehavior = snapFlingBehavior,
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = AaltoSpaceXs, vertical = AaltoSpaceXs),
-            horizontalArrangement = Arrangement.spacedBy(AaltoSpaceS)
-        ) {
-            items(
-                items = stations.distinctBy { it.stableId },
-                key = { it.stableId },
-                contentType = { "station-card" }
-            ) { station ->
-                StationCard(
-                    station = station,
-                    isSelected = station.stableId == selectedStation.stableId,
-                    isFavorite = station.stableId in favoriteIds,
-                    onClick = { onStationClick(station) },
-                    onFavoriteClick = { onStationFavoriteClick(station) }
+                nowPlaying(
+                    Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
                 )
+
+                SectionHeader(
+                    title = shelfTitle,
+                    action = stringResource(R.string.tab_search),
+                    onAction = onFind
+                )
+
+                if (!showOwnStations) {
+                    OwnStationsHint()
+                }
+
+                val carouselState = rememberLazyListState()
+                val snapFlingBehavior = rememberSnapFlingBehavior(carouselState)
+                LazyRow(
+                    state = carouselState,
+                    flingBehavior = snapFlingBehavior,
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(horizontal = AaltoSpaceXs, vertical = AaltoSpaceXs),
+                    horizontalArrangement = Arrangement.spacedBy(AaltoSpaceS)
+                ) {
+                    items(
+                        items = shelfStations,
+                        key = { it.stableId },
+                        contentType = { "station-card" }
+                    ) { station ->
+                        StationCard(
+                            station = station,
+                            isSelected = station.stableId == selectedStation.stableId,
+                            isPlaying = isPlaying,
+                            isFavorite = station.stableId in favoriteIds,
+                            onClick = { onStationClick(station) },
+                            onFavoriteClick = { onStationFavoriteClick(station) }
+                        )
+                    }
+                }
             }
         }
     }
+}
+
+@Composable
+private fun OwnStationsHint() {
+    Text(
+        text = stringResource(R.string.home_popular_hint),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = MaterialTheme.typography.bodySmall,
+        modifier = Modifier.padding(start = AaltoSpaceXs)
+    )
 }

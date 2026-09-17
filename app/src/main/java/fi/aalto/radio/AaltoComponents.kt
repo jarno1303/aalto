@@ -1,45 +1,20 @@
 package fi.aalto.radio
 
-import android.os.Bundle
-import android.util.Log
-import fi.aalto.radio.catalog.CatalogFreshness
-import fi.aalto.radio.catalog.CatalogReadResult
-import fi.aalto.radio.catalog.CatalogStation
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.BackHandler
-import androidx.activity.compose.LocalActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.gestures.scrollBy
-import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -48,86 +23,56 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Radio
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
-import androidx.core.view.WindowCompat
-import androidx.compose.foundation.isSystemInDarkTheme
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import java.net.URI
-import java.util.Locale
+
+// =============================================================
+// BOTTOM NAVIGATION
+// =============================================================
 
 @Composable
 internal fun AaltoBottomNavigation(
@@ -157,13 +102,13 @@ internal fun AaltoBottomNavigation(
             AaltoNavigationItem(
                 selected = selectedTab == 1,
                 label = stringResource(R.string.tab_search),
-                icon = Icons.Default.Search,
+                icon = Icons.Filled.Search,
                 onClick = { onTabSelected(1) }
             )
             AaltoNavigationItem(
                 selected = selectedTab == 2,
                 label = stringResource(R.string.tab_favorites),
-                icon = Icons.Outlined.FavoriteBorder,
+                icon = if (selectedTab == 2) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                 onClick = { onTabSelected(2) }
             )
         }
@@ -174,7 +119,7 @@ internal fun AaltoBottomNavigation(
 internal fun RowScope.AaltoNavigationItem(
     selected: Boolean,
     label: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     onClick: () -> Unit
 ) {
     val contentColor by animateColorAsState(
@@ -187,8 +132,9 @@ internal fun RowScope.AaltoNavigationItem(
         modifier = Modifier
             .weight(1f)
             .height(64.dp)
-            .clickable(
-                onClickLabel = label,
+            // selectable() exposes the selected state to screen readers as well.
+            .selectable(
+                selected = selected,
                 role = Role.Tab,
                 onClick = onClick
             ),
@@ -212,19 +158,22 @@ internal fun RowScope.AaltoNavigationItem(
         Text(
             text = label,
             color = contentColor,
-            fontSize = 11.sp,
-            lineHeight = 14.sp,
+            style = MaterialTheme.typography.labelSmall,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
         )
     }
 }
 
+// =============================================================
+// TOP BAR
+// =============================================================
+
 @Composable
-internal fun TopBar(onOpenSync: () -> Unit) {
+internal fun TopBar(onOpenSettings: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 44.dp),
+            .heightIn(min = 48.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
@@ -247,112 +196,71 @@ internal fun TopBar(onOpenSync: () -> Unit) {
         Text(
             text = stringResource(R.string.app_name),
             color = MaterialTheme.colorScheme.onSurface,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold
+            style = MaterialTheme.typography.titleMedium,
+            fontSize = 18.sp
         )
 
         Spacer(modifier = Modifier.weight(1f))
-        IconButton(onClick = onOpenSync) {
+
+        IconButton(onClick = onOpenSettings) {
             Icon(
                 imageVector = Icons.Outlined.Settings,
-                contentDescription = stringResource(R.string.sync_title),
+                contentDescription = stringResource(R.string.settings_title),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
 }
 
+// =============================================================
+// SECTION HEADER
+// =============================================================
+
 @Composable
-internal fun StationLogo(
-    station: RadioStation,
-    size: Dp,
-    cornerRadius: Dp,
-    framed: Boolean = true
+internal fun SectionHeader(
+    title: String,
+    action: String?,
+    onAction: (() -> Unit)?,
+    modifier: Modifier = Modifier
 ) {
-    val logo = rememberStationLogo(station)
-    val stationColor = Color(station.logoColorArgb)
-    val shape = RoundedCornerShape(cornerRadius)
-    val fallbackTextColor = if (stationColor.luminance() > 0.58f) {
-        MaterialTheme.colorScheme.onSurface
-    } else {
-        stationColor
-    }
-
-    val logoSurfaceColor = when {
-        !framed -> Color.Transparent
-        logo != null -> Color.Transparent
-        else -> MaterialTheme.colorScheme.surfaceVariant
-    }
-    val logoBorder = when {
-        !framed || logo != null -> null
-        else -> BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-    }
-
-    Box(
-        modifier = Modifier
-            .size(size)
-            .clip(shape)
-            .background(logoSurfaceColor)
-            .then(
-                if (logoBorder != null) {
-                    Modifier.border(logoBorder, shape)
-                } else {
-                    Modifier
-                }
-            ),
-        contentAlignment = Alignment.Center
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = AaltoSpaceXs, top = AaltoSpaceM),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(
-                    when {
-                        !framed && logo != null -> 0.dp
-                        !framed -> AaltoSpaceM
-                        else -> AaltoSpaceXs
-                    }
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            if (logo != null) {
-                Image(
-                    bitmap = logo,
-                    contentDescription = null,
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else {
+        Text(
+            text = title,
+            color = MaterialTheme.colorScheme.onSurface,
+            style = MaterialTheme.typography.titleMedium
+        )
+        if (action != null && onAction != null) {
+            Box(
+                modifier = Modifier
+                    .heightIn(min = 48.dp)
+                    .clip(RoundedCornerShape(AaltoSpaceS))
+                    .clickable(
+                        onClickLabel = action,
+                        role = Role.Button,
+                        onClick = onAction
+                    )
+                    .padding(horizontal = AaltoSpaceS),
+                contentAlignment = Alignment.Center
+            ) {
                 Text(
-                    text = station.initials.ifBlank { "A" },
-                    color = fallbackTextColor,
-                    fontSize = if (!framed) 28.sp else 13.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    text = action,
+                    color = AaltoBlue,
+                    style = MaterialTheme.typography.labelLarge
                 )
             }
         }
     }
 }
 
-@Composable
-internal fun rememberStationLogo(station: RadioStation): androidx.compose.ui.graphics.ImageBitmap? {
-    val context = LocalContext.current
-    val stationUuid = station.radioBrowserStationUuid ?: station.id
-    val logoUrl = station.logoUrl
-    val logoUrls = remember(station.id, logoUrl, station.logoCandidates) {
-        station.logoUrls
-    }
-    var logo by remember(station.id, logoUrls) {
-        mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null)
-    }
-
-    LaunchedEffect(station.id, stationUuid, logoUrls) {
-        logo = StationLogoResolver.resolve(context, stationUuid, logoUrls)
-    }
-
-    return logo
-}
+// =============================================================
+// PLAYBACK STATE
+// =============================================================
 
 @Composable
 internal fun playbackStateText(
@@ -367,6 +275,27 @@ internal fun playbackStateText(
         else -> R.string.state_paused
     }
 )
+
+/**
+ * Small, static "this station is playing" mark. State is never shown by
+ * colour alone (AGENTS.md §18), and a static icon keeps the list calm.
+ */
+@Composable
+internal fun NowPlayingIndicator(
+    modifier: Modifier = Modifier,
+    size: Dp = 18.dp
+) {
+    Icon(
+        imageVector = Icons.Filled.GraphicEq,
+        contentDescription = stringResource(R.string.state_playing),
+        tint = AaltoBlue,
+        modifier = modifier.size(size)
+    )
+}
+
+// =============================================================
+// MINI PLAYER
+// =============================================================
 
 /**
  * Compact now-playing bar shown above the bottom navigation on Search and Favorites,
@@ -414,9 +343,7 @@ internal fun MiniPlayer(
                     Text(
                         text = station.name,
                         color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 15.sp,
-                        lineHeight = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.titleMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -427,8 +354,7 @@ internal fun MiniPlayer(
                         } else {
                             MaterialTheme.colorScheme.onSurfaceVariant
                         },
-                        fontSize = 12.sp,
-                        lineHeight = 16.sp,
+                        style = MaterialTheme.typography.bodySmall,
                         maxLines = 1
                     )
                 }
@@ -458,67 +384,128 @@ internal fun MiniPlayer(
     }
 }
 
-@Composable
-internal fun SectionHeader(
-    title: String,
-    action: String?,
-    onAction: (() -> Unit)?
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                start = AaltoSpaceXs,
-                top = AaltoSpaceM,
-                bottom = 0.dp
-            ),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            text = title,
-        color = MaterialTheme.colorScheme.onSurface,
-        fontSize = 16.sp,
-            lineHeight = 19.sp,
-            fontWeight = FontWeight.SemiBold
-        )
+// =============================================================
+// STATION LOGO
+// =============================================================
 
-        if (action != null && onAction != null) {
+@Composable
+internal fun StationLogo(
+    station: RadioStation,
+    size: Dp,
+    cornerRadius: Dp,
+    framed: Boolean = true
+) {
+    val logo = rememberStationLogo(station)
+    val stationColor = Color(station.logoColorArgb)
+    val shape = RoundedCornerShape(cornerRadius)
+    val fallbackTextColor = if (stationColor.luminance() > 0.58f) {
+        MaterialTheme.colorScheme.onSurface
+    } else {
+        stationColor
+    }
+    val logoSurfaceColor = when {
+        !framed -> Color.Transparent
+        logo != null -> Color.Transparent
+        else -> MaterialTheme.colorScheme.surfaceVariant
+    }
+    val logoBorder = when {
+        !framed || logo != null -> null
+        else -> BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+    }
+
+    Box(
+        modifier = Modifier
+            .size(size)
+            .clip(shape)
+            .background(logoSurfaceColor)
+            .then(
+                if (logoBorder != null) {
+                    Modifier.border(logoBorder, shape)
+                } else {
+                    Modifier
+                }
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        // Short crossfade so the initials placeholder does not pop into the logo.
+        Crossfade(
+            targetState = logo,
+            animationSpec = tween(durationMillis = 180),
+            label = "stationLogo"
+        ) { bitmap ->
             Box(
                 modifier = Modifier
-                    .heightIn(min = 40.dp)
-                    .clickable(
-                        onClickLabel = action,
-                        role = Role.Button,
-                        onClick = onAction
-                    )
-                    .padding(horizontal = AaltoSpaceS),
+                    .fillMaxSize()
+                    .padding(
+                        when {
+                            !framed && bitmap != null -> 0.dp
+                            !framed -> AaltoSpaceM
+                            else -> AaltoSpaceXs
+                        }
+                    ),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = action,
-                    color = AaltoBlue,
-                    fontSize = 13.sp,
-                    lineHeight = 15.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
+                if (bitmap != null) {
+                    Image(
+                        bitmap = bitmap,
+                        contentDescription = null,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Text(
+                        text = station.initials.ifBlank { "A" },
+                        color = fallbackTextColor,
+                        fontSize = if (!framed) 28.sp else 13.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
+internal fun rememberStationLogo(station: RadioStation): ImageBitmap? {
+    val context = LocalContext.current
+    val stationUuid = station.radioBrowserStationUuid ?: station.id
+    val logoUrls = remember(station.id, station.logoUrl, station.logoCandidates) {
+        station.logoUrls
+    }
+    var logo by remember(station.id, logoUrls) {
+        mutableStateOf<ImageBitmap?>(null)
+    }
+
+    LaunchedEffect(station.id, stationUuid, logoUrls) {
+        logo = StationLogoResolver.resolve(context, stationUuid, logoUrls)
+    }
+
+    return logo
+}
+
+// =============================================================
+// STATION CARD (home presets / popular)
+// =============================================================
+
+@Composable
 internal fun StationCard(
     station: RadioStation,
     isSelected: Boolean,
+    isPlaying: Boolean,
     isFavorite: Boolean,
     onClick: () -> Unit,
-    onFavoriteClick: () -> Unit
+    onFavoriteClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    width: Dp = 112.dp
 ) {
+    val logoSize = width - AaltoSpaceS * 2
+
     Surface(
-        modifier = Modifier
-            .width(104.dp)
-            .height(164.dp)
+        modifier = modifier
+            .width(width)
+            .clip(RoundedCornerShape(AaltoSurfaceRadius))
             .clickable(
                 onClickLabel = stringResource(R.string.action_play_station, station.name),
                 onClick = onClick
@@ -532,48 +519,83 @@ internal fun StationCard(
         }
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(AaltoSpaceS),
+            modifier = Modifier.padding(AaltoSpaceS),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            StationLogo(
-                station = station,
-                size = 88.dp,
-                cornerRadius = AaltoLogoRadius
-            )
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = station.name,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 13.sp,
-                    lineHeight = 16.sp,
-                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
+            Box(modifier = Modifier.size(logoSize)) {
+                StationLogo(
+                    station = station,
+                    size = logoSize,
+                    cornerRadius = AaltoLogoRadius
                 )
-                IconButton(
-                    onClick = onFavoriteClick,
-                    modifier = Modifier.size(48.dp)
+
+                // Heart sits on the logo corner so the name gets the full card width.
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = 6.dp, y = (-6).dp)
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .clickable(
+                            onClickLabel = stringResource(
+                                if (isFavorite) R.string.favorite_remove else R.string.favorite_add
+                            ),
+                            role = Role.Button,
+                            onClick = onFavoriteClick
+                        ),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                        contentDescription = if (isFavorite) stringResource(R.string.favorite_remove) else stringResource(R.string.favorite_add),
-                        tint = if (isFavorite) AaltoBlue else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = null,
+                            tint = if (isFavorite) AaltoBlue else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+
+                if (isSelected && isPlaying) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(AaltoSpaceXs)
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        NowPlayingIndicator(size = 16.dp)
+                    }
                 }
             }
+
+            Spacer(modifier = Modifier.height(AaltoSpaceS))
+
+            Text(
+                text = station.name,
+                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                minLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
+
+// =============================================================
+// STATION ROW (search / favorites lists)
+// =============================================================
 
 @Composable
 internal fun StationRow(
@@ -583,6 +605,7 @@ internal fun StationRow(
     onClick: () -> Unit,
     onFavoriteClick: () -> Unit,
     modifier: Modifier = Modifier,
+    isPlaying: Boolean = false,
     isDragging: Boolean = false
 ) {
     val scale by animateFloatAsState(
@@ -610,7 +633,6 @@ internal fun StationRow(
         animationSpec = tween(durationMillis = 160),
         label = "stationRowBorder"
     )
-
     val rowColor by animateColorAsState(
         targetValue = when {
             isSelected -> MaterialTheme.colorScheme.primaryContainer
@@ -628,15 +650,12 @@ internal fun StationRow(
                 scaleX = scale
                 scaleY = scale
             }
+            .clip(RoundedCornerShape(AaltoSurfaceRadius))
             .clickable(
                 onClickLabel = stringResource(R.string.action_play_station, station.name),
                 onClick = onClick
             ),
-        shape = if (isSelected || isDragging) {
-            RoundedCornerShape(AaltoSurfaceRadius)
-        } else {
-            RoundedCornerShape(0.dp)
-        },
+        shape = RoundedCornerShape(AaltoSurfaceRadius),
         color = rowColor,
         shadowElevation = elevation,
         border = if (isSelected || isDragging) {
@@ -657,55 +676,41 @@ internal fun StationRow(
                 size = 46.dp,
                 cornerRadius = AaltoLogoRadius
             )
-
             Spacer(modifier = Modifier.width(AaltoSpaceM))
-
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = station.name,
                     color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 15.sp,
-                    lineHeight = 18.sp,
+                    style = MaterialTheme.typography.bodyLarge,
                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-
                 val metadata = stationMetadataLine(station)
                 if (metadata.isNotBlank()) {
                     Text(
                         text = metadata,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 12.sp,
-                        lineHeight = 16.sp,
-                        fontWeight = FontWeight.Medium,
+                        style = MaterialTheme.typography.bodySmall,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = AaltoSpaceXs)
                     )
                 }
             }
-
+            if (isSelected && isPlaying) {
+                NowPlayingIndicator(modifier = Modifier.padding(horizontal = AaltoSpaceXs))
+            }
             IconButton(
                 onClick = onFavoriteClick,
                 modifier = Modifier.size(48.dp)
             ) {
                 Icon(
-                    imageVector = if (isFavorite) {
-                        Icons.Filled.Favorite
-                    } else {
-                        Icons.Outlined.FavoriteBorder
-                    },
-                    contentDescription = if (isFavorite) {
-                        stringResource(R.string.favorite_remove)
-                    } else {
-                        stringResource(R.string.favorite_add)
-                    },
-                    tint = if (isFavorite) {
-                        AaltoBlue
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
+                    imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                    contentDescription = stringResource(
+                        if (isFavorite) R.string.favorite_remove else R.string.favorite_add
+                    ),
+                    tint = if (isFavorite) AaltoBlue else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(22.dp)
                 )
             }

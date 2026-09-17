@@ -16,6 +16,8 @@
     <string name="action_play">Toista</string>
     <string name="action_pause">Tauko</string>
     <string name="action_play_station">Toista %1$s</string>
+    <string name="action_next_station">Seuraava oma asema</string>
+    <string name="action_previous_station">Edellinen oma asema</string>
     <string name="action_open_now_playing">Avaa toistonäkymä</string>
     <string name="playback_error_start">Asemaan ei saatu yhteyttä.</string>
     <string name="playback_error_unavailable">Toisto ei ole käytettävissä.</string>
@@ -24,23 +26,39 @@
     <string name="favorite_add">Lisää suosikkeihin</string>
     <string name="favorite_remove">Poista suosikeista</string>
     <string name="favorites_empty">Ei suosikkeja vielä</string>
+    <string name="favorites_empty_hint">Napauta aseman sydäntä, niin se tulee tänne ja etusivun omiin asemiin.</string>
+    <string name="favorites_reorder_hint">Järjestä painamalla pitkään ja vetämällä.</string>
+    <string name="action_find_stations">Etsi asemia</string>
 
     <!-- Home -->
+    <string name="home_mine">Omat asemat</string>
+    <string name="home_popular_hint">Lisää omia asemia napauttamalla sydäntä.</string>
     <string name="home_popular">Suositut asemat</string>
 
     <!-- Search -->
     <string name="search_placeholder">Asema tai genre</string>
     <string name="search_stations">Asemat</string>
     <string name="search_results">Tulokset</string>
+    <string name="search_clear">Tyhjennä haku</string>
+    <string name="search_recent">Viimeksi kuunnellut</string>
+    <string name="search_country">Maa: %1$s</string>
     <string name="search_no_results">Ei asemia tällä rajauksella</string>
     <string name="catalog_loading">Ladataan asemia…</string>
     <string name="catalog_unavailable">Asemaluettelo ei ole nyt saatavilla. Omat asemasi toimivat silti.</string>
 
     <!-- Night Screen -->
     <string name="night_screen_open">Pimennä näyttö</string>
+    <string name="night_screen_show_controls">Näytä ohjaimet</string>
     <string name="night_screen_exit">Palaa normaaliin näkymään</string>
     <string name="night_state_playing">Toistaa</string>
     <string name="night_state_error">Toisto keskeytynyt</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Asetukset</string>
+    <string name="theme_title">Ulkoasu</string>
+    <string name="theme_system">Järjestelmä</string>
+    <string name="theme_light">Vaalea</string>
+    <string name="theme_dark">Tumma</string>
 
     <!-- Sync -->
     <string name="sync_title">Aalto Sync</string>

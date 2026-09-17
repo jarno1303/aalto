@@ -63,6 +63,25 @@
     <string name="sleep_timer_minutes">%1$d min</string>
     <string name="sleep_timer_remaining">Sammuu %1$d min</string>
 
+    <!-- Wake-up radio -->
+    <string name="alarm_title">Herätys</string>
+    <string name="alarm_settings_title">Herätysradio</string>
+    <string name="alarm_enabled">Herätys päällä</string>
+    <string name="alarm_station">Asema</string>
+    <string name="alarm_no_stations">Lisää ensin omia asemia.</string>
+    <string name="alarm_repeat_once">Valitse päivät, tai herätys soi kerran.</string>
+    <string name="alarm_repeat_days">Toistuu valittuina päivinä.</string>
+    <string name="alarm_save">Tallenna</string>
+    <string name="alarm_snooze">Torkku</string>
+    <string name="alarm_snooze_minutes">Torkku %1$d min</string>
+    <string name="alarm_dismiss">Lopeta</string>
+    <string name="alarm_continue">Jatka kuuntelua</string>
+    <string name="alarm_channel">Herätykset</string>
+    <string name="alarm_fallback_note">Asemaan ei saatu yhteyttä – soitetaan hälytysääni</string>
+    <string name="alarm_open">Herätys</string>
+    <string name="alarm_next">Herätys %1$s</string>
+    <string name="alarm_exact_permission">Salli tarkat hälytykset, jotta herätys soi ajallaan.</string>
+
     <!-- Settings -->
     <string name="settings_title">Asetukset</string>
     <string name="theme_title">Ulkoasu</string>

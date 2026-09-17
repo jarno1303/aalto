@@ -1,7 +1,23 @@
 package fi.aalto.radio
 
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color as AndroidColor
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import fi.aalto.radio.alarm.AlarmScheduler
+import fi.aalto.radio.alarm.AlarmStore
+import fi.aalto.radio.alarm.finnishDayShort
+import fi.aalto.radio.alarm.formatClock
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
@@ -91,6 +107,20 @@ private fun AaltoApp() {
     val syncCoordinator = remember(context) { AaltoAppContainer.syncCoordinator(context) }
     val syncState by syncCoordinator.state.collectAsState()
     var showSettings by rememberSaveable { mutableStateOf(false) }
+    var showAlarm by rememberSaveable { mutableStateOf(false) }
+    var alarmSettings by remember { mutableStateOf(AlarmStore.load(context)) }
+    var nextAlarmMillis by remember { mutableStateOf(AlarmScheduler.nextRingMillis(context)) }
+    // Refresh the top bar label after an alarm has rung or a snooze ended.
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(60_000)
+            alarmSettings = AlarmStore.load(context)
+            nextAlarmMillis = AlarmScheduler.nextRingMillis(context)
+        }
+    }
+    val notificationPermission = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { /* The alarm rings either way; the permission only makes its screen visible. */ }
     // Saveable so the Night Screen survives rotation (e.g. mounting the phone in a car holder).
     var nightScreenActive by rememberSaveable { mutableStateOf(false) }
     var catalogStations by remember { mutableStateOf<List<CatalogStation>>(emptyList()) }
@@ -331,6 +361,8 @@ private fun AaltoApp() {
                     onFavorite = { toggleFavorite(selectedStation) },
                     onFind = { selectedTab = TAB_SEARCH },
                     onEditOwnStations = { selectedTab = TAB_FAVORITES },
+                    onOpenAlarm = { showAlarm = true },
+                    alarmLabel = nextAlarmMillis?.let(::alarmLabel),
                     onStationClick = { station ->
                         playStation(station, openNowPlaying = false)
                     },
@@ -410,6 +442,47 @@ private fun AaltoApp() {
         }
     }
 
+    if (showAlarm) {
+        val alarmStations = buildList {
+            addAll(favoriteStations)
+            add(selectedStation)
+            alarmSettings.stationId?.let { repository.stationById(it) }?.let { add(it) }
+        }.distinctBy { it.stableId }
+        AlarmDialog(
+            initial = alarmSettings,
+            stations = alarmStations,
+            onSave = { updated ->
+                AlarmStore.save(context, updated)
+                if (!updated.enabled) AlarmScheduler.cancelSnooze(context)
+                AlarmScheduler.reschedule(context)
+                alarmSettings = updated
+                nextAlarmMillis = AlarmScheduler.nextRingMillis(context)
+                showAlarm = false
+
+                if (updated.enabled) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+                        PackageManager.PERMISSION_GRANTED
+                    ) {
+                        notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                    if (!AlarmScheduler.canScheduleExact(context) &&
+                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                    ) {
+                        Toast.makeText(context, R.string.alarm_exact_permission, Toast.LENGTH_LONG).show()
+                        runCatching {
+                            context.startActivity(
+                                Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+                                    .setData(android.net.Uri.parse("package:" + context.packageName))
+                            )
+                        }
+                    }
+                }
+            },
+            onDismiss = { showAlarm = false }
+        )
+    }
+
     if (showSettings) {
         SettingsDialog(
             themeMode = AaltoThemePreferences.mode,
@@ -423,5 +496,17 @@ private fun AaltoApp() {
             onSignOut = syncCoordinator::signOut,
             onDismiss = { showSettings = false }
         )
+    }
+}
+
+/** "7.00" for today or tomorrow, otherwise "ma 7.00". */
+private fun alarmLabel(epochMs: Long): String {
+    val time = Instant.ofEpochMilli(epochMs).atZone(ZoneId.systemDefault())
+    val clock = formatClock(time.hour, time.minute)
+    val today = LocalDate.now()
+    return when (time.toLocalDate()) {
+        today -> clock
+        today.plusDays(1) -> clock
+        else -> "${finnishDayShort.getValue(time.dayOfWeek)} $clock"
     }
 }

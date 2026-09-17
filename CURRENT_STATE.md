@@ -83,3 +83,13 @@ landscape layout, light/dark/system theme switching and system bar icons.
 - Song title from stream metadata (RadioPlayer.nowPlayingTrack, read-only onMediaMetadataChanged listener).
 - usesCleartextTraffic=true for http streams/logos.
 Physical checks: sleep timer with screen off, song titles on ICY/HLS stations, logo lookup for Yle stations.
+
+## Wake-up radio (MVP, ui-ux-polish)
+Code: `alarm/` (AlarmSettings, AlarmScheduler, AlarmReceiver + AlarmBootReceiver, AlarmService, AlarmActivity), `AlarmDialog.kt`, alarm button in TopBar.
+- setAlarmClock (exact, shown in status bar); USE_EXACT_ALARM (API 33+) / SCHEDULE_EXACT_ALARM (31-32).
+- AlarmService is separate from PlaybackService: own ExoPlayer on USAGE_ALARM, 45 s volume ramp,
+  built-in alarm tone if the stream is not playing within 15 s or fails, auto-stop after 30 min.
+- Lock-screen view: Torkku 9 min / Jatka kuuntelua (hands over to PlaybackService via MediaController) / Lopeta.
+- Re-armed after reboot, app update, time and time zone changes.
+Test plan (physical): alarm in 2 min with screen locked; flight mode -> fallback tone; snooze; continue listening;
+reboot with alarm set; weekday repeat; media volume 0 (alarm volume should apply); ColorOS battery settings overnight.

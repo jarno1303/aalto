@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.outlined.Alarm
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Radio
 import androidx.compose.material.icons.outlined.Settings
@@ -171,7 +172,11 @@ internal fun RowScope.AaltoNavigationItem(
 // =============================================================
 
 @Composable
-internal fun TopBar(onOpenSettings: () -> Unit) {
+internal fun TopBar(
+    onOpenSettings: () -> Unit,
+    onOpenAlarm: (() -> Unit)? = null,
+    alarmLabel: String? = null
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -203,6 +208,36 @@ internal fun TopBar(onOpenSettings: () -> Unit) {
         )
 
         Spacer(modifier = Modifier.weight(1f))
+
+        if (onOpenAlarm != null) {
+            // Shows the next wake-up time when one is set.
+            Row(
+                modifier = Modifier
+                    .heightIn(min = 48.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .clickable(
+                        onClickLabel = stringResource(R.string.alarm_open),
+                        role = Role.Button,
+                        onClick = onOpenAlarm
+                    )
+                    .padding(horizontal = AaltoSpaceS),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Alarm,
+                    contentDescription = if (alarmLabel == null) stringResource(R.string.alarm_open) else null,
+                    tint = if (alarmLabel != null) AaltoBlue else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (alarmLabel != null) {
+                    Spacer(modifier = Modifier.width(AaltoSpaceXs))
+                    Text(
+                        text = alarmLabel,
+                        color = AaltoBlue,
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
+            }
+        }
 
         IconButton(onClick = onOpenSettings) {
             Icon(

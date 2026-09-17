@@ -51,7 +51,9 @@ internal fun RadioScreen(
     onPrevious: (() -> Unit)?,
     onNext: (() -> Unit)?,
     trackTitle: String? = null,
-    onEditOwnStations: (() -> Unit)? = null
+    onEditOwnStations: (() -> Unit)? = null,
+    onOpenAlarm: (() -> Unit)? = null,
+    alarmLabel: String? = null
 ) {
     val showOwnStations = favoriteStations.isNotEmpty()
     val shelfStations = (if (showOwnStations) favoriteStations else popularStations)
@@ -99,7 +101,7 @@ internal fun RadioScreen(
                         .weight(1f)
                         .fillMaxHeight()
                 ) {
-                    TopBar(onOpenSettings)
+                    TopBar(onOpenSettings, onOpenAlarm, alarmLabel)
                     nowPlaying(Modifier.fillMaxWidth().weight(1f))
                 }
                 Column(
@@ -154,7 +156,7 @@ internal fun RadioScreen(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(AaltoSpaceXs)
             ) {
-                TopBar(onOpenSettings)
+                TopBar(onOpenSettings, onOpenAlarm, alarmLabel)
 
                 NowPlayingCard(
                     station = selectedStation,

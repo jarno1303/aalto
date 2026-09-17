@@ -25,6 +25,7 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
 import fi.aalto.radio.playback.AaltoSessionPlayer
+import fi.aalto.radio.playback.BrowseActions
 import fi.aalto.radio.playback.LastStationStore
 import fi.aalto.radio.playback.LogoTiles
 import fi.aalto.radio.playback.StationLookup
@@ -158,9 +159,9 @@ class PlaybackService : MediaLibraryService() {
         session.setMediaButtonPreferences(buttons)
     }
 
-    private fun toggleFavorite() {
-        val id = sessionPlayer?.currentMediaItem?.mediaId ?: return
+    private fun setFavorite(id: String, add: Boolean) {
         val wasFavorite = id in favoriteIds
+        if (wasFavorite == add) return
         // Show the new state at once; the database flow confirms it.
         favoriteIds = if (wasFavorite) favoriteIds - id else favoriteIds + id
         updateFavoriteButton()
@@ -174,6 +175,8 @@ class PlaybackService : MediaLibraryService() {
             }.getOrDefault(false)
             if (committed) {
                 runCatching { AaltoAppContainer.syncCoordinator(this@PlaybackService).requestSync() }
+                // Let the car refresh "Omat asemat".
+                mediaSession?.notifyChildrenChanged(MINE_ID, Int.MAX_VALUE, null)
             } else {
                 favoriteIds = if (wasFavorite) favoriteIds + id else favoriteIds - id
                 updateFavoriteButton()
@@ -254,6 +257,8 @@ class PlaybackService : MediaLibraryService() {
             val commands = MediaSession.ConnectionResult.DEFAULT_SESSION_AND_LIBRARY_COMMANDS
                 .buildUpon()
                 .add(favoriteCommand)
+                .add(SessionCommand(BrowseActions.ADD_FAVORITE, Bundle.EMPTY))
+                .add(SessionCommand(BrowseActions.REMOVE_FAVORITE, Bundle.EMPTY))
                 .build()
             return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
                 .setAvailableSessionCommands(commands)
@@ -266,9 +271,22 @@ class PlaybackService : MediaLibraryService() {
             customCommand: SessionCommand,
             args: Bundle
         ): ListenableFuture<SessionResult> {
-            if (customCommand.customAction == ACTION_TOGGLE_FAVORITE) {
-                toggleFavorite()
-                return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+            when (customCommand.customAction) {
+                ACTION_TOGGLE_FAVORITE -> {
+                    val id = sessionPlayer?.currentMediaItem?.mediaId
+                    if (id != null) setFavorite(id, id !in favoriteIds)
+                    return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+                }
+                BrowseActions.ADD_FAVORITE, BrowseActions.REMOVE_FAVORITE -> {
+                    val id = args.getString(BrowseActions.KEY_MEDIA_ITEM_ID)
+                        ?: return Futures.immediateFuture(SessionResult(SessionResult.RESULT_ERROR_BAD_VALUE))
+                    val add = customCommand.customAction == BrowseActions.ADD_FAVORITE
+                    setFavorite(id, add)
+                    val message = getString(if (add) R.string.auto_added_favorite else R.string.auto_removed_favorite)
+                    return Futures.immediateFuture(
+                        SessionResult(SessionResult.RESULT_SUCCESS, BrowseActions.result(message))
+                    )
+                }
             }
             return super.onCustomCommand(session, controller, customCommand, args)
         }
@@ -288,6 +306,7 @@ class PlaybackService : MediaLibraryService() {
                     MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM
                 )
                 putBoolean("android.media.browse.SEARCH_SUPPORTED", true)
+                BrowseActions.putRootActions(this@PlaybackService, this)
             }
             Log.d(TAG, "root requested by ${browser.packageName}")
             val rootParams = LibraryParams.Builder().setExtras(extras).build()
@@ -320,12 +339,12 @@ class PlaybackService : MediaLibraryService() {
                         .sortedBy { countryName(it) })
                         .map { code -> StationMediaItems.folder(COUNTRY_PREFIX + code, countryName(code)) }
                 }
-                MINE_ID -> lookup.favorites().map { StationMediaItems.build(this@PlaybackService, it) }
-                RECENT_ID -> lookup.recents().map { StationMediaItems.build(this@PlaybackService, it) }
-                POPULAR_ID -> lookup.popular().map { StationMediaItems.build(this@PlaybackService, it) }
+                MINE_ID -> lookup.favorites().map { browseItem(it) }
+                RECENT_ID -> lookup.recents().map { browseItem(it) }
+                POPULAR_ID -> lookup.popular().map { browseItem(it) }
                 else -> if (parentId.startsWith(COUNTRY_PREFIX)) {
                     lookup.popular(countryCode = parentId.removePrefix(COUNTRY_PREFIX))
-                        .map { StationMediaItems.build(this@PlaybackService, it) }
+                        .map { browseItem(it) }
                 } else {
                     emptyList()
                 }
@@ -370,7 +389,7 @@ class PlaybackService : MediaLibraryService() {
             params: LibraryParams?
         ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> = future {
             val results = searchResults[query] ?: lookup.search(query).also { searchResults[query] = it }
-            val items = results.map { StationMediaItems.build(this@PlaybackService, it) }
+            val items = results.map { browseItem(it) }
             LibraryResult.ofItemList(paged(items, page, pageSize), params)
         }
 
@@ -402,6 +421,9 @@ class PlaybackService : MediaLibraryService() {
         }
         return null
     }
+
+    private fun browseItem(station: RadioStation): MediaItem =
+        StationMediaItems.build(this, station, BrowseActions.forStation(station.id in favoriteIds))
 
     private fun paged(items: List<MediaItem>, page: Int, pageSize: Int): ImmutableList<MediaItem> {
         if (pageSize <= 0 || pageSize == Int.MAX_VALUE) return ImmutableList.copyOf(items)

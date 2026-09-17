@@ -102,6 +102,8 @@
     <!-- Android Auto -->
     <string name="auto_popular">Suositut</string>
     <string name="auto_recent">Viimeisimmät</string>
+    <string name="auto_added_favorite">Lisätty omiin asemiin</string>
+    <string name="auto_removed_favorite">Poistettu omista asemista</string>
     <string name="auto_countries">Maat</string>
 
     <!-- Widget -->

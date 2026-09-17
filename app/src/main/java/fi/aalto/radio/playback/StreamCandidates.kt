@@ -123,13 +123,17 @@ internal object StationMediaItems {
             .appendPath(stationId)
             .build()
 
-    fun build(context: Context, station: RadioStation): MediaItem {
+    /**
+     * @param browseActions ids of car "browse actions" (e.g. the heart) shown
+     * on this station's tile; null for items that are only played.
+     */
+    fun build(context: Context, station: RadioStation, browseActions: List<String>? = null): MediaItem {
         val candidates = StreamCandidates.forStation(station, StreamMemory.get(context, station.id))
         val url = candidates.firstOrNull() ?: station.preferredStreamUrl
         return MediaItem.Builder()
             .setMediaId(station.id)
             .setUri(url)
-            .setMediaMetadata(metadata(station, candidates))
+            .setMediaMetadata(metadata(station, candidates, browseActions))
             .build()
     }
 
@@ -137,7 +141,11 @@ internal object StationMediaItems {
     fun subtitle(station: RadioStation): String =
         fi.aalto.radio.stationMetadataLine(station).ifBlank { station.description }.ifBlank { "Aalto" }
 
-    fun metadata(station: RadioStation, candidates: List<String>): MediaMetadata =
+    fun metadata(
+        station: RadioStation,
+        candidates: List<String>,
+        browseActions: List<String>? = null
+    ): MediaMetadata =
         MediaMetadata.Builder()
             .setTitle(station.name)
             .setArtist(subtitle(station))
@@ -147,7 +155,13 @@ internal object StationMediaItems {
             .setIsBrowsable(false)
             .setIsPlayable(true)
             .setMediaType(MediaMetadata.MEDIA_TYPE_RADIO_STATION)
-            .setExtras(StreamCandidates.extras(candidates))
+            .setExtras(
+                StreamCandidates.extras(candidates).apply {
+                    if (browseActions != null) {
+                        putStringArrayList(BrowseActions.KEY_ITEM_ACTION_IDS, ArrayList(browseActions))
+                    }
+                }
+            )
             .build()
 
     fun folder(id: String, title: String): MediaItem =

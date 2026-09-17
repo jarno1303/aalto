@@ -452,8 +452,8 @@ internal fun StationLogo(
                     .fillMaxSize()
                     .padding(
                         when {
-                            // A square logo must fit inside the circle.
-                            circular && bitmap != null -> size * 0.15f
+                            // Round tiles: the logo fills the whole circle.
+                            circular && bitmap != null -> 0.dp
                             !framed && bitmap != null -> 0.dp
                             !framed -> AaltoSpaceM
                             else -> AaltoSpaceXs
@@ -465,8 +465,10 @@ internal fun StationLogo(
                     Image(
                         bitmap = bitmap,
                         contentDescription = null,
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier.fillMaxSize()
+                        contentScale = if (circular) ContentScale.Crop else ContentScale.Fit,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .then(if (circular) Modifier.clip(CircleShape) else Modifier)
                     )
                 } else {
                     Text(

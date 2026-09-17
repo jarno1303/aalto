@@ -107,6 +107,10 @@ internal class AaltoSessionPlayer(
 
     init {
         exo.addListener(internalListener)
+        // Shown as the heading of the car's queue: the queue is the own stations.
+        exo.playlistMetadata = androidx.media3.common.MediaMetadata.Builder()
+            .setTitle(context.getString(fi.aalto.radio.R.string.home_mine))
+            .build()
         startTracking(exo.currentMediaItem)
     }
 
@@ -343,17 +347,32 @@ internal class AaltoSessionPlayer(
     // ---- Playlist = own stations -------------------------------------------
 
     /**
-     * A single station coming from the app or the car becomes the own-station
-     * playlist when it is one of them; any other station plays alone.
+     * A single station from the app, car, widget or alarm always comes with
+     * the own stations: an own station plays at its place in the list, any
+     * other station plays first with the own stations after it. So the queue
+     * is always "Omat asemat".
      */
     private fun expand(items: List<MediaItem>, startIndex: Int, startPositionMs: Long) {
         val single = items.singleOrNull()
         val list = presets()
-        val index = if (single == null) -1 else list.indexOfFirst { it.id == single.mediaId }
-        if (single != null && index >= 0 && list.size > 1) {
+        if (single == null || list.isEmpty()) {
+            exo.setMediaItems(items, startIndex, startPositionMs)
+            return
+        }
+        val index = list.indexOfFirst { it.id == single.mediaId }
+        if (index >= 0) {
             exo.setMediaItems(presetItems(list, keep = single), index, C.TIME_UNSET)
         } else {
-            exo.setMediaItems(items, startIndex, startPositionMs)
+            exo.setMediaItems(listOf(single) + presetItems(list), 0, C.TIME_UNSET)
+        }
+    }
+
+    /** Station ids the playlist should have around [current]. */
+    private fun wantedIds(current: MediaItem, list: List<RadioStation>): List<String> {
+        val ids = list.map { it.id }
+        return when {
+            current.mediaId in ids -> ids
+            else -> listOf(current.mediaId) + ids
         }
     }
 
@@ -376,17 +395,20 @@ internal class AaltoSessionPlayer(
         val current = exo.currentMediaItem ?: return
         val list = presets()
         val index = list.indexOfFirst { it.id == current.mediaId }
-        val wanted = if (index >= 0 && list.size > 1) list.map { it.id } else listOf(current.mediaId)
+        val wanted = wantedIds(current, list)
         val actual = (0 until exo.mediaItemCount).map { exo.getMediaItemAt(it).mediaId }
         if (actual == wanted) return
         val currentIndex = exo.currentMediaItemIndex
         switching = true
         try {
+            // Keep only the playing entry, then rebuild the list around it.
             if (currentIndex + 1 < exo.mediaItemCount) exo.removeMediaItems(currentIndex + 1, exo.mediaItemCount)
             if (currentIndex > 0) exo.removeMediaItems(0, currentIndex)
-            if (wanted.size > 1) {
+            if (index >= 0) {
                 exo.addMediaItems(0, presetItems(list.subList(0, index)))
                 exo.addMediaItems(presetItems(list.subList(index + 1, list.size)))
+            } else {
+                exo.addMediaItems(presetItems(list))
             }
             lastIndex = exo.currentMediaItemIndex
         } finally {

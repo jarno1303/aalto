@@ -116,8 +116,10 @@ internal fun NightScreen(
     onPlayPause: () -> Unit,
     onPrevious: (() -> Unit)?,
     onNext: (() -> Unit)?,
-    onExit: () -> Unit
+    onExit: () -> Unit,
+    trackTitle: String? = null
 ) {
+    val sleepMinutes = rememberSleepTimerMinutes()
     val interactionSource = remember { MutableInteractionSource() }
     // Controls (and the exit button) are shown on entry, so the way out is visible at once.
     var controlsVisible by remember { mutableStateOf(true) }
@@ -196,8 +198,24 @@ internal fun NightScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
 
+            if (trackTitle != null && isPlaying && playbackError == null) {
+                Text(
+                    text = trackTitle,
+                    color = Color.White.copy(alpha = 0.50f),
+                    fontSize = 15.sp,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+            }
+
             Text(
-                text = playbackText,
+                text = if (sleepMinutes != null) {
+                    playbackText + " · " + stringResource(R.string.sleep_timer_remaining, sleepMinutes)
+                } else {
+                    playbackText
+                },
                 color = if (playbackError == null) {
                     Color.White.copy(alpha = 0.36f)
                 } else {

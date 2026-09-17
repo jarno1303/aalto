@@ -56,6 +56,12 @@
     <string name="night_hint_tap">Napauta näyttöä: ohjaimet ja poistuminen</string>
     <string name="night_hint_exit">Poistu yläkulmasta tai Takaisin-painikkeella</string>
 
+    <!-- Sleep timer -->
+    <string name="sleep_timer">Uniajastin</string>
+    <string name="sleep_timer_off">Pois päältä</string>
+    <string name="sleep_timer_minutes">%1$d min</string>
+    <string name="sleep_timer_remaining">Sammuu %1$d min kuluttua</string>
+
     <!-- Settings -->
     <string name="settings_title">Asetukset</string>
     <string name="theme_title">Ulkoasu</string>

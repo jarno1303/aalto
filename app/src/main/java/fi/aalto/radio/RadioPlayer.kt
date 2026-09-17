@@ -44,6 +44,13 @@ class RadioPlayer(context: Context) : Player.Listener {
     var isConnecting by mutableStateOf(false)
         private set
 
+    /**
+     * "Artist – Title" from the stream's own metadata (ICY / ID3), or null.
+     * Read-only listener; it never changes what or how the player plays.
+     */
+    var nowPlayingTrack by mutableStateOf<String?>(null)
+        private set
+
     init {
         val sessionToken = SessionToken(
             appContext,
@@ -227,6 +234,25 @@ class RadioPlayer(context: Context) : Player.Listener {
             }
             Player.STATE_IDLE, Player.STATE_ENDED -> isConnecting = false
         }
+    }
+
+    override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
+        nowPlayingTrack = trackText(mediaMetadata)
+    }
+
+    override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+        nowPlayingTrack = null
+    }
+
+    private fun trackText(metadata: MediaMetadata): String? {
+        val stationTitle = controller?.currentMediaItem?.mediaMetadata?.title?.toString()?.trim()
+        val title = metadata.title?.toString()?.trim()
+            ?.takeIf { it.length >= 2 && !it.equals(stationTitle, ignoreCase = true) }
+            ?.takeUnless { it.startsWith("http", ignoreCase = true) }
+            ?: return null
+        val artist = metadata.artist?.toString()?.trim()
+            ?.takeIf { it.isNotEmpty() && it != "Aalto" && !it.equals(stationTitle, ignoreCase = true) }
+        return if (artist != null && !title.contains(artist, ignoreCase = true)) "$artist – $title" else title
     }
 
     override fun onPlayerError(error: PlaybackException) {

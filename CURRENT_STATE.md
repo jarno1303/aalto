@@ -75,3 +75,11 @@ Open: MediaSession next/previous for steering wheel / Android Auto needs Playbac
 Physical checks needed: tap-to-play feedback, retry, pause on catalog stations, mini player,
 favorite drag-and-drop (unchanged logic, new row styling), Night Screen controls and brightness,
 landscape layout, light/dark/system theme switching and system bar icons.
+
+## UI polish round 2 (ui-ux-polish)
+- Portrait home: compact Now Playing card + grid of own stations (rounded-square logo tiles on white).
+- Built-in stations fetch a logo from Radio Browser by name (cached in SharedPreferences `aalto_logo_lookup`).
+- Sleep timer (SleepTimer.kt): 15-90 min, pauses PlaybackService through its own MediaController.
+- Song title from stream metadata (RadioPlayer.nowPlayingTrack, read-only onMediaMetadataChanged listener).
+- usesCleartextTraffic=true for http streams/logos.
+Physical checks: sleep timer with screen off, song titles on ICY/HLS stations, logo lookup for Yle stations.

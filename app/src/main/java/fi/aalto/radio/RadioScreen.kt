@@ -49,7 +49,8 @@ internal fun RadioScreen(
     onOpenSettings: () -> Unit,
     onNightScreen: () -> Unit,
     onPrevious: (() -> Unit)?,
-    onNext: (() -> Unit)?
+    onNext: (() -> Unit)?,
+    trackTitle: String? = null
 ) {
     val showOwnStations = favoriteStations.isNotEmpty()
     val shelfStations = (if (showOwnStations) favoriteStations else popularStations)
@@ -82,7 +83,8 @@ internal fun RadioScreen(
                 onNightScreen = onNightScreen,
                 onPrevious = onPrevious,
                 onNext = onNext,
-                modifier = modifier
+                modifier = modifier,
+                trackTitle = trackTitle
             )
         }
 
@@ -163,7 +165,8 @@ internal fun RadioScreen(
                     onFavorite = onFavorite,
                     onNightScreen = onNightScreen,
                     onPrevious = onPrevious,
-                    onNext = onNext
+                    onNext = onNext,
+                    trackTitle = trackTitle
                 )
 
                 SectionHeader(

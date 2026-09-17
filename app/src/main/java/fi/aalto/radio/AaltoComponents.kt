@@ -311,7 +311,8 @@ internal fun MiniPlayer(
     hasError: Boolean,
     onPlayPause: () -> Unit,
     onOpen: () -> Unit,
-    onNext: (() -> Unit)? = null
+    onNext: (() -> Unit)? = null,
+    trackTitle: String? = null
 ) {
     val showPause = isPlaying || isConnecting
     // Tinted so the player reads as its own area between content and navigation.
@@ -340,8 +341,7 @@ internal fun MiniPlayer(
                 StationLogo(
                     station = station,
                     size = 44.dp,
-                    cornerRadius = 22.dp,
-                    circular = true
+                    cornerRadius = 10.dp
                 )
                 Spacer(modifier = Modifier.width(AaltoSpaceM))
                 Column(modifier = Modifier.weight(1f)) {
@@ -353,7 +353,8 @@ internal fun MiniPlayer(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = playbackStateText(isPlaying, isConnecting, hasError),
+                        text = trackTitle?.takeIf { isPlaying && !hasError }
+                            ?: playbackStateText(isPlaying, isConnecting, hasError),
                         color = if (hasError) {
                             MaterialTheme.colorScheme.error
                         } else {
@@ -421,10 +422,15 @@ internal fun StationLogo(
         // Round tiles take the logo's own edge colour, so a square logo
         // blends into a full circle instead of showing hard corners.
         logo != null && circular -> logoBackdrop ?: Color.White
-        logo != null -> Color.Transparent
+        // Logos sit on white, like printed station logos; never cropped.
+        logo != null -> Color.White
         else -> stationColor
     }
-    val logoBorder: BorderStroke? = null
+    val logoBorder: BorderStroke? = if (logo != null && framed) {
+        BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+    } else {
+        null
+    }
 
     Box(
         modifier = Modifier
@@ -453,7 +459,7 @@ internal fun StationLogo(
                         when {
                             // The square logo fits inside the circle (inscribed square).
                             circular && bitmap != null -> size * 0.15f
-                            !framed && bitmap != null -> 0.dp
+                            bitmap != null -> size * 0.08f
                             !framed -> AaltoSpaceM
                             else -> AaltoSpaceXs
                         }
@@ -542,24 +548,28 @@ internal fun StationCard(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(modifier = Modifier.size(logoSize)) {
-                // Round logo; the selected station gets a blue ring.
+                // Rounded-square logo tile; the selected station gets a blue frame.
+                val tileShape = RoundedCornerShape(logoSize * 0.22f)
                 Box(
                     modifier = Modifier
                         .size(logoSize)
-                        .clip(CircleShape)
-                        .border(
-                            width = if (isSelected) 3.dp else 1.dp,
-                            color = if (isSelected) AaltoBlue else MaterialTheme.colorScheme.outline,
-                            shape = CircleShape
-                        )
-                        .padding(if (isSelected) 5.dp else 1.dp),
+                        .clip(tileShape)
+                        .then(
+                            if (isSelected) {
+                                Modifier
+                                    .border(3.dp, AaltoBlue, tileShape)
+                                    .padding(5.dp)
+                            } else {
+                                Modifier
+                            }
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
+                    val innerSize = if (isSelected) logoSize - 10.dp else logoSize
                     StationLogo(
                         station = station,
-                        size = logoSize - if (isSelected) 10.dp else 2.dp,
-                        cornerRadius = logoSize / 2,
-                        circular = true
+                        size = innerSize,
+                        cornerRadius = innerSize * 0.18f
                     )
                 }
 
@@ -669,8 +679,7 @@ internal fun StationRow(
     val rowColor by animateColorAsState(
         targetValue = when {
             isSelected -> MaterialTheme.colorScheme.primaryContainer
-            isDragging -> MaterialTheme.colorScheme.surface
-            else -> Color.Transparent
+            else -> MaterialTheme.colorScheme.surface
         },
         animationSpec = tween(durationMillis = 160),
         label = "stationRowSurface"

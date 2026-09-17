@@ -59,6 +59,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.offset
+import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
@@ -82,7 +91,8 @@ internal fun NowPlaying(
     onNightScreen: () -> Unit,
     modifier: Modifier = Modifier,
     onPrevious: (() -> Unit)? = null,
-    onNext: (() -> Unit)? = null
+    onNext: (() -> Unit)? = null,
+    trackTitle: String? = null
 ) {
     stationTrace("ui_current_state", station)
     Column(
@@ -158,11 +168,15 @@ internal fun NowPlaying(
                 Spacer(modifier = Modifier.height(AaltoSpaceS))
 
                 Text(
-                    text = playbackStateText(
-                        isPlaying = isPlaying,
-                        isConnecting = isConnecting,
-                        hasError = playbackError != null
-                    ),
+                    text = trackTitle?.takeIf { isPlaying && playbackError == null }
+                        ?: playbackStateText(
+                            isPlaying = isPlaying,
+                            isConnecting = isConnecting,
+                            hasError = playbackError != null
+                        ),
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                     color = if (playbackError != null) {
                         MaterialTheme.colorScheme.error
                     } else {
@@ -328,7 +342,6 @@ internal fun NowPlayingLogo(
             station = station,
             size = logoSize,
             cornerRadius = cornerRadius,
-            framed = false,
             circular = circular
         )
     }
@@ -430,10 +443,9 @@ internal fun NightScreenTrigger(
 /**
  * Compact Now Playing card for the portrait home screen.
  *
- * Same pattern as the big radio apps (Radioplayer, TuneIn, Simple Radio):
- * a short "what is on" block on top, and the rest of the screen for the
- * user's own stations. Logo on the left, name and state on the right,
- * controls in one row below. Nothing is clipped on small screens.
+ * Logo on white on the left; name, what is on (song title when the stream
+ * sends one) and station details on the right; favorite in the corner.
+ * One control row: sleep timer, previous / play / next, Night Screen.
  */
 @Composable
 internal fun NowPlayingCard(
@@ -448,10 +460,13 @@ internal fun NowPlayingCard(
     onNightScreen: () -> Unit,
     modifier: Modifier = Modifier,
     onPrevious: (() -> Unit)? = null,
-    onNext: (() -> Unit)? = null
+    onNext: (() -> Unit)? = null,
+    trackTitle: String? = null
 ) {
     stationTrace("ui_current_state", station)
     val canSkip = onPrevious != null && onNext != null
+    val sleepMinutes = rememberSleepTimerMinutes()
+    val showTrack = trackTitle != null && isPlaying && playbackError == null
 
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -459,9 +474,9 @@ internal fun NowPlayingCard(
         color = MaterialTheme.colorScheme.surface
     ) {
         Column(modifier = Modifier.padding(AaltoSpaceL)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(verticalAlignment = Alignment.Top) {
                 val logo: @Composable () -> Unit = {
-                    NowPlayingLogo(station = station, isPlaying = isPlaying, logoSize = 80.dp, circular = true)
+                    NowPlayingLogo(station = station, isPlaying = isPlaying, logoSize = 80.dp)
                 }
                 if (canSkip) {
                     SwipeableStation(onPrevious = onPrevious!!, onNext = onNext!!, content = logo)
@@ -471,7 +486,11 @@ internal fun NowPlayingCard(
 
                 Spacer(modifier = Modifier.width(AaltoSpaceM))
 
-                Column(modifier = Modifier.weight(1f)) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(top = AaltoSpaceXs)
+                ) {
                     Text(
                         text = station.name,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -487,30 +506,56 @@ internal fun NowPlayingCard(
                             Spacer(modifier = Modifier.width(AaltoSpaceXs))
                         }
                         Text(
-                            text = playbackStateText(
-                                isPlaying = isPlaying,
-                                isConnecting = isConnecting,
-                                hasError = playbackError != null
-                            ),
-                            color = if (playbackError != null) {
-                                MaterialTheme.colorScheme.error
+                            text = if (showTrack) {
+                                trackTitle!!
                             } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
+                                playbackStateText(
+                                    isPlaying = isPlaying,
+                                    isConnecting = isConnecting,
+                                    hasError = playbackError != null
+                                )
+                            },
+                            color = when {
+                                playbackError != null -> MaterialTheme.colorScheme.error
+                                showTrack -> MaterialTheme.colorScheme.onSurface
+                                else -> MaterialTheme.colorScheme.onSurfaceVariant
                             },
                             style = MaterialTheme.typography.bodyMedium,
-                            maxLines = 1,
+                            fontWeight = if (showTrack) FontWeight.Medium else FontWeight.Normal,
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
-                    if (station.description.isNotBlank() && playbackError == null) {
+                    val details = when {
+                        sleepMinutes != null -> stringResource(R.string.sleep_timer_remaining, sleepMinutes)
+                        else -> stationMetadataLine(station).ifBlank { station.description }
+                    }
+                    if (details.isNotBlank() && playbackError == null) {
                         Text(
-                            text = station.description,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            text = details,
+                            color = if (sleepMinutes != null) AaltoBlue else MaterialTheme.colorScheme.onSurfaceVariant,
                             style = MaterialTheme.typography.bodySmall,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(top = 2.dp)
                         )
                     }
+                }
+
+                IconButton(
+                    onClick = onFavorite,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .offset(x = AaltoSpaceS, y = (-AaltoSpaceS))
+                ) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                        contentDescription = stringResource(
+                            if (isFavorite) R.string.favorite_remove else R.string.favorite_add
+                        ),
+                        tint = if (isFavorite) AaltoBlue else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             }
 
@@ -536,16 +581,7 @@ internal fun NowPlayingCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                IconButton(onClick = onFavorite, modifier = Modifier.size(48.dp)) {
-                    Icon(
-                        imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                        contentDescription = stringResource(
-                            if (isFavorite) R.string.favorite_remove else R.string.favorite_add
-                        ),
-                        tint = if (isFavorite) AaltoBlue else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
+                SleepTimerButton(active = sleepMinutes != null)
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(AaltoSpaceS)
@@ -560,6 +596,71 @@ internal fun NowPlayingCard(
                     SkipButton(visible = canSkip, isNext = true, onClick = { onNext?.invoke() })
                 }
                 NightScreenTrigger(onNightScreen = onNightScreen)
+            }
+        }
+    }
+}
+
+/** Minutes left on the sleep timer, refreshed every few seconds; null when off. */
+@Composable
+internal fun rememberSleepTimerMinutes(): Int? {
+    val endsAt = SleepTimer.endsAtElapsedMs
+    val minutes by produceState<Int?>(initialValue = SleepTimer.remainingMinutes(), endsAt) {
+        while (true) {
+            value = SleepTimer.remainingMinutes()
+            if (endsAt == null) break
+            delay(5_000)
+        }
+    }
+    return if (endsAt == null) null else minutes
+}
+
+@Composable
+internal fun SleepTimerButton(
+    active: Boolean,
+    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant
+) {
+    val context = LocalContext.current
+    var menuOpen by remember { mutableStateOf(false) }
+
+    Box {
+        IconButton(
+            onClick = { menuOpen = true },
+            modifier = Modifier.size(48.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Timer,
+                contentDescription = stringResource(R.string.sleep_timer),
+                tint = if (active) AaltoBlue else tint,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+        DropdownMenu(
+            expanded = menuOpen,
+            onDismissRequest = { menuOpen = false }
+        ) {
+            Text(
+                text = stringResource(R.string.sleep_timer),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(horizontal = AaltoSpaceL, vertical = AaltoSpaceS)
+            )
+            SleepTimer.choicesMinutes.forEach { minutes ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.sleep_timer_minutes, minutes)) },
+                    onClick = {
+                        SleepTimer.start(context, minutes)
+                        menuOpen = false
+                    }
+                )
+            }
+            if (active) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.sleep_timer_off)) },
+                    onClick = {
+                        SleepTimer.cancel()
+                        menuOpen = false
+                    }
+                )
             }
         }
     }

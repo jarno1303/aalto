@@ -305,7 +305,8 @@ private fun AaltoApp() {
                             hasError = radioPlayer.playbackError != null,
                             onPlayPause = { radioPlayer.toggle(selectedStation) },
                             onOpen = { selectedTab = TAB_RADIO },
-                            onNext = onNext
+                            onNext = onNext,
+                            trackTitle = radioPlayer.nowPlayingTrack
                         )
                     }
                     AaltoBottomNavigation(
@@ -336,7 +337,8 @@ private fun AaltoApp() {
                     onOpenSettings = { showSettings = true },
                     onNightScreen = { nightScreenActive = true },
                     onPrevious = onPrevious,
-                    onNext = onNext
+                    onNext = onNext,
+                    trackTitle = radioPlayer.nowPlayingTrack
                 )
 
                 TAB_SEARCH -> SearchScreen(
@@ -401,7 +403,8 @@ private fun AaltoApp() {
                 onPlayPause = { radioPlayer.toggle(selectedStation) },
                 onPrevious = onPrevious,
                 onNext = onNext,
-                onExit = { nightScreenActive = false }
+                onExit = { nightScreenActive = false },
+                trackTitle = radioPlayer.nowPlayingTrack
             )
         }
     }

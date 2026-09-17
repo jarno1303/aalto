@@ -352,7 +352,7 @@ internal fun stationGenreAndTags(station: RadioStation): String {
 internal fun stationMetadataLine(station: RadioStation): String {
     return listOf(stationGenreAndTags(station), stationLocation(station))
         .filter { it.isNotBlank() }
-        .joinToString(" - ")
+        .joinToString(" · ")
 }
 
 internal fun stationLocation(station: RadioStation): String {

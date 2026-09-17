@@ -1,5 +1,7 @@
 package fi.aalto.radio
 
+import fi.aalto.radio.catalog.CatalogStation
+
 private const val TAG_SEPARATOR = "|"
 
 object StationIdentity {
@@ -25,6 +27,39 @@ fun RadioStation.toEntity(updatedAt: Long): StationEntity {
         category = category,
         streamHealthStatus = streamHealthStatus,
         updatedAt = updatedAt
+    )
+}
+
+fun CatalogStation.toPlayableRadioStationOrNull(): RadioStation? {
+    val stream = preferredStreamUrl?.trim()?.takeIf { it.isNotBlank() } ?: return null
+    val displayName = canonicalName.trim().takeIf { it.isNotBlank() } ?: return null
+    val initials = displayName
+        .split(Regex("\\s+"))
+        .filter { it.isNotBlank() }
+        .take(2)
+        .joinToString("") { it.first().uppercase() }
+        .take(5)
+
+    return RadioStation(
+        id = stableId,
+        radioBrowserStationUuid = sourceStationId,
+        name = displayName,
+        description = region ?: countryName.orEmpty(),
+        initials = initials.ifBlank { "A" },
+        logoColorArgb = 0xFF68727D,
+        streamUrl = stream,
+        preferredStreamUrl = stream,
+        faviconUrl = logoUrl,
+        countryCode = countryCode.orEmpty(),
+        tags = rawTags,
+        category = rawTags.firstOrNull().orEmpty(),
+        languages = languages,
+        location = listOfNotNull(region?.trim()?.takeIf { it.isNotBlank() }, countryName?.trim()?.takeIf { it.isNotBlank() })
+            .distinct()
+            .joinToString(", "),
+        lastKnownWorkingStreamUrl = stream,
+        logoCandidates = logoCandidates,
+        streamAlternatives = streamAlternatives
     )
 }
 

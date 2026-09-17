@@ -48,3 +48,6 @@ service-account*.json
 
 # Temporary AGENTS safety copies
 AGENTS.backup-*.md
+
+# Local agent scratch
+.codex/

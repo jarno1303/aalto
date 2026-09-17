@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.withContext
+import java.util.concurrent.ConcurrentHashMap
 
 class StationRepository(
     private val dao: LocalRadioDao,
@@ -18,10 +19,18 @@ class StationRepository(
     private val mutationIdFactory: () -> String = SyncMutationIds::newId,
     private val recentLimit: Int = DEFAULT_RECENT_LIMIT
 ) {
-    val stations: List<RadioStation> = StationCatalog.allStations
+    private val catalogStationsById = ConcurrentHashMap<String, RadioStation>()
+
+    val stations: List<RadioStation>
+        get() = (StationCatalog.allStations + catalogStationsById.values)
+            .distinctBy { it.id }
 
     fun stationById(stationId: String): RadioStation? {
-        return StationCatalog.stationById(stationId)
+        return StationCatalog.stationById(stationId) ?: catalogStationsById[stationId]
+    }
+
+    fun registerCatalogStations(stations: Iterable<RadioStation>) {
+        stations.forEach { station -> catalogStationsById[station.id] = station }
     }
 
     fun searchStations(query: String): List<RadioStation> {

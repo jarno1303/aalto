@@ -2,12 +2,17 @@ package fi.aalto.radio
 
 import android.content.Context
 import com.google.firebase.firestore.FirebaseFirestore
+import fi.aalto.radio.catalog.RoomStationCatalogCache
+import fi.aalto.radio.catalog.StationCatalogRepository
+import fi.aalto.radio.catalog.radiobrowser.RadioBrowserCatalogSource
 
 object AaltoAppContainer {
     @Volatile
     private var stationRepository: StationRepository? = null
     @Volatile
     private var syncCoordinator: AaltoSyncCoordinator? = null
+    @Volatile
+    private var catalogRepository: StationCatalogRepository? = null
 
     fun stationRepository(context: Context): StationRepository {
         return stationRepository ?: synchronized(this) {
@@ -38,6 +43,19 @@ object AaltoAppContainer {
                     deviceIdProvider = identity::deviceId,
                     firestore = FirebaseFirestore.getInstance()
                 ).also { syncCoordinator = it }
+            }
+        }
+    }
+
+    fun stationCatalogRepository(context: Context): StationCatalogRepository {
+        return catalogRepository ?: synchronized(this) {
+            catalogRepository ?: run {
+                val appContext = context.applicationContext
+                val database = AaltoDatabase.getInstance(appContext)
+                StationCatalogRepository(
+                    source = RadioBrowserCatalogSource(),
+                    cache = RoomStationCatalogCache(database.catalogStationDao())
+                ).also { catalogRepository = it }
             }
         }
     }

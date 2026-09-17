@@ -14,8 +14,21 @@ data class RadioStation(
     val tags: List<String>,
     val category: String,
     val lastKnownWorkingStreamUrl: String? = streamUrl,
-    val streamHealthStatus: String? = null
-)
+    val streamHealthStatus: String? = null,
+    val languages: List<String> = emptyList(),
+    val location: String? = null,
+    val logoCandidates: List<String> = emptyList(),
+    val streamAlternatives: List<String> = emptyList()
+) {
+    val logoUrl: String?
+        get() = faviconUrl
+
+    val stableId: String
+        get() = id
+
+    val logoUrls: List<String>
+        get() = (listOfNotNull(logoUrl) + logoCandidates).distinct()
+}
 
 object StationCatalog {
     const val DEFAULT_STATION_ID = "yle-klassinen"

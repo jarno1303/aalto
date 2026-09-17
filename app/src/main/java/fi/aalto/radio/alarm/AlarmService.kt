@@ -89,6 +89,7 @@ internal object AlarmRuntime {
     var ringing by mutableStateOf(false)
     var stationName by mutableStateOf("")
     var usingFallback by mutableStateOf(false)
+    var snoozeMinutes by mutableStateOf(DEFAULT_SNOOZE_MINUTES)
 }
 
 /**
@@ -115,8 +116,9 @@ class AlarmService : Service() {
         when (intent?.action) {
             ACTION_START -> startAlarm()
             ACTION_SNOOZE -> {
-                AlarmLog.add(this, "torkku $SNOOZE_MINUTES min")
-                AlarmScheduler.scheduleSnooze(this, SNOOZE_MINUTES)
+                val minutes = AlarmStore.load(this).snoozeMinutes
+                AlarmLog.add(this, "torkku $minutes min")
+                AlarmScheduler.scheduleSnooze(this, minutes)
                 stopAlarm()
             }
             ACTION_CONTINUE -> {
@@ -139,6 +141,7 @@ class AlarmService : Service() {
         settings = AlarmStore.load(this)
         AlarmRuntime.stationName = settings.stationName.orEmpty()
         AlarmRuntime.usingFallback = false
+        AlarmRuntime.snoozeMinutes = settings.snoozeMinutes
         AlarmRuntime.ringing = true
 
         // Must be in the foreground within a few seconds of the start request.
@@ -414,7 +417,6 @@ class AlarmService : Service() {
             )
         }
 
-        const val SNOOZE_MINUTES = 9
         private const val CHANNEL_ID = "aalto_alarm"
         private const val NOTIFICATION_ID = 4101
         private const val FALLBACK_AFTER_MS = 20_000L

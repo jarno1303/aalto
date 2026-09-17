@@ -16,11 +16,15 @@ internal data class AlarmSettings(
     val days: Set<DayOfWeek> = emptySet(),
     val stationId: String? = null,
     val stationName: String? = null,
-    val streamUrl: String? = null
+    val streamUrl: String? = null,
+    val snoozeMinutes: Int = DEFAULT_SNOOZE_MINUTES
 ) {
     val hasStation: Boolean
         get() = !streamUrl.isNullOrBlank()
 }
+
+internal const val DEFAULT_SNOOZE_MINUTES = 9
+internal val snoozeChoicesMinutes = listOf(5, 9, 10, 15)
 
 internal object AlarmStore {
     private const val PREFS = "aalto_alarm"
@@ -32,6 +36,7 @@ internal object AlarmStore {
     private const val KEY_STATION_NAME = "station_name"
     private const val KEY_STREAM_URL = "stream_url"
     private const val KEY_SNOOZE_AT = "snooze_at"
+    private const val KEY_SNOOZE_MINUTES = "snooze_minutes"
     private const val KEY_SKIP_AT = "skip_at"
 
     private fun prefs(context: Context) =
@@ -49,7 +54,9 @@ internal object AlarmStore {
                 .toSet(),
             stationId = p.getString(KEY_STATION_ID, null),
             stationName = p.getString(KEY_STATION_NAME, null),
-            streamUrl = p.getString(KEY_STREAM_URL, null)
+            streamUrl = p.getString(KEY_STREAM_URL, null),
+            snoozeMinutes = p.getInt(KEY_SNOOZE_MINUTES, DEFAULT_SNOOZE_MINUTES)
+                .takeIf { it in 1..60 } ?: DEFAULT_SNOOZE_MINUTES
         )
     }
 
@@ -62,6 +69,7 @@ internal object AlarmStore {
             .putString(KEY_STATION_ID, settings.stationId)
             .putString(KEY_STATION_NAME, settings.stationName)
             .putString(KEY_STREAM_URL, settings.streamUrl)
+            .putInt(KEY_SNOOZE_MINUTES, settings.snoozeMinutes)
             .apply()
     }
 

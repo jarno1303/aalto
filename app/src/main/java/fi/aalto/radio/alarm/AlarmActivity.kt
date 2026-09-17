@@ -65,6 +65,7 @@ class AlarmActivity : ComponentActivity() {
                 AlarmScreen(
                     stationName = AlarmRuntime.stationName,
                     usingFallback = AlarmRuntime.usingFallback,
+                    snoozeMinutes = AlarmRuntime.snoozeMinutes,
                     onSnooze = { send(AlarmService.ACTION_SNOOZE) },
                     onDismiss = { send(AlarmService.ACTION_DISMISS) },
                     onContinue = ::continueInApp
@@ -91,6 +92,7 @@ class AlarmActivity : ComponentActivity() {
 private fun AlarmScreen(
     stationName: String,
     usingFallback: Boolean,
+    snoozeMinutes: Int,
     onSnooze: () -> Unit,
     onDismiss: () -> Unit,
     onContinue: () -> Unit
@@ -146,7 +148,7 @@ private fun AlarmScreen(
                 .height(64.dp)
         ) {
             Text(
-                text = stringResource(R.string.alarm_snooze_minutes, AlarmService.SNOOZE_MINUTES),
+                text = stringResource(R.string.alarm_snooze_minutes, snoozeMinutes),
                 fontSize = 20.sp
             )
         }

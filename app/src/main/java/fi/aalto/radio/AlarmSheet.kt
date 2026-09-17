@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.sp
 import fi.aalto.radio.alarm.AlarmSettings
 import fi.aalto.radio.alarm.finnishDayShort
 import fi.aalto.radio.alarm.formatClock
+import fi.aalto.radio.alarm.snoozeChoicesMinutes
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.ZoneId
@@ -177,6 +178,25 @@ internal fun AlarmSheet(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            // Snooze length
+            Text(
+                text = stringResource(R.string.alarm_snooze_length),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(top = AaltoSpaceL)
+            )
+            Spacer(modifier = Modifier.height(AaltoSpaceXs))
+            Row(horizontalArrangement = Arrangement.spacedBy(AaltoSpaceS)) {
+                snoozeChoicesMinutes.forEach { minutes ->
+                    FilterChip(
+                        selected = settings.snoozeMinutes == minutes,
+                        onClick = {
+                            onChange(withStation(settings, selectedStation).copy(snoozeMinutes = minutes))
+                        },
+                        label = { Text(stringResource(R.string.sleep_timer_minutes, minutes)) }
+                    )
+                }
+            }
 
             // Station
             Text(

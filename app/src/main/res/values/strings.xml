@@ -101,6 +101,7 @@
 
     <!-- Android Auto -->
     <string name="auto_popular_country">Suositut · %1$s</string>
+    <string name="auto_recent">Viimeisimmät</string>
     <string name="auto_countries">Maat</string>
 
     <!-- Widget -->

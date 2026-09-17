@@ -9,7 +9,11 @@ data class CleanedStationMetadata(
 
 object CatalogMetadataCleaner {
     private val technicalSuffix = Regex(
-        "(?i)\\s+(?:\\d{2,4}\\s*k(?:bps)?|aac(?:\\+)?|mp3|opus|flac)\\s*$"
+        "(?i)\\s+(?:\\d{2,4}\\s*k(?:bps|bit)?(?:/s)?|aac(?:\\+)?|mp3|opus|flac)\\s*$"
+    )
+    // "SWR 3 (128 kbit)", "Radio X [AAC+]", "Station (HQ)"
+    private val bracketedTechnicalSuffix = Regex(
+        "(?i)\\s*[(\\[]\\s*(?:\\d{2,4}\\s*k(?:bps|bit|b)?(?:/s)?|aac\\+?|mp3|opus|flac|hq|hd)[^)\\]]*[)\\]]\\s*$"
     )
     private val streamSuffix = Regex("(?i)\\s*[-|]\\s*(?:online|live)\\s+stream\\s*$")
     private val urlLike = Regex("(?i)^(?:https?://|www\\.|[a-z0-9.-]+\\.(?:com|net|org)(?:/|$))")
@@ -17,7 +21,11 @@ object CatalogMetadataCleaner {
     fun clean(value: String): CleanedStationMetadata {
         val collapsed = value.trim().replace(Regex("\\s+"), " ")
         val withoutStreamSuffix = collapsed.replace(streamSuffix, "").trim()
-        val withoutTechnicalSuffix = withoutStreamSuffix.replace(technicalSuffix, "").trim()
+        val withoutTechnicalSuffix = withoutStreamSuffix
+            .replace(bracketedTechnicalSuffix, "")
+            .trim()
+            .replace(technicalSuffix, "")
+            .trim()
         val displayName = withoutTechnicalSuffix.ifBlank { collapsed }
         val dedupeName = displayName.lowercase()
             .replace(Regex("[^\\p{L}\\p{Nd}]+"), " ")

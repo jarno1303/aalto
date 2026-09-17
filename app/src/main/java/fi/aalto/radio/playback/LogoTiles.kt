@@ -19,12 +19,13 @@ internal object LogoTiles {
 
     /** The logo centred on white with a margin, so wide logos are not cropped. */
     fun square(context: Context, logo: File): File? {
-        val out = File(dir(context), "sq-${logo.nameWithoutExtension}.png")
+        val out = File(dir(context), "sq2-${logo.nameWithoutExtension}.png")
         if (out.isFile && out.lastModified() >= logo.lastModified()) return out
         val source = BitmapFactory.decodeFile(logo.absolutePath) ?: return null
         val bitmap = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        canvas.drawColor(Color.WHITE)
+        // White, unless the logo is light on transparent (it would vanish).
+        canvas.drawColor(if (isLightOnTransparent(source)) Color.rgb(27, 32, 39) else Color.WHITE)
         val margin = SIZE * 0.1f
         val box = SIZE - 2 * margin
         val scale = minOf(box / source.width, box / source.height)
@@ -64,6 +65,24 @@ internal object LogoTiles {
         val y = SIZE / 2f - (paint.descent() + paint.ascent()) / 2
         canvas.drawText(text, SIZE / 2f, y, paint)
         return write(bitmap, out)
+    }
+
+    private fun isLightOnTransparent(source: Bitmap): Boolean {
+        val w = source.width
+        val h = source.height
+        val transparentCorners = listOf(0 to 0, w - 1 to 0, 0 to h - 1, w - 1 to h - 1)
+            .count { (x, y) -> Color.alpha(source.getPixel(x, y)) < 60 }
+        if (transparentCorners < 3) return false
+        var sum = 0.0
+        var count = 0
+        for (yy in 0 until 10) for (xx in 0 until 10) {
+            val p = source.getPixel(xx * (w - 1) / 9, yy * (h - 1) / 9)
+            if (Color.alpha(p) > 128) {
+                sum += (0.2126 * Color.red(p) + 0.7152 * Color.green(p) + 0.0722 * Color.blue(p)) / 255.0
+                count++
+            }
+        }
+        return count > 0 && sum / count > 0.75
     }
 
     private fun dir(context: Context): File =

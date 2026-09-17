@@ -205,11 +205,9 @@ class PlaybackService : MediaLibraryService() {
             val items: List<MediaItem> = when (parentId) {
                 ROOT_ID -> listOf(
                     StationMediaItems.folder(MINE_ID, getString(R.string.home_mine)),
-                    StationMediaItems.folder(RECENT_ID, getString(R.string.search_recent)),
-                    StationMediaItems.folder(
-                        POPULAR_ID,
-                        getString(R.string.auto_popular_country, countryName(lookup.country()))
-                    ),
+                    StationMediaItems.folder(RECENT_ID, getString(R.string.auto_recent)),
+                    // Short tab labels: the car shows at most four tabs in one row.
+                    StationMediaItems.folder(POPULAR_ID, countryName(lookup.country())),
                     StationMediaItems.folder(COUNTRIES_ID, getString(R.string.auto_countries))
                 )
                 COUNTRIES_ID -> {

@@ -57,6 +57,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -412,18 +413,16 @@ internal fun StationLogo(
     val logo = rememberStationLogo(station)
     val stationColor = Color(station.logoColorArgb)
     val shape = if (circular) CircleShape else RoundedCornerShape(cornerRadius)
-    val fallbackTextColor = if (stationColor.luminance() > 0.58f) {
-        MaterialTheme.colorScheme.onSurface
-    } else {
-        stationColor
-    }
+    val fallbackTextColor = if (stationColor.luminance() > 0.5f) Color(0xFF101317) else Color.White
+    val logoBackdrop = remember(logo) { logo?.let(::logoBackdropColor) }
     // Without a real logo the tile gets a soft tint of the station colour,
     // so fallback tiles look intentional instead of empty.
     val logoSurfaceColor = when {
-        // Round tiles get a white disc so transparent logos stay readable.
-        logo != null && circular -> Color.White
+        // Round tiles take the logo's own edge colour, so a square logo
+        // blends into a full circle instead of showing hard corners.
+        logo != null && circular -> logoBackdrop ?: Color.White
         logo != null -> Color.Transparent
-        else -> stationColor.copy(alpha = 0.16f)
+        else -> stationColor
     }
     val logoBorder: BorderStroke? = null
 
@@ -452,8 +451,8 @@ internal fun StationLogo(
                     .fillMaxSize()
                     .padding(
                         when {
-                            // Round tiles: the logo fills the whole circle.
-                            circular && bitmap != null -> 0.dp
+                            // The square logo fits inside the circle (inscribed square).
+                            circular && bitmap != null -> size * 0.15f
                             !framed && bitmap != null -> 0.dp
                             !framed -> AaltoSpaceM
                             else -> AaltoSpaceXs
@@ -465,10 +464,8 @@ internal fun StationLogo(
                     Image(
                         bitmap = bitmap,
                         contentDescription = null,
-                        contentScale = if (circular) ContentScale.Crop else ContentScale.Fit,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .then(if (circular) Modifier.clip(CircleShape) else Modifier)
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.fillMaxSize()
                     )
                 } else {
                     Text(
@@ -503,7 +500,7 @@ internal fun rememberStationLogo(station: RadioStation): ImageBitmap? {
     LaunchedEffect(station.id, stationUuid, logoUrls) {
         // Built-in stations have no logo URL; borrow one from Radio Browser by name.
         val urls = logoUrls.ifEmpty {
-            listOfNotNull(StationLogoResolver.lookupLogoUrl(context, station))
+            StationLogoResolver.lookupLogoUrls(context, station)
         }
         logo = StationLogoResolver.resolve(context, stationUuid, urls)
     }
@@ -524,7 +521,8 @@ internal fun StationCard(
     onClick: () -> Unit,
     onFavoriteClick: () -> Unit,
     modifier: Modifier = Modifier,
-    width: Dp = 112.dp
+    width: Dp = 112.dp,
+    showFavoriteButton: Boolean = true
 ) {
     val logoSize = width - AaltoSpaceS * 2
 
@@ -565,11 +563,10 @@ internal fun StationCard(
                     )
                 }
 
-                // Heart sits on the logo corner so the name gets the full card width.
-                Box(
+                // Heart only where it adds something (not on own stations).
+                if (showFavoriteButton) Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .offset(x = 6.dp, y = (-6).dp)
                         .size(40.dp)
                         .clip(CircleShape)
                         .clickable(
@@ -753,3 +750,36 @@ internal fun StationRow(
         }
     }
 }
+
+/**
+ * Background for a round logo tile: the logo's own edge colour when its
+ * corners are opaque; for transparent logos a contrasting light or dark disc.
+ */
+private fun logoBackdropColor(image: ImageBitmap): Color = runCatching {
+    val bitmap = image.asAndroidBitmap()
+    val w = bitmap.width
+    val h = bitmap.height
+    val edge = listOf(0 to 0, w - 1 to 0, 0 to h - 1, w - 1 to h - 1, w / 2 to 0, 0 to h / 2)
+        .map { (x, y) -> bitmap.getPixel(x, y) }
+        .filter { android.graphics.Color.alpha(it) > 200 }
+    if (edge.size >= 4) {
+        Color(
+            red = edge.map { android.graphics.Color.red(it) }.average().toFloat() / 255f,
+            green = edge.map { android.graphics.Color.green(it) }.average().toFloat() / 255f,
+            blue = edge.map { android.graphics.Color.blue(it) }.average().toFloat() / 255f
+        )
+    } else {
+        var sum = 0.0
+        var count = 0
+        for (yy in 0 until 8) for (xx in 0 until 8) {
+            val p = bitmap.getPixel(xx * (w - 1) / 7, yy * (h - 1) / 7)
+            if (android.graphics.Color.alpha(p) > 128) {
+                sum += (0.2126 * android.graphics.Color.red(p) +
+                    0.7152 * android.graphics.Color.green(p) +
+                    0.0722 * android.graphics.Color.blue(p)) / 255.0
+                count++
+            }
+        }
+        if (count > 0 && sum / count > 0.6) Color(0xFF1B2027) else Color.White
+    }
+}.getOrDefault(Color.White)

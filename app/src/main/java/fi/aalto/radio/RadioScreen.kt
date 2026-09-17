@@ -181,7 +181,7 @@ internal fun RadioScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
-                    contentPadding = PaddingValues(bottom = AaltoSpaceS),
+                    contentPadding = PaddingValues(top = AaltoSpaceXs, bottom = AaltoSpaceS),
                     horizontalArrangement = Arrangement.spacedBy(gridGap),
                     verticalArrangement = Arrangement.spacedBy(gridGap)
                 ) {
@@ -197,7 +197,8 @@ internal fun RadioScreen(
                             isFavorite = station.stableId in favoriteIds,
                             onClick = { onStationClick(station) },
                             onFavoriteClick = { onStationFavoriteClick(station) },
-                            width = cellWidth
+                            width = cellWidth,
+                            showFavoriteButton = !showOwnStations
                         )
                     }
                 }

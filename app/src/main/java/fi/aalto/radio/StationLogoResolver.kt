@@ -79,38 +79,38 @@ object StationLogoResolver {
      * by asking Radio Browser for the same station name. The answer is kept in
      * SharedPreferences; a miss is retried after a week.
      */
-    suspend fun lookupLogoUrl(context: Context, station: RadioStation): String? = withContext(Dispatchers.IO) {
+    suspend fun lookupLogoUrls(context: Context, station: RadioStation): List<String> = withContext(Dispatchers.IO) {
         val prefs = context.applicationContext.getSharedPreferences(LOOKUP_PREFS, Context.MODE_PRIVATE)
-        val key = "logo:${station.id}"
+        val key = "logos2:${station.id}"
         prefs.getString(key, null)?.let { stored ->
             if (stored.startsWith("miss:")) {
                 val at = stored.removePrefix("miss:").toLongOrNull() ?: 0L
-                if (System.currentTimeMillis() - at < LOOKUP_RETRY_MS) return@withContext null
+                if (System.currentTimeMillis() - at < LOOKUP_RETRY_MS) return@withContext emptyList()
             } else {
-                return@withContext stored
+                return@withContext stored.split('\n').filter { it.isNotBlank() }
             }
         }
 
         // Network errors are not stored, so an offline start does not block the lookup for a week.
         val result = runCatching { searchLogo(station) }
-        if (result.isFailure) return@withContext null
-        val found = result.getOrNull()
+        if (result.isFailure) return@withContext emptyList()
+        val found = result.getOrNull().orEmpty()
         prefs.edit()
-            .putString(key, found ?: "miss:${System.currentTimeMillis()}")
+            .putString(key, if (found.isEmpty()) "miss:${System.currentTimeMillis()}" else found.joinToString("\n"))
             .apply()
         found
     }
 
-    private fun searchLogo(station: RadioStation): String? {
+    private fun searchLogo(station: RadioStation): List<String> {
         val wanted = normalizeName(station.name)
-        if (wanted.isEmpty()) return null
+        if (wanted.isEmpty()) return emptyList()
         val url = LOOKUP_BASE_URL + "/json/stations/search" +
             "?name=" + URLEncoder.encode(station.name, "UTF-8") +
             "&countrycode=" + URLEncoder.encode(station.countryCode, "UTF-8") +
             "&order=votes&reverse=true&hidebroken=true&limit=20"
         var connection: HttpURLConnection? = null
         try {
-            connection = URL(url).openConnection() as? HttpURLConnection ?: return null
+            connection = URL(url).openConnection() as? HttpURLConnection ?: return emptyList()
             connection.connectTimeout = CONNECT_TIMEOUT_MS
             connection.readTimeout = READ_TIMEOUT_MS
             connection.setRequestProperty("User-Agent", USER_AGENT)
@@ -118,16 +118,22 @@ object StationLogoResolver {
             if (connection.responseCode !in 200..299) error("Radio Browser HTTP ${connection.responseCode}")
             val body = connection.inputStream.bufferedReader().use { it.readText() }
             val array = JSONArray(body)
-            var prefixMatch: String? = null
+            // Several candidates: some favicons are SVG or broken, so the
+            // resolver tries them in order until one decodes.
+            val exact = mutableListOf<String>()
+            val prefix = mutableListOf<String>()
             for (index in 0 until array.length()) {
                 val item = array.optJSONObject(index) ?: continue
                 val favicon = item.optString("favicon").trim()
                 if (normalizeUrl(favicon) == null) continue
+                if (favicon.substringBefore('?').endsWith(".svg", ignoreCase = true)) continue
                 val name = normalizeName(item.optString("name"))
-                if (name == wanted) return favicon
-                if (prefixMatch == null && name.startsWith(wanted)) prefixMatch = favicon
+                when {
+                    name == wanted -> exact += favicon
+                    name.startsWith(wanted) -> prefix += favicon
+                }
             }
-            return prefixMatch
+            return (exact + prefix).distinct().take(5)
         } finally {
             connection?.disconnect()
         }

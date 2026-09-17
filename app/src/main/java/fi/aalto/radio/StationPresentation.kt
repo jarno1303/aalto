@@ -322,6 +322,28 @@ internal fun countryName(countryCode: String): String {
     }
 }
 
+/**
+ * The country chosen in the app's station browser. Remembered, so the car
+ * screen shows popular stations from the same country as the phone.
+ */
+internal object RadioCountryPreference {
+    private const val PREFS = "aalto_catalog"
+    private const val KEY = "country"
+
+    fun get(context: android.content.Context): String =
+        context.applicationContext.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
+            .getString(KEY, null)
+            ?.takeIf { it.matches(Regex("[A-Z]{2}")) }
+            ?: defaultRadioCountryCode()
+
+    fun set(context: android.content.Context, code: String) {
+        context.applicationContext.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
+            .edit()
+            .putString(KEY, code.uppercase())
+            .apply()
+    }
+}
+
 internal fun defaultRadioCountryCode(): String {
     return Locale.getDefault().country
         .trim()

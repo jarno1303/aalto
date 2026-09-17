@@ -3,10 +3,10 @@ package fi.aalto.radio.playback
 import android.content.Context
 import fi.aalto.radio.AaltoAppContainer
 import fi.aalto.radio.AaltoDatabase
+import fi.aalto.radio.RadioCountryPreference
 import fi.aalto.radio.RadioStation
 import fi.aalto.radio.catalog.CatalogReadResult
 import fi.aalto.radio.catalog.toDomain
-import fi.aalto.radio.defaultRadioCountryCode
 import fi.aalto.radio.toDomain
 import fi.aalto.radio.toPlayableRadioStationOrNull
 
@@ -53,13 +53,18 @@ internal class StationLookup(context: Context) {
     suspend fun popular(limit: Int = 40): List<RadioStation> {
         val catalog = AaltoAppContainer.stationCatalogRepository(appContext)
         val fromCatalog = when (val result = runCatching {
-            catalog.getStationsByCountry(defaultRadioCountryCode(), limit)
+            catalog.getStationsByCountry(country(), limit)
         }.getOrNull()) {
             is CatalogReadResult.Success -> result.snapshot.stations.mapNotNull { it.toPlayableRadioStationOrNull() }
             else -> emptyList()
         }
-        return (repository.stations + fromCatalog).distinctBy { it.id }.take(limit)
+        // Built-in (Finnish) stations only belong to the Finnish list.
+        val builtIn = if (country() == "FI") repository.stations else emptyList()
+        return (fromCatalog + builtIn).distinctBy { it.id }.take(limit)
     }
+
+    /** Country chosen in the phone app. */
+    fun country(): String = RadioCountryPreference.get(appContext)
 
     suspend fun search(query: String, limit: Int = 40): List<RadioStation> {
         val terms = query.trim().lowercase()
@@ -67,18 +72,15 @@ internal class StationLookup(context: Context) {
         val local = (favorites() + repository.stations)
             .filter { it.name.lowercase().contains(terms) }
         val catalog = AaltoAppContainer.stationCatalogRepository(appContext)
-        val remote = when (val result = runCatching {
-            catalog.searchStations(query, defaultRadioCountryCode(), limit)
-        }.getOrNull()) {
-            is CatalogReadResult.Success -> result.snapshot.stations.mapNotNull { it.toPlayableRadioStationOrNull() }
-            else -> emptyList()
-        }
-        val merged = (local + remote).distinctBy { it.id }
-        // If the catalog search found nothing in the home country, try everywhere.
-        if (merged.isNotEmpty()) return merged.take(limit)
-        return when (val result = runCatching { catalog.searchStations(query, null, limit) }.getOrNull()) {
-            is CatalogReadResult.Success -> result.snapshot.stations.mapNotNull { it.toPlayableRadioStationOrNull() }
-            else -> emptyList()
-        }
+        suspend fun remote(countryCode: String?): List<RadioStation> =
+            when (val result = runCatching { catalog.searchStations(query, countryCode, limit) }.getOrNull()) {
+                is CatalogReadResult.Success -> result.snapshot.stations.mapNotNull { it.toPlayableRadioStationOrNull() }
+                else -> emptyList()
+            }
+        // Chosen country first, then the whole world (e.g. "Radio Bob" while the
+        // phone is set to Finland).
+        val inCountry = remote(country())
+        val worldwide = if (inCountry.size < limit / 2) remote(null) else emptyList()
+        return (local + inCountry + worldwide).distinctBy { it.id }.take(limit)
     }
 }

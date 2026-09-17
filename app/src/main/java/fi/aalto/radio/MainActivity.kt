@@ -160,7 +160,7 @@ private fun AaltoApp() {
     }
 
     var radioCountryCode by rememberSaveable {
-        mutableStateOf(defaultRadioCountryCode())
+        mutableStateOf(RadioCountryPreference.get(context))
     }
 
     LaunchedEffect(catalogRepository, radioCountryCode) {
@@ -391,7 +391,10 @@ private fun AaltoApp() {
                     stations = stations,
                     recentStations = recentStations,
                     radioCountryCode = radioCountryCode,
-                    onRadioCountryChange = { radioCountryCode = it },
+                    onRadioCountryChange = {
+                        radioCountryCode = it
+                        RadioCountryPreference.set(context, it)
+                    },
                     selectedStation = selectedStation,
                     isPlaying = radioPlayer.isPlaying,
                     favoriteIds = favoriteIds,

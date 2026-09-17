@@ -206,7 +206,10 @@ class PlaybackService : MediaLibraryService() {
                 ROOT_ID -> listOf(
                     StationMediaItems.folder(MINE_ID, getString(R.string.home_mine)),
                     StationMediaItems.folder(RECENT_ID, getString(R.string.search_recent)),
-                    StationMediaItems.folder(POPULAR_ID, getString(R.string.home_popular))
+                    StationMediaItems.folder(
+                        POPULAR_ID,
+                        getString(R.string.auto_popular_country, countryName(lookup.country()))
+                    )
                 )
                 MINE_ID -> lookup.favorites().map { StationMediaItems.build(this@PlaybackService, it) }
                 RECENT_ID -> lookup.recents().map { StationMediaItems.build(this@PlaybackService, it) }

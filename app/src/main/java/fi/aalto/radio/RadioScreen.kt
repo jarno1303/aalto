@@ -50,7 +50,8 @@ internal fun RadioScreen(
     onNightScreen: () -> Unit,
     onPrevious: (() -> Unit)?,
     onNext: (() -> Unit)?,
-    trackTitle: String? = null
+    trackTitle: String? = null,
+    onEditOwnStations: (() -> Unit)? = null
 ) {
     val showOwnStations = favoriteStations.isNotEmpty()
     val shelfStations = (if (showOwnStations) favoriteStations else popularStations)
@@ -64,8 +65,8 @@ internal fun RadioScreen(
             .padding(
                 start = AaltoScreenHorizontalPadding,
                 end = AaltoScreenHorizontalPadding,
-                top = AaltoScreenTopPadding,
-                bottom = AaltoScreenBottomPadding
+                top = AaltoSpaceS,
+                bottom = AaltoSpaceS
             )
     ) {
         val wideLandscape = maxWidth > maxHeight && maxWidth >= 600.dp
@@ -145,12 +146,13 @@ internal fun RadioScreen(
             // scrollable grid below. Uses the height for stations instead of
             // empty space around one big logo.
             val gridGap = AaltoSpaceS
-            val columns = ((maxWidth + gridGap) / (104.dp + gridGap)).toInt().coerceIn(3, 6)
+            // Four or more tiles per row: at least two full rows stay visible.
+            val columns = ((maxWidth + gridGap) / (84.dp + gridGap)).toInt().coerceIn(4, 7)
             val cellWidth = (maxWidth - gridGap * (columns - 1)) / columns
 
             Column(
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(AaltoSpaceS)
+                verticalArrangement = Arrangement.spacedBy(AaltoSpaceXs)
             ) {
                 TopBar(onOpenSettings)
 
@@ -169,10 +171,15 @@ internal fun RadioScreen(
                     trackTitle = trackTitle
                 )
 
+                // Search lives in the bottom bar; the header only offers editing.
                 SectionHeader(
                     title = shelfTitle,
-                    action = stringResource(R.string.tab_search),
-                    onAction = onFind
+                    action = if (showOwnStations && onEditOwnStations != null) {
+                        stringResource(R.string.action_edit_own_stations)
+                    } else {
+                        null
+                    },
+                    onAction = if (showOwnStations) onEditOwnStations else null
                 )
 
                 if (!showOwnStations) {

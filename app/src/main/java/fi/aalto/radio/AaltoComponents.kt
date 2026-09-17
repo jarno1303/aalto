@@ -228,7 +228,7 @@ internal fun SectionHeader(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = AaltoSpaceXs, top = AaltoSpaceM),
+            .padding(start = AaltoSpaceXs, top = AaltoSpaceXs),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -415,7 +415,9 @@ internal fun StationLogo(
     val stationColor = Color(station.logoColorArgb)
     val shape = if (circular) CircleShape else RoundedCornerShape(cornerRadius)
     val fallbackTextColor = if (stationColor.luminance() > 0.5f) Color(0xFF101317) else Color.White
-    val logoBackdrop = remember(logo) { logo?.let(::logoBackdropColor) }
+    val logoBackdrop = remember(logo, circular) {
+        logo?.let { if (circular) logoBackdropColor(it) else transparentLogoBackdrop(it) }
+    }
     // Without a real logo the tile gets a soft tint of the station colour,
     // so fallback tiles look intentional instead of empty.
     val logoSurfaceColor = when {
@@ -423,7 +425,8 @@ internal fun StationLogo(
         // blends into a full circle instead of showing hard corners.
         logo != null && circular -> logoBackdrop ?: Color.White
         // Logos sit on white, like printed station logos; never cropped.
-        logo != null -> Color.White
+        // Transparent white logos get a dark back instead of vanishing on white.
+        logo != null -> logoBackdrop ?: Color.White
         else -> stationColor
     }
     val logoBorder: BorderStroke? = if (logo != null && framed) {
@@ -530,7 +533,7 @@ internal fun StationCard(
     width: Dp = 112.dp,
     showFavoriteButton: Boolean = true
 ) {
-    val logoSize = width - AaltoSpaceS * 2
+    val logoSize = width - AaltoSpaceXs * 2
 
     Surface(
         modifier = modifier
@@ -544,7 +547,7 @@ internal fun StationCard(
         color = Color.Transparent
     ) {
         Column(
-            modifier = Modifier.padding(AaltoSpaceS),
+            modifier = Modifier.padding(AaltoSpaceXs),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(modifier = Modifier.size(logoSize)) {
@@ -619,7 +622,7 @@ internal fun StationCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(AaltoSpaceS))
+            Spacer(modifier = Modifier.height(AaltoSpaceXs))
 
             Text(
                 text = station.name,
@@ -792,3 +795,15 @@ private fun logoBackdropColor(image: ImageBitmap): Color = runCatching {
         if (count > 0 && sum / count > 0.6) Color(0xFF1B2027) else Color.White
     }
 }.getOrDefault(Color.White)
+
+/** For square tiles: white, unless the logo is light on transparent (then dark). */
+private fun transparentLogoBackdrop(image: ImageBitmap): Color? = runCatching {
+    val bitmap = image.asAndroidBitmap()
+    val w = bitmap.width
+    val h = bitmap.height
+    val corners = listOf(0 to 0, w - 1 to 0, 0 to h - 1, w - 1 to h - 1)
+        .count { (x, y) -> android.graphics.Color.alpha(bitmap.getPixel(x, y)) < 60 }
+    if (corners < 3) return@runCatching null
+    val backdrop = logoBackdropColor(image)
+    backdrop.takeIf { it != Color.White }
+}.getOrNull()

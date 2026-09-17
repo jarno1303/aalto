@@ -330,6 +330,7 @@ private fun AaltoApp() {
                     onRetry = { playStation(selectedStation, openNowPlaying = false) },
                     onFavorite = { toggleFavorite(selectedStation) },
                     onFind = { selectedTab = TAB_SEARCH },
+                    onEditOwnStations = { selectedTab = TAB_FAVORITES },
                     onStationClick = { station ->
                         playStation(station, openNowPlaying = false)
                     },

@@ -29,6 +29,7 @@
     <string name="favorites_empty_hint">Napauta aseman sydäntä, niin se tulee tänne ja etusivun omiin asemiin.</string>
     <string name="favorites_reorder_hint">Järjestä painamalla pitkään ja vetämällä.</string>
     <string name="action_find_stations">Etsi asemia</string>
+    <string name="action_edit_own_stations">Muokkaa</string>
 
     <!-- Home -->
     <string name="home_mine">Omat asemat</string>
@@ -60,7 +61,7 @@
     <string name="sleep_timer">Uniajastin</string>
     <string name="sleep_timer_off">Pois päältä</string>
     <string name="sleep_timer_minutes">%1$d min</string>
-    <string name="sleep_timer_remaining">Sammuu %1$d min kuluttua</string>
+    <string name="sleep_timer_remaining">Sammuu %1$d min</string>
 
     <!-- Settings -->
     <string name="settings_title">Asetukset</string>

@@ -59,6 +59,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.offset
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material3.DropdownMenu
@@ -317,18 +318,19 @@ internal fun NowPlayingLogo(
     station: RadioStation,
     isPlaying: Boolean,
     logoSize: Dp,
-    circular: Boolean = false
+    circular: Boolean = false,
+    showHalo: Boolean = true
 ) {
     val cornerRadius = logoSize * 0.19f
     val haloShape = if (circular) CircleShape else RoundedCornerShape(cornerRadius * 1.06f)
     val haloAlpha by animateFloatAsState(
-        targetValue = if (isPlaying) 0.14f else 0f,
+        targetValue = if (isPlaying && showHalo) 0.14f else 0f,
         animationSpec = tween(durationMillis = 320),
         label = "nowPlayingHaloAlpha"
     )
 
     Box(
-        modifier = Modifier.size(logoSize * 1.14f),
+        modifier = Modifier.size(if (showHalo) logoSize * 1.14f else logoSize),
         contentAlignment = Alignment.Center
     ) {
         Box(
@@ -473,10 +475,17 @@ internal fun NowPlayingCard(
         shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.surface
     ) {
-        Column(modifier = Modifier.padding(AaltoSpaceL)) {
-            Row(verticalAlignment = Alignment.Top) {
+        Column(
+            modifier = Modifier.padding(
+                start = AaltoSpaceL,
+                end = AaltoSpaceL,
+                top = AaltoSpaceM,
+                bottom = AaltoSpaceS
+            )
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 val logo: @Composable () -> Unit = {
-                    NowPlayingLogo(station = station, isPlaying = isPlaying, logoSize = 80.dp)
+                    NowPlayingLogo(station = station, isPlaying = isPlaying, logoSize = 64.dp, showHalo = false)
                 }
                 if (canSkip) {
                     SwipeableStation(onPrevious = onPrevious!!, onNext = onNext!!, content = logo)
@@ -486,20 +495,16 @@ internal fun NowPlayingCard(
 
                 Spacer(modifier = Modifier.width(AaltoSpaceM))
 
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(top = AaltoSpaceXs)
-                ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = station.name,
                         color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 2,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontSize = 18.sp,
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    Spacer(modifier = Modifier.height(AaltoSpaceXs))
+                    Spacer(modifier = Modifier.height(2.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (isPlaying && playbackError == null) {
                             NowPlayingIndicator(size = 16.dp)
@@ -522,7 +527,7 @@ internal fun NowPlayingCard(
                             },
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = if (showTrack) FontWeight.Medium else FontWeight.Normal,
-                            maxLines = 2,
+                            maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
@@ -546,7 +551,7 @@ internal fun NowPlayingCard(
                     onClick = onFavorite,
                     modifier = Modifier
                         .size(48.dp)
-                        .offset(x = AaltoSpaceS, y = (-AaltoSpaceS))
+                        .offset(x = AaltoSpaceS)
                 ) {
                     Icon(
                         imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
@@ -573,7 +578,7 @@ internal fun NowPlayingCard(
                     Text(stringResource(R.string.action_retry))
                 }
             } else {
-                Spacer(modifier = Modifier.height(AaltoSpaceM))
+                Spacer(modifier = Modifier.height(AaltoSpaceS))
             }
 
             Row(
@@ -590,7 +595,7 @@ internal fun NowPlayingCard(
                     NowPlayingPlayPauseButton(
                         isPlaying = isPlaying,
                         isConnecting = isConnecting,
-                        playSize = 64.dp,
+                        playSize = 56.dp,
                         onClick = onPlayPause
                     )
                     SkipButton(visible = canSkip, isNext = true, onClick = { onNext?.invoke() })

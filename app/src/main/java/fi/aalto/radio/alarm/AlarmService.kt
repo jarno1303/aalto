@@ -354,7 +354,8 @@ class AlarmService : Service() {
         )
 
         val title = getString(R.string.alarm_title)
-        val text = settings.stationName ?: formatClock(settings.hour, settings.minute)
+        val text = listOfNotNull(settings.stationName, getString(R.string.alarm_tap_for_more))
+            .joinToString(" · ")
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
@@ -366,18 +367,11 @@ class AlarmService : Service() {
             .setOngoing(true)
             .setContentIntent(fullScreen)
             .setFullScreenIntent(fullScreen, true)
+            // When the phone is in use Android shows a small heads-up instead of
+            // the full-screen view. Two short actions fit there; "Jatka kuuntelua"
+            // is in the full view that opens when the notification is tapped.
             .addAction(0, getString(R.string.alarm_snooze), serviceIntent(this, ACTION_SNOOZE, 1))
             .addAction(0, getString(R.string.alarm_dismiss), serviceIntent(this, ACTION_DISMISS, 2))
-            .addAction(
-                0,
-                getString(R.string.alarm_continue),
-                PendingIntent.getActivity(
-                    this,
-                    3,
-                    AlarmHandoff.continueIntent(this),
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                )
-            )
             .build()
     }
 

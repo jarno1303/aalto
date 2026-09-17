@@ -17,7 +17,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * Sleep timer: pauses playback after the chosen time.
+ * Sleep timer: fades the radio out over half a minute and then stops it
+ * (live radio has nothing to resume, and a stopped player also removes the
+ * media notification).
  *
  * Lives at process level (not in a screen), so it keeps running while the
  * screen is off and the activity is in the background. The pause goes to
@@ -46,8 +48,7 @@ internal object SleepTimer {
         endsAtElapsedMs = endsAt
         job = scope.launch {
             delay(endsAt - SystemClock.elapsedRealtime())
-            pausePlayback(appContext)
-            endsAtElapsedMs = null
+            fadeOutAndStop(appContext)
         }
     }
 
@@ -64,15 +65,38 @@ internal object SleepTimer {
         return ((left + 59_999L) / 60_000L).toInt()
     }
 
-    private fun pausePlayback(context: Context) {
+    private fun fadeOutAndStop(context: Context) {
         val token = SessionToken(context, ComponentName(context, PlaybackService::class.java))
         val future = MediaController.Builder(context, token).buildAsync()
         future.addListener(
             {
-                runCatching { future.get().pause() }
-                MediaController.releaseFuture(future)
+                val controller = runCatching { future.get() }.getOrNull()
+                if (controller == null) {
+                    endsAtElapsedMs = null
+                    MediaController.releaseFuture(future)
+                    return@addListener
+                }
+                job = scope.launch {
+                    try {
+                        val steps = FADE_STEPS
+                        for (step in 1..steps) {
+                            if (!controller.isPlaying) break
+                            controller.volume = 1f - step.toFloat() / steps
+                            delay(FADE_MS / steps)
+                        }
+                        controller.stop()
+                    } finally {
+                        // Next listening session starts at normal volume.
+                        runCatching { controller.volume = 1f }
+                        MediaController.releaseFuture(future)
+                        endsAtElapsedMs = null
+                    }
+                }
             },
             ContextCompat.getMainExecutor(context)
         )
     }
+
+    private const val FADE_MS = 30_000L
+    private const val FADE_STEPS = 30
 }

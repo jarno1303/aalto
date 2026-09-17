@@ -3,6 +3,7 @@ package fi.aalto.radio.playback
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import androidx.media3.common.C
 import androidx.media3.common.ForwardingPlayer
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
@@ -24,8 +25,10 @@ import kotlinx.coroutines.withContext
  *    tried. While that happens the error is not shown to controllers, so the
  *    UI simply keeps saying "Yhdistetään…". Only when every address has
  *    failed does the error reach the UI.
- * 2. **Previous / next = own stations.** Steering wheel, car screen, headset
- *    and notification buttons move through the user's own stations.
+ * 2. **Own stations as the playlist.** When an own station plays, the whole
+ *    own-station list is the player's playlist: the car's "Jono" shows it,
+ *    and steering wheel / headset / notification previous-next move through
+ *    it. Only the current station is ever loaded; the rest are just entries.
  */
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 internal class AaltoSessionPlayer(
@@ -57,8 +60,22 @@ internal class AaltoSessionPlayer(
 
     // Registered before the session is created, so it runs before the
     // session's own listener for every event.
+    private var lastIndex = 0
+
     private val internalListener = object : Player.Listener {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO && exo.mediaItemCount > 1) {
+                // A live stream "ended": never jump to another station by itself.
+                val back = lastIndex
+                handler.post {
+                    if (back < exo.mediaItemCount) {
+                        exo.seekToDefaultPosition(back)
+                        exo.prepare()
+                    }
+                }
+                return
+            }
+            lastIndex = exo.currentMediaItemIndex
             if (switching && mediaItem?.mediaId == currentId) return
             startTracking(mediaItem)
         }
@@ -259,7 +276,7 @@ internal class AaltoSessionPlayer(
         val replacement = item.buildUpon().setUri(url).build()
         switching = true
         try {
-            exo.setMediaItem(replacement)
+            exo.replaceMediaItem(exo.currentMediaItemIndex, replacement)
             exo.prepare()
         } finally {
             switching = false
@@ -300,15 +317,81 @@ internal class AaltoSessionPlayer(
     private fun step(direction: Int) {
         val list = presets()
         if (list.isEmpty()) return
-        val index = list.indexOfFirst { it.id == exo.currentMediaItem?.mediaId }
+        val currentStationId = exo.currentMediaItem?.mediaId
+        val index = list.indexOfFirst { it.id == currentStationId }
         val next = if (index < 0) {
             if (direction > 0) 0 else list.lastIndex
         } else {
             Math.floorMod(index + direction, list.size)
         }
-        exo.setMediaItem(StationMediaItems.build(context, list[next]))
+        val inPlaylist = exo.mediaItemCount == list.size &&
+            (0 until exo.mediaItemCount).all { exo.getMediaItemAt(it).mediaId == list[it].id }
+        if (inPlaylist) {
+            exo.seekToDefaultPosition(next)
+        } else {
+            exo.setMediaItems(presetItems(list), next, C.TIME_UNSET)
+        }
         exo.prepare()
         exo.play()
+    }
+
+    private fun presetItems(list: List<RadioStation>, keep: MediaItem? = null): List<MediaItem> =
+        list.map { station ->
+            if (keep != null && keep.mediaId == station.id) keep else StationMediaItems.build(context, station)
+        }
+
+    // ---- Playlist = own stations -------------------------------------------
+
+    /**
+     * A single station coming from the app or the car becomes the own-station
+     * playlist when it is one of them; any other station plays alone.
+     */
+    private fun expand(items: List<MediaItem>, startIndex: Int, startPositionMs: Long) {
+        val single = items.singleOrNull()
+        val list = presets()
+        val index = if (single == null) -1 else list.indexOfFirst { it.id == single.mediaId }
+        if (single != null && index >= 0 && list.size > 1) {
+            exo.setMediaItems(presetItems(list, keep = single), index, C.TIME_UNSET)
+        } else {
+            exo.setMediaItems(items, startIndex, startPositionMs)
+        }
+    }
+
+    override fun setMediaItem(mediaItem: MediaItem) = expand(listOf(mediaItem), 0, C.TIME_UNSET)
+    override fun setMediaItem(mediaItem: MediaItem, startPositionMs: Long) =
+        expand(listOf(mediaItem), 0, startPositionMs)
+    override fun setMediaItem(mediaItem: MediaItem, resetPosition: Boolean) =
+        expand(listOf(mediaItem), 0, C.TIME_UNSET)
+    override fun setMediaItems(mediaItems: MutableList<MediaItem>) = expand(mediaItems, 0, C.TIME_UNSET)
+    override fun setMediaItems(mediaItems: MutableList<MediaItem>, resetPosition: Boolean) =
+        expand(mediaItems, 0, C.TIME_UNSET)
+    override fun setMediaItems(mediaItems: MutableList<MediaItem>, startIndex: Int, startPositionMs: Long) =
+        expand(mediaItems, startIndex, startPositionMs)
+
+    /**
+     * Own stations changed (added, removed, reordered): update the playlist
+     * around the current station without interrupting it.
+     */
+    fun syncPlaylist() {
+        val current = exo.currentMediaItem ?: return
+        val list = presets()
+        val index = list.indexOfFirst { it.id == current.mediaId }
+        val wanted = if (index >= 0 && list.size > 1) list.map { it.id } else listOf(current.mediaId)
+        val actual = (0 until exo.mediaItemCount).map { exo.getMediaItemAt(it).mediaId }
+        if (actual == wanted) return
+        val currentIndex = exo.currentMediaItemIndex
+        switching = true
+        try {
+            if (currentIndex + 1 < exo.mediaItemCount) exo.removeMediaItems(currentIndex + 1, exo.mediaItemCount)
+            if (currentIndex > 0) exo.removeMediaItems(0, currentIndex)
+            if (wanted.size > 1) {
+                exo.addMediaItems(0, presetItems(list.subList(0, index)))
+                exo.addMediaItems(presetItems(list.subList(index + 1, list.size)))
+            }
+            lastIndex = exo.currentMediaItemIndex
+        } finally {
+            switching = false
+        }
     }
 
     /** Stops fallback timers and listening; the player itself is released by the session owner. */

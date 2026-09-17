@@ -105,6 +105,7 @@ class PlaybackService : MediaLibraryService() {
                     favoriteIds = ids.toSet()
                     updateFavoriteButton()
                     presets = lookup.byIds(ids)
+                    sessionPlayer?.syncPlaylist()
                 }
         }
     }

@@ -406,7 +406,7 @@ internal fun stationLocation(station: RadioStation): String {
             country,
             locale.getDisplayCountry(java.util.Locale.ENGLISH),
             locale.getDisplayCountry(java.util.Locale("fi"))
-        ).map { it.lowercase() }.toSet()
+        ).flatMap { name -> listOf(name.lowercase(), "the " + name.lowercase()) }.toSet()
     }
     val places = station.location
         ?.split(',')

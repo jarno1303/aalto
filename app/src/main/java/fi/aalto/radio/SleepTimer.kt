@@ -38,6 +38,10 @@ internal object SleepTimer {
     var endsAtElapsedMs by mutableStateOf<Long?>(null)
         private set
 
+    /** The chosen length, so the menu can show which one is on. */
+    var selectedMinutes by mutableStateOf<Int?>(null)
+        private set
+
     val isActive: Boolean
         get() = endsAtElapsedMs != null
 
@@ -46,6 +50,7 @@ internal object SleepTimer {
         job?.cancel()
         val endsAt = SystemClock.elapsedRealtime() + minutes * 60_000L
         endsAtElapsedMs = endsAt
+        selectedMinutes = minutes
         job = scope.launch {
             delay(endsAt - SystemClock.elapsedRealtime())
             fadeOutAndStop(appContext)
@@ -56,6 +61,7 @@ internal object SleepTimer {
         job?.cancel()
         job = null
         endsAtElapsedMs = null
+        selectedMinutes = null
     }
 
     /** Whole minutes left, rounded up, or null when the timer is off. */

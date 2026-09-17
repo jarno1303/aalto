@@ -217,7 +217,15 @@ internal fun AlarmSheet(
                         onClick = {
                             onChange(withStation(settings, selectedStation).copy(snoozeMinutes = minutes))
                         },
-                        label = { Text(stringResource(R.string.sleep_timer_minutes, minutes)) }
+                        label = {
+                            Text(
+                                if (minutes == 0) {
+                                    stringResource(R.string.alarm_snooze_off)
+                                } else {
+                                    stringResource(R.string.sleep_timer_minutes, minutes)
+                                }
+                            )
+                        }
                     )
                 }
             }

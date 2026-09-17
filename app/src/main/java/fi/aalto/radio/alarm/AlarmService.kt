@@ -117,8 +117,12 @@ class AlarmService : Service() {
             ACTION_START -> startAlarm()
             ACTION_SNOOZE -> {
                 val minutes = AlarmStore.load(this).snoozeMinutes
-                AlarmLog.add(this, "torkku $minutes min")
-                AlarmScheduler.scheduleSnooze(this, minutes)
+                if (minutes > 0) {
+                    AlarmLog.add(this, "torkku $minutes min")
+                    AlarmScheduler.scheduleSnooze(this, minutes)
+                } else {
+                    AlarmLog.add(this, "torkku pois käytöstä -> lopetetaan")
+                }
                 stopAlarm()
             }
             ACTION_CONTINUE -> {
@@ -429,7 +433,11 @@ class AlarmService : Service() {
             // When the phone is in use Android shows a small heads-up instead of
             // the full-screen view. Two short actions fit there; "Jatka kuuntelua"
             // is in the full view that opens when the notification is tapped.
-            .addAction(0, getString(R.string.alarm_snooze), serviceIntent(this, ACTION_SNOOZE, 1))
+            .apply {
+                if (settings.snoozeMinutes > 0) {
+                    addAction(0, getString(R.string.alarm_snooze), serviceIntent(this@AlarmService, ACTION_SNOOZE, 1))
+                }
+            }
             .addAction(0, getString(R.string.alarm_dismiss), serviceIntent(this, ACTION_DISMISS, 2))
             .build()
     }

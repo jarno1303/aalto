@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -403,6 +404,16 @@ internal fun NowPlayingPlayPauseButton(
 }
 
 @Composable
+private fun SelectedMark() {
+    Icon(
+        imageVector = Icons.Filled.Check,
+        contentDescription = null,
+        tint = AaltoBlue,
+        modifier = Modifier.size(18.dp)
+    )
+}
+
+@Composable
 internal fun NightScreenTrigger(
     onNightScreen: () -> Unit
 ) {
@@ -649,20 +660,25 @@ internal fun SleepTimerButton(
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(horizontal = AaltoSpaceL, vertical = AaltoSpaceS)
             )
+            // Always offered, so the timer can be switched off at any time.
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.sleep_timer_off)) },
+                trailingIcon = if (!active) { { SelectedMark() } } else null,
+                onClick = {
+                    SleepTimer.cancel()
+                    menuOpen = false
+                }
+            )
             SleepTimer.choicesMinutes.forEach { minutes ->
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.sleep_timer_minutes, minutes)) },
+                    trailingIcon = if (active && SleepTimer.selectedMinutes == minutes) {
+                        { SelectedMark() }
+                    } else {
+                        null
+                    },
                     onClick = {
                         SleepTimer.start(context, minutes)
-                        menuOpen = false
-                    }
-                )
-            }
-            if (active) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.sleep_timer_off)) },
-                    onClick = {
-                        SleepTimer.cancel()
                         menuOpen = false
                     }
                 )

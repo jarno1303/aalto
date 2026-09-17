@@ -27,7 +27,8 @@ internal data class AlarmSettings(
 
 internal const val DEFAULT_SNOOZE_MINUTES = 9
 internal const val DEFAULT_VOLUME_PERCENT = 70
-internal val snoozeChoicesMinutes = listOf(5, 9, 10, 15)
+/** 0 = no snooze at all. */
+internal val snoozeChoicesMinutes = listOf(0, 5, 9, 10, 15)
 
 internal object AlarmStore {
     private const val PREFS = "aalto_alarm"
@@ -60,7 +61,7 @@ internal object AlarmStore {
             stationName = p.getString(KEY_STATION_NAME, null),
             streamUrl = p.getString(KEY_STREAM_URL, null),
             snoozeMinutes = p.getInt(KEY_SNOOZE_MINUTES, DEFAULT_SNOOZE_MINUTES)
-                .takeIf { it in 1..60 } ?: DEFAULT_SNOOZE_MINUTES,
+                .takeIf { it in 0..60 } ?: DEFAULT_SNOOZE_MINUTES,
             volumePercent = p.getInt(KEY_VOLUME_PERCENT, DEFAULT_VOLUME_PERCENT)
                 .takeIf { it in 10..100 } ?: DEFAULT_VOLUME_PERCENT
         )

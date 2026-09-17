@@ -93,7 +93,10 @@ class AlarmActivity : ComponentActivity() {
         if (keyCode == android.view.KeyEvent.KEYCODE_VOLUME_UP ||
             keyCode == android.view.KeyEvent.KEYCODE_VOLUME_DOWN
         ) {
-            send(AlarmService.ACTION_SNOOZE)
+            // Volume keys snooze, or stop when snooze is switched off.
+            send(
+                if (AlarmRuntime.snoozeMinutes > 0) AlarmService.ACTION_SNOOZE else AlarmService.ACTION_DISMISS
+            )
             return true
         }
         return super.onKeyDown(keyCode, event)
@@ -165,19 +168,21 @@ private fun AlarmScreen(
 
         Spacer(modifier = Modifier.height(56.dp))
 
-        Button(
-            onClick = onSnooze,
-            colors = ButtonDefaults.buttonColors(containerColor = AaltoBlue),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(64.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.alarm_snooze_minutes, snoozeMinutes),
-                fontSize = 20.sp
-            )
+        if (snoozeMinutes > 0) {
+            Button(
+                onClick = onSnooze,
+                colors = ButtonDefaults.buttonColors(containerColor = AaltoBlue),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(64.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.alarm_snooze_minutes, snoozeMinutes),
+                    fontSize = 20.sp
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
         }
-        Spacer(modifier = Modifier.height(16.dp))
         OutlinedButton(
             onClick = onContinue,
             modifier = Modifier

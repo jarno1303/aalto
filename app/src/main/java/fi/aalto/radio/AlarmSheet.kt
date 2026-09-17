@@ -23,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -222,6 +223,27 @@ internal fun AlarmSheet(
                     )
                 }
             }
+
+            // Loudness
+            Text(
+                text = stringResource(R.string.alarm_volume, settings.volumePercent),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(top = AaltoSpaceL)
+            )
+            Slider(
+                value = settings.volumePercent.toFloat(),
+                onValueChange = { value ->
+                    onChange(withStation(settings, selectedStation).copy(volumePercent = value.toInt()))
+                },
+                valueRange = 10f..100f,
+                steps = 8,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Text(
+                text = stringResource(R.string.alarm_volume_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             // Station
             Text(

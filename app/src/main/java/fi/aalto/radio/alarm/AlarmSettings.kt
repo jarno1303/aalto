@@ -17,13 +17,16 @@ internal data class AlarmSettings(
     val stationId: String? = null,
     val stationName: String? = null,
     val streamUrl: String? = null,
-    val snoozeMinutes: Int = DEFAULT_SNOOZE_MINUTES
+    val snoozeMinutes: Int = DEFAULT_SNOOZE_MINUTES,
+    /** Alarm loudness 10-100 %: the alarm raises the phone's alarm volume to this. */
+    val volumePercent: Int = DEFAULT_VOLUME_PERCENT
 ) {
     val hasStation: Boolean
         get() = !streamUrl.isNullOrBlank()
 }
 
 internal const val DEFAULT_SNOOZE_MINUTES = 9
+internal const val DEFAULT_VOLUME_PERCENT = 70
 internal val snoozeChoicesMinutes = listOf(5, 9, 10, 15)
 
 internal object AlarmStore {
@@ -37,6 +40,7 @@ internal object AlarmStore {
     private const val KEY_STREAM_URL = "stream_url"
     private const val KEY_SNOOZE_AT = "snooze_at"
     private const val KEY_SNOOZE_MINUTES = "snooze_minutes"
+    private const val KEY_VOLUME_PERCENT = "volume_percent"
     private const val KEY_SKIP_AT = "skip_at"
 
     private fun prefs(context: Context) =
@@ -56,7 +60,9 @@ internal object AlarmStore {
             stationName = p.getString(KEY_STATION_NAME, null),
             streamUrl = p.getString(KEY_STREAM_URL, null),
             snoozeMinutes = p.getInt(KEY_SNOOZE_MINUTES, DEFAULT_SNOOZE_MINUTES)
-                .takeIf { it in 1..60 } ?: DEFAULT_SNOOZE_MINUTES
+                .takeIf { it in 1..60 } ?: DEFAULT_SNOOZE_MINUTES,
+            volumePercent = p.getInt(KEY_VOLUME_PERCENT, DEFAULT_VOLUME_PERCENT)
+                .takeIf { it in 10..100 } ?: DEFAULT_VOLUME_PERCENT
         )
     }
 
@@ -70,6 +76,7 @@ internal object AlarmStore {
             .putString(KEY_STATION_NAME, settings.stationName)
             .putString(KEY_STREAM_URL, settings.streamUrl)
             .putInt(KEY_SNOOZE_MINUTES, settings.snoozeMinutes)
+            .putInt(KEY_VOLUME_PERCENT, settings.volumePercent)
             .apply()
     }
 

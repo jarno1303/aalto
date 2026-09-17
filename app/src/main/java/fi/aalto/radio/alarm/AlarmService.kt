@@ -164,6 +164,7 @@ class AlarmService : Service() {
         // The normal player does not give way by itself: pause it so only the
         // alarm station is heard.
         pauseNormalPlayback()
+        raiseAlarmVolume()
 
         val url = settings.streamUrl
         val host = url?.let { runCatching { android.net.Uri.parse(it).host }.getOrNull() }
@@ -286,6 +287,8 @@ class AlarmService : Service() {
         AlarmRuntime.usingFallback = false
     }
 
+    private var previousAlarmVolume: Int? = null
+
     private fun stopPlayers() {
         handler.removeCallbacksAndMessages(null)
         player?.release()
@@ -296,6 +299,7 @@ class AlarmService : Service() {
 
     private fun stopAlarm() {
         stopPlayers()
+        restoreAlarmVolume()
         AlarmRuntime.ringing = false
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         stopSelf()
@@ -305,6 +309,32 @@ class AlarmService : Service() {
         stopPlayers()
         AlarmRuntime.ringing = false
         super.onDestroy()
+    }
+
+    /**
+     * A wake-up that cannot be heard is not a wake-up: if the phone's alarm
+     * volume is below the chosen level, it is raised for the alarm and put
+     * back afterwards.
+     */
+    private fun raiseAlarmVolume() {
+        val audio = getSystemService(android.media.AudioManager::class.java) ?: return
+        runCatching {
+            val max = audio.getStreamMaxVolume(android.media.AudioManager.STREAM_ALARM)
+            val current = audio.getStreamVolume(android.media.AudioManager.STREAM_ALARM)
+            val target = ((max * settings.volumePercent) / 100).coerceIn(1, max)
+            if (current < target) {
+                previousAlarmVolume = current
+                audio.setStreamVolume(android.media.AudioManager.STREAM_ALARM, target, 0)
+                AlarmLog.add(this, "äänenvoimakkuus $current -> $target / $max")
+            }
+        }
+    }
+
+    private fun restoreAlarmVolume() {
+        val previous = previousAlarmVolume ?: return
+        previousAlarmVolume = null
+        val audio = getSystemService(android.media.AudioManager::class.java) ?: return
+        runCatching { audio.setStreamVolume(android.media.AudioManager.STREAM_ALARM, previous, 0) }
     }
 
     private fun pauseNormalPlayback() {

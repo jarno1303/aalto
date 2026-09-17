@@ -85,6 +85,8 @@
     <string name="alarm_off">Pois päältä</string>
     <string name="alarm_days">Päivät</string>
     <string name="alarm_snooze_length">Torkun pituus</string>
+    <string name="alarm_volume">Äänenvoimakkuus %1$d %%</string>
+    <string name="alarm_volume_hint">Herätys nostaa puhelimen hälytysäänen tälle tasolle ja palauttaa sen jälkeen entiselleen.</string>
     <string name="alarm_days_hint">Ilman valittuja päiviä herätys soi kerran.</string>
     <string name="alarm_days_once">Kerran</string>
     <string name="alarm_days_every">Joka päivä</string>

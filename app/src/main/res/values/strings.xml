@@ -52,6 +52,9 @@
     <string name="night_screen_exit">Palaa normaaliin näkymään</string>
     <string name="night_state_playing">Toistaa</string>
     <string name="night_state_error">Toisto keskeytynyt</string>
+    <string name="night_exit_short">Poistu</string>
+    <string name="night_hint_tap">Napauta näyttöä: ohjaimet ja poistuminen</string>
+    <string name="night_hint_exit">Poistu yläkulmasta tai Takaisin-painikkeella</string>
 
     <!-- Settings -->
     <string name="settings_title">Asetukset</string>

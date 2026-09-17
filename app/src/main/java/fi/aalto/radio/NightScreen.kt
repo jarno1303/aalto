@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -29,7 +30,6 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -119,7 +119,8 @@ internal fun NightScreen(
     onExit: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-    var controlsVisible by remember { mutableStateOf(false) }
+    // Controls (and the exit button) are shown on entry, so the way out is visible at once.
+    var controlsVisible by remember { mutableStateOf(true) }
     // Any interaction restarts the auto-hide timer.
     var interactionCount by remember { mutableIntStateOf(0) }
 
@@ -263,17 +264,46 @@ internal fun NightScreen(
             }
         }
 
+        // Always-visible, very dim hint so the user knows how to get controls and out.
+        Text(
+            text = stringResource(
+                if (controlsVisible) R.string.night_hint_exit else R.string.night_hint_tap
+            ),
+            color = Color.White.copy(alpha = 0.30f),
+            fontSize = 12.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
+
         androidx.compose.animation.AnimatedVisibility(
             visible = controlsVisible,
             enter = fadeIn(animationSpec = tween(durationMillis = 160)),
             exit = fadeOut(animationSpec = tween(durationMillis = 300)),
             modifier = Modifier.align(Alignment.TopEnd)
         ) {
-            IconButton(onClick = onExit) {
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Color.White.copy(alpha = 0.08f))
+                    .clickable(
+                        onClickLabel = stringResource(R.string.night_screen_exit),
+                        onClick = onExit
+                    )
+                    .padding(horizontal = AaltoSpaceL, vertical = AaltoSpaceM),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Icon(
                     imageVector = Icons.Filled.Close,
-                    contentDescription = stringResource(R.string.night_screen_exit),
-                    tint = dim
+                    contentDescription = null,
+                    tint = dim,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(AaltoSpaceS))
+                Text(
+                    text = stringResource(R.string.night_exit_short),
+                    color = dim,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium
                 )
             }
         }

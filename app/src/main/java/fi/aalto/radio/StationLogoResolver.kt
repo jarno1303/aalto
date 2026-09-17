@@ -12,6 +12,8 @@ import java.io.File
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.net.URLEncoder
+import org.json.JSONArray
 import java.security.MessageDigest
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
@@ -67,6 +69,72 @@ object StationLogoResolver {
             }
             .firstOrNull()
     }
+
+    private const val LOOKUP_PREFS = "aalto_logo_lookup"
+    private const val LOOKUP_RETRY_MS = 7L * 24 * 60 * 60 * 1000
+    private const val LOOKUP_BASE_URL = "https://all.api.radio-browser.info"
+
+    /**
+     * Finds a logo URL for a station that has none (the built-in stations),
+     * by asking Radio Browser for the same station name. The answer is kept in
+     * SharedPreferences; a miss is retried after a week.
+     */
+    suspend fun lookupLogoUrl(context: Context, station: RadioStation): String? = withContext(Dispatchers.IO) {
+        val prefs = context.applicationContext.getSharedPreferences(LOOKUP_PREFS, Context.MODE_PRIVATE)
+        val key = "logo:${station.id}"
+        prefs.getString(key, null)?.let { stored ->
+            if (stored.startsWith("miss:")) {
+                val at = stored.removePrefix("miss:").toLongOrNull() ?: 0L
+                if (System.currentTimeMillis() - at < LOOKUP_RETRY_MS) return@withContext null
+            } else {
+                return@withContext stored
+            }
+        }
+
+        // Network errors are not stored, so an offline start does not block the lookup for a week.
+        val result = runCatching { searchLogo(station) }
+        if (result.isFailure) return@withContext null
+        val found = result.getOrNull()
+        prefs.edit()
+            .putString(key, found ?: "miss:${System.currentTimeMillis()}")
+            .apply()
+        found
+    }
+
+    private fun searchLogo(station: RadioStation): String? {
+        val wanted = normalizeName(station.name)
+        if (wanted.isEmpty()) return null
+        val url = LOOKUP_BASE_URL + "/json/stations/search" +
+            "?name=" + URLEncoder.encode(station.name, "UTF-8") +
+            "&countrycode=" + URLEncoder.encode(station.countryCode, "UTF-8") +
+            "&order=votes&reverse=true&hidebroken=true&limit=20"
+        var connection: HttpURLConnection? = null
+        try {
+            connection = URL(url).openConnection() as? HttpURLConnection ?: return null
+            connection.connectTimeout = CONNECT_TIMEOUT_MS
+            connection.readTimeout = READ_TIMEOUT_MS
+            connection.setRequestProperty("User-Agent", USER_AGENT)
+            connection.setRequestProperty("Accept", "application/json")
+            if (connection.responseCode !in 200..299) error("Radio Browser HTTP ${connection.responseCode}")
+            val body = connection.inputStream.bufferedReader().use { it.readText() }
+            val array = JSONArray(body)
+            var prefixMatch: String? = null
+            for (index in 0 until array.length()) {
+                val item = array.optJSONObject(index) ?: continue
+                val favicon = item.optString("favicon").trim()
+                if (normalizeUrl(favicon) == null) continue
+                val name = normalizeName(item.optString("name"))
+                if (name == wanted) return favicon
+                if (prefixMatch == null && name.startsWith(wanted)) prefixMatch = favicon
+            }
+            return prefixMatch
+        } finally {
+            connection?.disconnect()
+        }
+    }
+
+    private fun normalizeName(value: String): String =
+        value.lowercase().filter { it.isLetterOrDigit() }
 
     private fun normalizeUrl(value: String?): String? {
         val normalized = value?.trim().orEmpty()

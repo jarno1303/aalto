@@ -302,9 +302,11 @@ private fun SwipeableStation(
 internal fun NowPlayingLogo(
     station: RadioStation,
     isPlaying: Boolean,
-    logoSize: Dp
+    logoSize: Dp,
+    circular: Boolean = false
 ) {
     val cornerRadius = logoSize * 0.19f
+    val haloShape = if (circular) CircleShape else RoundedCornerShape(cornerRadius * 1.06f)
     val haloAlpha by animateFloatAsState(
         targetValue = if (isPlaying) 0.14f else 0f,
         animationSpec = tween(durationMillis = 320),
@@ -319,14 +321,15 @@ internal fun NowPlayingLogo(
             modifier = Modifier
                 .size(logoSize * 1.06f)
                 .graphicsLayer { alpha = haloAlpha }
-                .clip(RoundedCornerShape(cornerRadius * 1.06f))
+                .clip(haloShape)
                 .background(AaltoBlue)
         )
         StationLogo(
             station = station,
             size = logoSize,
             cornerRadius = cornerRadius,
-            framed = false
+            framed = false,
+            circular = circular
         )
     }
 }
@@ -458,7 +461,7 @@ internal fun NowPlayingCard(
         Column(modifier = Modifier.padding(AaltoSpaceL)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 val logo: @Composable () -> Unit = {
-                    NowPlayingLogo(station = station, isPlaying = isPlaying, logoSize = 84.dp)
+                    NowPlayingLogo(station = station, isPlaying = isPlaying, logoSize = 80.dp, circular = true)
                 }
                 if (canSkip) {
                     SwipeableStation(onPrevious = onPrevious!!, onNext = onNext!!, content = logo)

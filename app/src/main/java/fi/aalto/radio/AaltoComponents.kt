@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Radio
 import androidx.compose.material.icons.outlined.Settings
@@ -308,11 +309,13 @@ internal fun MiniPlayer(
     isConnecting: Boolean,
     hasError: Boolean,
     onPlayPause: () -> Unit,
-    onOpen: () -> Unit
+    onOpen: () -> Unit,
+    onNext: (() -> Unit)? = null
 ) {
     val showPause = isPlaying || isConnecting
+    // Tinted so the player reads as its own area between content and navigation.
     Surface(
-        color = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.primaryContainer,
         modifier = Modifier.fillMaxWidth()
     ) {
         Column {
@@ -335,8 +338,9 @@ internal fun MiniPlayer(
             ) {
                 StationLogo(
                     station = station,
-                    size = 40.dp,
-                    cornerRadius = 10.dp
+                    size = 44.dp,
+                    cornerRadius = 22.dp,
+                    circular = true
                 )
                 Spacer(modifier = Modifier.width(AaltoSpaceM))
                 Column(modifier = Modifier.weight(1f)) {
@@ -379,6 +383,15 @@ internal fun MiniPlayer(
                         )
                     }
                 }
+                if (onNext != null) {
+                    IconButton(onClick = onNext, modifier = Modifier.size(48.dp)) {
+                        Icon(
+                            imageVector = Icons.Filled.SkipNext,
+                            contentDescription = stringResource(R.string.action_next_station),
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
             }
         }
     }
@@ -393,11 +406,12 @@ internal fun StationLogo(
     station: RadioStation,
     size: Dp,
     cornerRadius: Dp,
-    framed: Boolean = true
+    framed: Boolean = true,
+    circular: Boolean = false
 ) {
     val logo = rememberStationLogo(station)
     val stationColor = Color(station.logoColorArgb)
-    val shape = RoundedCornerShape(cornerRadius)
+    val shape = if (circular) CircleShape else RoundedCornerShape(cornerRadius)
     val fallbackTextColor = if (stationColor.luminance() > 0.58f) {
         MaterialTheme.colorScheme.onSurface
     } else {
@@ -406,6 +420,8 @@ internal fun StationLogo(
     // Without a real logo the tile gets a soft tint of the station colour,
     // so fallback tiles look intentional instead of empty.
     val logoSurfaceColor = when {
+        // Round tiles get a white disc so transparent logos stay readable.
+        logo != null && circular -> Color.White
         logo != null -> Color.Transparent
         else -> stationColor.copy(alpha = 0.16f)
     }
@@ -436,6 +452,8 @@ internal fun StationLogo(
                     .fillMaxSize()
                     .padding(
                         when {
+                            // A square logo must fit inside the circle.
+                            circular && bitmap != null -> size * 0.15f
                             !framed && bitmap != null -> 0.dp
                             !framed -> AaltoSpaceM
                             else -> AaltoSpaceXs
@@ -481,7 +499,11 @@ internal fun rememberStationLogo(station: RadioStation): ImageBitmap? {
     }
 
     LaunchedEffect(station.id, stationUuid, logoUrls) {
-        logo = StationLogoResolver.resolve(context, stationUuid, logoUrls)
+        // Built-in stations have no logo URL; borrow one from Radio Browser by name.
+        val urls = logoUrls.ifEmpty {
+            listOfNotNull(StationLogoResolver.lookupLogoUrl(context, station))
+        }
+        logo = StationLogoResolver.resolve(context, stationUuid, urls)
     }
 
     return logo
@@ -513,23 +535,33 @@ internal fun StationCard(
                 onClick = onClick
             ),
         shape = RoundedCornerShape(AaltoSurfaceRadius),
-        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
-        border = if (isSelected) {
-            BorderStroke(1.dp, AaltoBlue.copy(alpha = 0.24f))
-        } else {
-            null
-        }
+        color = Color.Transparent
     ) {
         Column(
             modifier = Modifier.padding(AaltoSpaceS),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(modifier = Modifier.size(logoSize)) {
-                StationLogo(
-                    station = station,
-                    size = logoSize,
-                    cornerRadius = AaltoLogoRadius
-                )
+                // Round logo; the selected station gets a blue ring.
+                Box(
+                    modifier = Modifier
+                        .size(logoSize)
+                        .clip(CircleShape)
+                        .border(
+                            width = if (isSelected) 3.dp else 1.dp,
+                            color = if (isSelected) AaltoBlue else MaterialTheme.colorScheme.outline,
+                            shape = CircleShape
+                        )
+                        .padding(if (isSelected) 5.dp else 1.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    StationLogo(
+                        station = station,
+                        size = logoSize - if (isSelected) 10.dp else 2.dp,
+                        cornerRadius = logoSize / 2,
+                        circular = true
+                    )
+                }
 
                 // Heart sits on the logo corner so the name gets the full card width.
                 Box(
@@ -582,9 +614,9 @@ internal fun StationCard(
 
             Text(
                 text = station.name,
-                color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.labelMedium,
-                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                color = if (isSelected) AaltoBlue else MaterialTheme.colorScheme.onSurface,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                 textAlign = TextAlign.Center,
                 maxLines = 2,
                 minLines = 2,

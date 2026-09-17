@@ -304,7 +304,8 @@ private fun AaltoApp() {
                             isConnecting = radioPlayer.isConnecting,
                             hasError = radioPlayer.playbackError != null,
                             onPlayPause = { radioPlayer.toggle(selectedStation) },
-                            onOpen = { selectedTab = TAB_RADIO }
+                            onOpen = { selectedTab = TAB_RADIO },
+                            onNext = onNext
                         )
                     }
                     AaltoBottomNavigation(

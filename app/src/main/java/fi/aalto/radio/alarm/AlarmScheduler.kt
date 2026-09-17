@@ -1,11 +1,18 @@
 package fi.aalto.radio.alarm
 
 import android.app.AlarmManager
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import fi.aalto.radio.MainActivity
+import fi.aalto.radio.R
+import java.time.Instant
+import java.time.ZoneId
 import java.time.ZonedDateTime
 
 /**
@@ -17,11 +24,32 @@ internal object AlarmScheduler {
     private const val REQUEST_ALARM = 4201
     private const val REQUEST_SNOOZE = 4202
     private const val REQUEST_SHOW = 4203
+    private const val REQUEST_UPCOMING = 4204
+    private const val REQUEST_SKIP = 4205
+    private const val UPCOMING_CHANNEL_ID = "aalto_alarm_upcoming"
+    private const val UPCOMING_NOTIFICATION_ID = 4102
+    private const val UPCOMING_LEAD_MS = 60L * 60_000L
 
     fun canScheduleExact(context: Context): Boolean {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
         val manager = context.getSystemService(AlarmManager::class.java) ?: return false
         return manager.canScheduleExactAlarms()
+    }
+
+    /**
+     * Next regular ring time (epoch ms), honouring a skipped occurrence,
+     * or null when the alarm is off.
+     */
+    fun nextRegularMillis(context: Context): Long? {
+        val settings = AlarmStore.load(context)
+        if (!settings.enabled || !settings.hasStation) return null
+        val now = ZonedDateTime.now()
+        var next = nextAlarmTime(now, settings.hour, settings.minute, settings.days)
+        val skip = AlarmStore.skipAt(context)
+        if (skip != 0L && next.toInstant().toEpochMilli() == skip) {
+            next = nextAlarmTime(next, settings.hour, settings.minute, settings.days)
+        }
+        return next.toInstant().toEpochMilli()
     }
 
     /** Re-arms the regular alarm from the stored settings (or cancels it). */
@@ -30,10 +58,27 @@ internal object AlarmScheduler {
         val manager = context.getSystemService(AlarmManager::class.java) ?: return
         val operation = firePendingIntent(context, AlarmReceiver.ACTION_FIRE, REQUEST_ALARM)
         manager.cancel(operation)
+        val upcoming = firePendingIntent(context, AlarmReceiver.ACTION_UPCOMING, REQUEST_UPCOMING)
+        manager.cancel(upcoming)
 
-        if (settings.enabled && settings.hasStation && canScheduleExact(context)) {
-            val next = nextAlarmTime(ZonedDateTime.now(), settings.hour, settings.minute, settings.days)
-            setAlarmClock(context, manager, next.toInstant().toEpochMilli(), operation)
+        // A skipped occurrence that has passed is no longer needed.
+        val skip = AlarmStore.skipAt(context)
+        if (skip != 0L && skip < System.currentTimeMillis()) AlarmStore.setSkipAt(context, 0L)
+
+        val next = nextRegularMillis(context)
+        if (next != null && canScheduleExact(context)) {
+            setAlarmClock(context, manager, next, operation)
+            val showAt = next - UPCOMING_LEAD_MS
+            if (showAt <= System.currentTimeMillis()) {
+                showUpcoming(context)
+            } else {
+                cancelUpcomingNotification(context)
+                runCatching {
+                    manager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, showAt, upcoming)
+                }
+            }
+        } else {
+            cancelUpcomingNotification(context)
         }
 
         // A snooze that is still ahead survives reboots and time changes.
@@ -69,15 +114,69 @@ internal object AlarmScheduler {
 
     /** Next ring time in epoch millis, or null when nothing is scheduled. */
     fun nextRingMillis(context: Context): Long? {
-        val settings = AlarmStore.load(context)
-        val regular = if (settings.enabled && settings.hasStation) {
-            nextAlarmTime(ZonedDateTime.now(), settings.hour, settings.minute, settings.days)
-                .toInstant().toEpochMilli()
-        } else {
-            null
-        }
+        val regular = nextRegularMillis(context)
         val snooze = AlarmStore.snoozeAt(context).takeIf { it > System.currentTimeMillis() }
         return listOfNotNull(regular, snooze).minOrNull()
+    }
+
+    /** "Ohita tämä kerta": skips the next occurrence (a one-time alarm is switched off). */
+    fun skipNext(context: Context) {
+        val settings = AlarmStore.load(context)
+        val next = nextRegularMillis(context) ?: return
+        if (settings.days.isEmpty()) {
+            AlarmStore.save(context, settings.copy(enabled = false))
+        } else {
+            AlarmStore.setSkipAt(context, next)
+        }
+        reschedule(context)
+        cancelUpcomingNotification(context)
+    }
+
+    /** Quiet "Tuleva herätys" notification with a skip action. */
+    @android.annotation.SuppressLint("MissingPermission")
+    fun showUpcoming(context: Context) {
+        val settings = AlarmStore.load(context)
+        val next = nextRegularMillis(context) ?: return
+        val manager = context.getSystemService(NotificationManager::class.java) ?: return
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            manager.createNotificationChannel(
+                NotificationChannel(
+                    UPCOMING_CHANNEL_ID,
+                    context.getString(R.string.alarm_upcoming_channel),
+                    NotificationManager.IMPORTANCE_LOW
+                )
+            )
+        }
+        val time = Instant.ofEpochMilli(next).atZone(ZoneId.systemDefault())
+        val text = listOfNotNull(
+            "${finnishDayShort.getValue(time.dayOfWeek)} ${formatClock(time.hour, time.minute)}",
+            settings.stationName
+        ).joinToString(" · ")
+        val open = PendingIntent.getActivity(
+            context,
+            REQUEST_SHOW,
+            Intent(context, MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val notification = NotificationCompat.Builder(context, UPCOMING_CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+            .setContentTitle(context.getString(R.string.alarm_upcoming_title))
+            .setContentText(text)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setContentIntent(open)
+            .setOnlyAlertOnce(true)
+            .addAction(
+                0,
+                context.getString(R.string.alarm_skip_once),
+                firePendingIntent(context, AlarmReceiver.ACTION_SKIP, REQUEST_SKIP)
+            )
+            .build()
+        runCatching { NotificationManagerCompat.from(context).notify(UPCOMING_NOTIFICATION_ID, notification) }
+    }
+
+    fun cancelUpcomingNotification(context: Context) {
+        NotificationManagerCompat.from(context).cancel(UPCOMING_NOTIFICATION_ID)
     }
 
     private fun setAlarmClock(

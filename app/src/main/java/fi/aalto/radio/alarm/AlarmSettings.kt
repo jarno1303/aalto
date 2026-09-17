@@ -32,6 +32,7 @@ internal object AlarmStore {
     private const val KEY_STATION_NAME = "station_name"
     private const val KEY_STREAM_URL = "stream_url"
     private const val KEY_SNOOZE_AT = "snooze_at"
+    private const val KEY_SKIP_AT = "skip_at"
 
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -68,6 +69,13 @@ internal object AlarmStore {
 
     fun setSnoozeAt(context: Context, epochMs: Long) {
         prefs(context).edit().putLong(KEY_SNOOZE_AT, epochMs).apply()
+    }
+
+    /** One occurrence of a repeating alarm the user chose to skip (epoch ms), or 0. */
+    fun skipAt(context: Context): Long = prefs(context).getLong(KEY_SKIP_AT, 0L)
+
+    fun setSkipAt(context: Context, epochMs: Long) {
+        prefs(context).edit().putLong(KEY_SKIP_AT, epochMs).apply()
     }
 }
 

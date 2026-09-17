@@ -478,27 +478,44 @@ private fun AaltoApp() {
             add(selectedStation)
             alarmSettings.stationId?.let { repository.stationById(it) }?.let { add(it) }
         }.distinctBy { it.stableId }
-        AlarmDialog(
-            initial = alarmSettings,
+        val isDebugBuild = remember {
+            (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        }
+        AlarmSheet(
+            settings = alarmSettings,
+            nextRingMillis = nextAlarmMillis,
             stations = alarmStations,
-            log = remember { AlarmLog.read(context) },
-            onTest = { testSettings ->
-                AlarmStore.save(context, testSettings)
-                AlarmScheduler.reschedule(context)
-                alarmSettings = testSettings
-                nextAlarmMillis = AlarmScheduler.nextRingMillis(context)
+            log = if (isDebugBuild) AlarmLog.read(context) else emptyList(),
+            onTest = {
                 showAlarm = false
                 AlarmService.ringNow(context)
             },
-            onSave = { updated ->
+            onChange = { updated ->
+                val previous = alarmSettings
+                // Every change is saved and scheduled at once (no Save button).
                 AlarmStore.save(context, updated)
                 if (!updated.enabled) AlarmScheduler.cancelSnooze(context)
+                if (updated.hour != previous.hour || updated.minute != previous.minute ||
+                    updated.days != previous.days || !updated.enabled
+                ) {
+                    AlarmStore.setSkipAt(context, 0L)
+                }
                 AlarmScheduler.reschedule(context)
                 alarmSettings = updated
                 nextAlarmMillis = AlarmScheduler.nextRingMillis(context)
-                showAlarm = false
 
-                if (updated.enabled) {
+                val timingChanged = !previous.enabled ||
+                    updated.hour != previous.hour ||
+                    updated.minute != previous.minute ||
+                    updated.days != previous.days
+                if (updated.enabled && timingChanged) {
+                    // Confirms the time and day right away.
+                    AlarmScheduler.nextRegularMillis(context)?.let { next ->
+                        Toast.makeText(context, alarmCountdownText(context, next), Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+                if (updated.enabled && !previous.enabled) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                         ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
                         PackageManager.PERMISSION_GRANTED

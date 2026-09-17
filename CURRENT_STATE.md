@@ -93,3 +93,6 @@ Code: `alarm/` (AlarmSettings, AlarmScheduler, AlarmReceiver + AlarmBootReceiver
 - Re-armed after reboot, app update, time and time zone changes.
 Test plan (physical): alarm in 2 min with screen locked; flight mode -> fallback tone; snooze; continue listening;
 reboot with alarm set; weekday repeat; media volume 0 (alarm volume should apply); ColorOS battery settings overnight.
+- Alarm UX (clock-app pattern): AlarmSheet bottom sheet, big time + switch, every change saved at once,
+  toast "Herätys soi X t Y min kuluttua", "Tuleva herätys" notification 1 h before with "Ohita tämä kerta"
+  (skip stored in `skip_at`), "Kokeile ääntä" as a text button, event log only in debug builds.

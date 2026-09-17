@@ -66,12 +66,8 @@
     <!-- Wake-up radio -->
     <string name="alarm_title">Herätys</string>
     <string name="alarm_settings_title">Herätysradio</string>
-    <string name="alarm_enabled">Herätys päällä</string>
     <string name="alarm_station">Asema</string>
     <string name="alarm_no_stations">Lisää ensin omia asemia.</string>
-    <string name="alarm_repeat_once">Valitse päivät, tai herätys soi kerran.</string>
-    <string name="alarm_repeat_days">Toistuu valittuina päivinä.</string>
-    <string name="alarm_save">Tallenna</string>
     <string name="alarm_snooze">Torkku</string>
     <string name="alarm_snooze_minutes">Torkku %1$d min</string>
     <string name="alarm_dismiss">Lopeta</string>
@@ -81,7 +77,24 @@
     <string name="alarm_open">Herätys</string>
     <string name="alarm_next">Herätys %1$s</string>
     <string name="alarm_tap_for_more">Napauta: lisää valintoja</string>
-    <string name="alarm_test_now">Testaa herätys nyt</string>
+    <string name="alarm_test_now">Kokeile ääntä</string>
+    <string name="alarm_change_time">Muuta aikaa</string>
+    <string name="alarm_ok">OK</string>
+    <string name="alarm_cancel">Peruuta</string>
+    <string name="alarm_done">Valmis</string>
+    <string name="alarm_off">Pois päältä</string>
+    <string name="alarm_days">Päivät</string>
+    <string name="alarm_days_hint">Ilman valittuja päiviä herätys soi kerran.</string>
+    <string name="alarm_days_once">Kerran</string>
+    <string name="alarm_days_every">Joka päivä</string>
+    <string name="alarm_days_weekdays">Arkisin</string>
+    <string name="alarm_days_weekend">Viikonloppuisin</string>
+    <string name="alarm_rings_in_hours">Herätys soi %1$d t %2$d min kuluttua</string>
+    <string name="alarm_rings_in_minutes">Herätys soi %1$d min kuluttua</string>
+    <string name="alarm_rings_at">Herätys soi %1$s</string>
+    <string name="alarm_upcoming_channel">Tulevat herätykset</string>
+    <string name="alarm_upcoming_title">Tuleva herätys</string>
+    <string name="alarm_skip_once">Ohita tämä kerta</string>
     <string name="alarm_log_title">Viimeisimmät tapahtumat</string>
     <string name="alarm_exact_permission">Salli tarkat hälytykset, jotta herätys soi ajallaan.</string>
 

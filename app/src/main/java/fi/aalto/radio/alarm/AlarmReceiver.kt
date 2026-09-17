@@ -11,6 +11,7 @@ class AlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         when (intent.action) {
             ACTION_FIRE -> {
+                AlarmScheduler.cancelUpcomingNotification(context)
                 val settings = AlarmStore.load(context)
                 if (settings.days.isEmpty()) {
                     // One-time alarm: switch off after it rings.
@@ -18,6 +19,11 @@ class AlarmReceiver : BroadcastReceiver() {
                 }
                 startRinging(context)
                 AlarmScheduler.reschedule(context)
+            }
+            ACTION_UPCOMING -> AlarmScheduler.showUpcoming(context)
+            ACTION_SKIP -> {
+                AlarmLog.add(context, "seuraava kerta ohitettu")
+                AlarmScheduler.skipNext(context)
             }
             ACTION_SNOOZE_FIRE -> {
                 AlarmStore.setSnoozeAt(context, 0L)
@@ -36,6 +42,8 @@ class AlarmReceiver : BroadcastReceiver() {
     companion object {
         const val ACTION_FIRE = "fi.aalto.radio.alarm.FIRE"
         const val ACTION_SNOOZE_FIRE = "fi.aalto.radio.alarm.SNOOZE_FIRE"
+        const val ACTION_UPCOMING = "fi.aalto.radio.alarm.UPCOMING"
+        const val ACTION_SKIP = "fi.aalto.radio.alarm.SKIP"
     }
 }
 

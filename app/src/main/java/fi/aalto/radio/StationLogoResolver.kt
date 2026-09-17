@@ -18,9 +18,12 @@ import java.util.concurrent.ConcurrentHashMap
 
 /** Resolves a station logo without putting disk or network work on the UI path. */
 object StationLogoResolver {
-    private const val CONNECT_TIMEOUT_MS = 2_000
-    private const val READ_TIMEOUT_MS = 2_500
-    private const val MAX_BYTES = 512 * 1024
+    private const val CONNECT_TIMEOUT_MS = 4_000
+    private const val READ_TIMEOUT_MS = 6_000
+    private const val MAX_BYTES = 1024 * 1024
+    private const val MAX_REDIRECTS = 4
+    private const val TARGET_LOGO_PX = 384
+    private const val USER_AGENT = "AaltoRadio/0.1 (Android; station logos)"
     private const val CACHE_DIRECTORY = "station-logos"
 
     private val memoryCache = ConcurrentHashMap<String, ImageBitmap>()
@@ -79,20 +82,50 @@ object StationLogoResolver {
     }
 
     private fun download(url: String): Bitmap? {
-        var connection: HttpURLConnection? = null
-        return try {
-            connection = URL(url).openConnection() as? HttpURLConnection ?: return null
-            connection.connectTimeout = CONNECT_TIMEOUT_MS
-            connection.readTimeout = READ_TIMEOUT_MS
-            connection.instanceFollowRedirects = true
-            if (connection.responseCode !in 200..299) return null
-            val bytes = connection.inputStream.use(::readBytesLimited) ?: return null
-            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-        } catch (_: Exception) {
-            null
-        } finally {
-            connection?.disconnect()
+        var currentUrl = url
+        // HttpURLConnection does not follow http <-> https redirects by itself,
+        // and many station favicons live behind exactly such a redirect.
+        repeat(MAX_REDIRECTS + 1) {
+            var connection: HttpURLConnection? = null
+            try {
+                connection = URL(currentUrl).openConnection() as? HttpURLConnection ?: return null
+                connection.connectTimeout = CONNECT_TIMEOUT_MS
+                connection.readTimeout = READ_TIMEOUT_MS
+                connection.instanceFollowRedirects = false
+                connection.setRequestProperty("User-Agent", USER_AGENT)
+                connection.setRequestProperty("Accept", "image/*")
+                val code = connection.responseCode
+                if (code in 300..399) {
+                    val location = connection.getHeaderField("Location") ?: return null
+                    currentUrl = URL(URL(currentUrl), location).toString()
+                    return@repeat
+                }
+                if (code !in 200..299) return null
+                val bytes = connection.inputStream.use(::readBytesLimited) ?: return null
+                return decodeScaled(bytes)
+            } catch (_: Exception) {
+                return null
+            } finally {
+                connection?.disconnect()
+            }
         }
+        return null
+    }
+
+    private fun decodeScaled(bytes: ByteArray): Bitmap? {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+        var sample = 1
+        while (bounds.outWidth / (sample * 2) >= TARGET_LOGO_PX &&
+            bounds.outHeight / (sample * 2) >= TARGET_LOGO_PX
+        ) {
+            sample *= 2
+        }
+        val options = BitmapFactory.Options().apply { inSampleSize = sample }
+        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options) ?: return null
+        // 1x1 or tiny tracking pixels are not logos; show initials instead.
+        return bitmap.takeIf { it.width >= 16 && it.height >= 16 }
     }
 
     private fun readBytesLimited(input: InputStream): ByteArray? {

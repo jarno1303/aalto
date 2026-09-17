@@ -403,15 +403,13 @@ internal fun StationLogo(
     } else {
         stationColor
     }
+    // Without a real logo the tile gets a soft tint of the station colour,
+    // so fallback tiles look intentional instead of empty.
     val logoSurfaceColor = when {
-        !framed -> Color.Transparent
         logo != null -> Color.Transparent
-        else -> MaterialTheme.colorScheme.surfaceVariant
+        else -> stationColor.copy(alpha = 0.16f)
     }
-    val logoBorder = when {
-        !framed || logo != null -> null
-        else -> BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-    }
+    val logoBorder: BorderStroke? = null
 
     Box(
         modifier = Modifier
@@ -456,7 +454,11 @@ internal fun StationLogo(
                     Text(
                         text = station.initials.ifBlank { "A" },
                         color = fallbackTextColor,
-                        fontSize = if (!framed) 28.sp else 13.sp,
+                        fontSize = when {
+                            size >= 96.dp -> 28.sp
+                            size >= 72.dp -> 18.sp
+                            else -> 13.sp
+                        },
                         fontWeight = FontWeight.ExtraBold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis

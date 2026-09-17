@@ -35,6 +35,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -420,5 +421,143 @@ internal fun NightScreenTrigger(
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = iconAlpha),
             modifier = Modifier.size(22.dp)
         )
+    }
+}
+
+/**
+ * Compact Now Playing card for the portrait home screen.
+ *
+ * Same pattern as the big radio apps (Radioplayer, TuneIn, Simple Radio):
+ * a short "what is on" block on top, and the rest of the screen for the
+ * user's own stations. Logo on the left, name and state on the right,
+ * controls in one row below. Nothing is clipped on small screens.
+ */
+@Composable
+internal fun NowPlayingCard(
+    station: RadioStation,
+    isPlaying: Boolean,
+    isFavorite: Boolean,
+    isConnecting: Boolean,
+    playbackError: String?,
+    onPlayPause: () -> Unit,
+    onRetry: () -> Unit,
+    onFavorite: () -> Unit,
+    onNightScreen: () -> Unit,
+    modifier: Modifier = Modifier,
+    onPrevious: (() -> Unit)? = null,
+    onNext: (() -> Unit)? = null
+) {
+    stationTrace("ui_current_state", station)
+    val canSkip = onPrevious != null && onNext != null
+
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surface
+    ) {
+        Column(modifier = Modifier.padding(AaltoSpaceL)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                val logo: @Composable () -> Unit = {
+                    NowPlayingLogo(station = station, isPlaying = isPlaying, logoSize = 84.dp)
+                }
+                if (canSkip) {
+                    SwipeableStation(onPrevious = onPrevious!!, onNext = onNext!!, content = logo)
+                } else {
+                    logo()
+                }
+
+                Spacer(modifier = Modifier.width(AaltoSpaceM))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = station.name,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(AaltoSpaceXs))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (isPlaying && playbackError == null) {
+                            NowPlayingIndicator(size = 16.dp)
+                            Spacer(modifier = Modifier.width(AaltoSpaceXs))
+                        }
+                        Text(
+                            text = playbackStateText(
+                                isPlaying = isPlaying,
+                                isConnecting = isConnecting,
+                                hasError = playbackError != null
+                            ),
+                            color = if (playbackError != null) {
+                                MaterialTheme.colorScheme.error
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    if (station.description.isNotBlank() && playbackError == null) {
+                        Text(
+                            text = station.description,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+
+            if (playbackError != null) {
+                TextButton(
+                    onClick = onRetry,
+                    modifier = Modifier.heightIn(min = 48.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Refresh,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(AaltoSpaceS))
+                    Text(stringResource(R.string.action_retry))
+                }
+            } else {
+                Spacer(modifier = Modifier.height(AaltoSpaceM))
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                IconButton(onClick = onFavorite, modifier = Modifier.size(48.dp)) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                        contentDescription = stringResource(
+                            if (isFavorite) R.string.favorite_remove else R.string.favorite_add
+                        ),
+                        tint = if (isFavorite) AaltoBlue else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(AaltoSpaceS)
+                ) {
+                    SkipButton(visible = canSkip, isNext = false, onClick = { onPrevious?.invoke() })
+                    NowPlayingPlayPauseButton(
+                        isPlaying = isPlaying,
+                        isConnecting = isConnecting,
+                        playSize = 64.dp,
+                        onClick = onPlayPause
+                    )
+                    SkipButton(visible = canSkip, isNext = true, onClick = { onNext?.invoke() })
+                }
+                NightScreenTrigger(onNightScreen = onNightScreen)
+            }
+        }
     }
 }

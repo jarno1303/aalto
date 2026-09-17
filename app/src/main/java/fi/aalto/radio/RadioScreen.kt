@@ -1,6 +1,5 @@
 package fi.aalto.radio
 
-import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -12,11 +11,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -143,16 +139,31 @@ internal fun RadioScreen(
                 }
             }
         } else {
+            // Portrait: compact Now Playing card on top, own stations as a
+            // scrollable grid below. Uses the height for stations instead of
+            // empty space around one big logo.
+            val gridGap = AaltoSpaceS
+            val columns = ((maxWidth + gridGap) / (104.dp + gridGap)).toInt().coerceIn(3, 6)
+            val cellWidth = (maxWidth - gridGap * (columns - 1)) / columns
+
             Column(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(AaltoSpaceS)
             ) {
                 TopBar(onOpenSettings)
 
-                nowPlaying(
-                    Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
+                NowPlayingCard(
+                    station = selectedStation,
+                    isPlaying = isPlaying,
+                    isFavorite = selectedStation.stableId in favoriteIds,
+                    isConnecting = isConnecting,
+                    playbackError = playbackError,
+                    onPlayPause = onPlayPause,
+                    onRetry = onRetry,
+                    onFavorite = onFavorite,
+                    onNightScreen = onNightScreen,
+                    onPrevious = onPrevious,
+                    onNext = onNext
                 )
 
                 SectionHeader(
@@ -165,16 +176,16 @@ internal fun RadioScreen(
                     OwnStationsHint()
                 }
 
-                val carouselState = rememberLazyListState()
-                val snapFlingBehavior = rememberSnapFlingBehavior(carouselState)
-                LazyRow(
-                    state = carouselState,
-                    flingBehavior = snapFlingBehavior,
-                    modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(horizontal = AaltoSpaceXs, vertical = AaltoSpaceXs),
-                    horizontalArrangement = Arrangement.spacedBy(AaltoSpaceS)
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(columns),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentPadding = PaddingValues(bottom = AaltoSpaceS),
+                    horizontalArrangement = Arrangement.spacedBy(gridGap),
+                    verticalArrangement = Arrangement.spacedBy(gridGap)
                 ) {
-                    items(
+                    gridItems(
                         items = shelfStations,
                         key = { it.stableId },
                         contentType = { "station-card" }
@@ -185,7 +196,8 @@ internal fun RadioScreen(
                             isPlaying = isPlaying,
                             isFavorite = station.stableId in favoriteIds,
                             onClick = { onStationClick(station) },
-                            onFavoriteClick = { onStationFavoriteClick(station) }
+                            onFavoriteClick = { onStationFavoriteClick(station) },
+                            width = cellWidth
                         )
                     }
                 }

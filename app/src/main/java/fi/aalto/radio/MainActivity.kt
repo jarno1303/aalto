@@ -472,6 +472,39 @@ private fun AaltoApp() {
         playStation(station, openNowPlaying = true)
     }
 
+    // Safety net: whenever an alarm rings while the app is open, it can be
+    // stopped here too, even if the system did not show the alarm view.
+    if (fi.aalto.radio.alarm.AlarmRuntime.ringing) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = {},
+            properties = androidx.compose.ui.window.DialogProperties(
+                dismissOnBackPress = false,
+                dismissOnClickOutside = false
+            ),
+            title = { androidx.compose.material3.Text(androidx.compose.ui.res.stringResource(R.string.alarm_title)) },
+            text = { androidx.compose.material3.Text(fi.aalto.radio.alarm.AlarmRuntime.stationName) },
+            confirmButton = {
+                androidx.compose.material3.Button(onClick = {
+                    AlarmService.send(context, AlarmService.ACTION_SNOOZE)
+                }) {
+                    androidx.compose.material3.Text(
+                        androidx.compose.ui.res.stringResource(
+                            R.string.alarm_snooze_minutes,
+                            fi.aalto.radio.alarm.AlarmRuntime.snoozeMinutes
+                        )
+                    )
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    AlarmService.send(context, AlarmService.ACTION_DISMISS)
+                }) {
+                    androidx.compose.material3.Text(androidx.compose.ui.res.stringResource(R.string.alarm_dismiss))
+                }
+            }
+        )
+    }
+
     if (showAlarm) {
         val alarmStations = buildList {
             addAll(favoriteStations)
@@ -488,6 +521,12 @@ private fun AaltoApp() {
             log = if (isDebugBuild) AlarmLog.read(context) else emptyList(),
             onTest = {
                 showAlarm = false
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                    ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+                    PackageManager.PERMISSION_GRANTED
+                ) {
+                    notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
                 AlarmService.ringNow(context)
             },
             onChange = { updated ->

@@ -23,7 +23,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -59,8 +62,19 @@ class AlarmActivity : ComponentActivity() {
         setContent {
             AaltoTheme(darkTheme = true) {
                 val ringing = AlarmRuntime.ringing
+                // The view can open a moment before the service reports ringing
+                // (test button), so close only after ringing has been seen, or
+                // if it never starts.
+                var seenRinging by remember { mutableStateOf(false) }
                 LaunchedEffect(ringing) {
-                    if (!ringing) finish()
+                    if (ringing) {
+                        seenRinging = true
+                    } else if (seenRinging) {
+                        finish()
+                    } else {
+                        delay(5_000)
+                        if (!AlarmRuntime.ringing) finish()
+                    }
                 }
                 AlarmScreen(
                     stationName = AlarmRuntime.stationName,

@@ -415,6 +415,14 @@ class AlarmService : Service() {
                 context,
                 Intent(context, AlarmService::class.java).setAction(ACTION_START)
             )
+            // The app is in the foreground, so the alarm view can be opened
+            // directly (Android would only show a small notification).
+            runCatching {
+                context.startActivity(
+                    Intent(context, AlarmActivity::class.java)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                )
+            }
         }
 
         private const val CHANNEL_ID = "aalto_alarm"

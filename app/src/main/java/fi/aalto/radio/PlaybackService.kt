@@ -122,9 +122,34 @@ class PlaybackService : MediaLibraryService() {
             refreshWidget()
         }
 
-        override fun onIsPlayingChanged(isPlaying: Boolean) = refreshWidget()
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            refreshWidget()
+            if (isPlaying) recordRecent()
+        }
 
         override fun onMediaMetadataChanged(mediaMetadata: androidx.media3.common.MediaMetadata) = refreshWidget()
+    }
+
+    private var lastRecordedId: String? = null
+
+    /**
+     * Recents are recorded here too, so stations started from the car,
+     * widget or notification show up in "Viimeisimmät". Runs after playback
+     * has started and never blocks it (AGENTS.md §8).
+     */
+    private fun recordRecent() {
+        val id = sessionPlayer?.currentMediaItem?.mediaId ?: return
+        if (id == lastRecordedId) return
+        lastRecordedId = id
+        scope.launch {
+            runCatching {
+                val repository = AaltoAppContainer.stationRepository(this@PlaybackService)
+                if (repository.stationById(id) == null) {
+                    lookup.byId(id)?.let { repository.registerCatalogStations(listOf(it)) }
+                }
+                repository.recordRecentlyPlayed(id)
+            }.onFailure { Log.w(TAG, "recent not recorded for $id", it) }
+        }
     }
 
     private fun refreshWidget() {
@@ -281,7 +306,11 @@ class PlaybackService : MediaLibraryService() {
             controller: MediaSession.ControllerInfo,
             mediaItems: MutableList<MediaItem>
         ): ListenableFuture<MutableList<MediaItem>> = future {
-            mediaItems.mapNotNull { item -> resolve(item) }.toMutableList()
+            mediaItems.mapNotNull { item ->
+                resolve(item).also {
+                    if (it == null) Log.w(TAG, "could not resolve '${item.mediaId}' from ${controller.packageName}")
+                }
+            }.toMutableList()
         }
     }
 

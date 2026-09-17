@@ -44,6 +44,15 @@ internal class StationLookup(context: Context) {
         return ids.mapNotNull { found[it] }
     }
 
+    /**
+     * Catalog stations shown in the car are registered in the shared
+     * repository, so a later tap (which sends only the id) finds them again.
+     * Catalog ids are canonical ids, not always the raw Radio Browser id.
+     */
+    private fun remember(stations: List<RadioStation>) {
+        if (stations.isNotEmpty()) repository.registerCatalogStations(stations)
+    }
+
     suspend fun favorites(): List<RadioStation> =
         byIds(runCatching { database.localRadioDao().activeFavoriteIdsInOrder() }.getOrDefault(emptyList()))
 
@@ -58,6 +67,7 @@ internal class StationLookup(context: Context) {
             is CatalogReadResult.Success -> result.snapshot.stations.mapNotNull { it.toPlayableRadioStationOrNull() }
             else -> emptyList()
         }
+        remember(fromCatalog)
         // Built-in (Finnish) stations only belong to the Finnish list.
         val builtIn = if (countryCode == "FI") repository.stations else emptyList()
         return (fromCatalog + builtIn).distinctBy { it.id }.take(limit)
@@ -84,5 +94,6 @@ internal class StationLookup(context: Context) {
         val inCountry = remote(homeCountry())
         val worldwide = if (inCountry.size < limit / 2) remote(null) else emptyList()
         return (local + inCountry + worldwide).distinctBy { it.id }.take(limit)
+            .also { remember(it) }
     }
 }

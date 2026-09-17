@@ -311,7 +311,8 @@ internal class AaltoSessionPlayer(
         exo.play()
     }
 
-    fun release() {
+    /** Stops fallback timers and listening; the player itself is released by the session owner. */
+    fun detach() {
         cancelTimeout()
         handler.removeCallbacksAndMessages(null)
         exo.removeListener(internalListener)

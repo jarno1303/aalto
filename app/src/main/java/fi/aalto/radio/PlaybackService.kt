@@ -102,7 +102,7 @@ class PlaybackService : MediaLibraryService() {
 
     override fun onDestroy() {
         mediaSession?.let { session ->
-            sessionPlayer?.release()
+            sessionPlayer?.detach()
             session.player.release()
             session.release()
         }

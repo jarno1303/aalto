@@ -535,6 +535,25 @@ private fun AaltoApp() {
             nextRingMillis = nextAlarmMillis,
             stations = alarmStations,
             log = if (isDebugBuild) AlarmLog.read(context) else emptyList(),
+            notificationsEnabled = androidx.core.app.NotificationManagerCompat.from(context)
+                .areNotificationsEnabled(),
+            onEnableNotifications = {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                    ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+                    PackageManager.PERMISSION_GRANTED
+                ) {
+                    notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                } else {
+                    // Already asked once: open the app's notification settings.
+                    runCatching {
+                        context.startActivity(
+                            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                                .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        )
+                    }
+                }
+            },
             onTest = {
                 showAlarm = false
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&

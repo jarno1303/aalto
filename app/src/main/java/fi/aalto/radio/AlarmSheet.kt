@@ -21,6 +21,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Surface
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -66,7 +67,9 @@ internal fun AlarmSheet(
     onChange: (AlarmSettings) -> Unit,
     onDismiss: () -> Unit,
     onTest: () -> Unit,
-    log: List<String>
+    log: List<String>,
+    notificationsEnabled: Boolean = true,
+    onEnableNotifications: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -146,6 +149,28 @@ internal fun AlarmSheet(
                 color = if (settings.enabled) AaltoBlue else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 2.dp)
             )
+
+            if (!notificationsEnabled) {
+                // Without notifications the alarm can only be stopped from the app.
+                Surface(
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = AaltoSpaceS)
+                ) {
+                    Column(modifier = Modifier.padding(AaltoSpaceM)) {
+                        Text(
+                            text = stringResource(R.string.alarm_notifications_off),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                        TextButton(onClick = onEnableNotifications) {
+                            Text(stringResource(R.string.alarm_allow_notifications))
+                        }
+                    }
+                }
+            }
 
             HorizontalDivider(
                 color = MaterialTheme.colorScheme.outline,

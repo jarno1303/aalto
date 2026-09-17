@@ -88,6 +88,17 @@ class AlarmActivity : ComponentActivity() {
         }
     }
 
+    /** Volume keys snooze, like a clock radio. */
+    override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent?): Boolean {
+        if (keyCode == android.view.KeyEvent.KEYCODE_VOLUME_UP ||
+            keyCode == android.view.KeyEvent.KEYCODE_VOLUME_DOWN
+        ) {
+            send(AlarmService.ACTION_SNOOZE)
+            return true
+        }
+        return super.onKeyDown(keyCode, event)
+    }
+
     private fun continueInApp() {
         // Ask the user to unlock; the app opens and plays the alarm station.
         AlarmService.send(this, AlarmService.ACTION_DISMISS)

@@ -96,6 +96,9 @@
     <string name="alarm_upcoming_channel">Tulevat herätykset</string>
     <string name="alarm_upcoming_title">Tuleva herätys</string>
     <string name="alarm_skip_once">Ohita tämä kerta</string>
+    <string name="alarm_switch_off">Kytke pois</string>
+    <string name="alarm_notifications_off">Ilmoitukset ovat pois päältä. Herätyksen voi silloin pysäyttää vain avaamalla Aallon.</string>
+    <string name="alarm_allow_notifications">Salli ilmoitukset</string>
     <string name="alarm_log_title">Viimeisimmät tapahtumat</string>
     <string name="alarm_exact_permission">Salli tarkat hälytykset, jotta herätys soi ajallaan.</string>
 

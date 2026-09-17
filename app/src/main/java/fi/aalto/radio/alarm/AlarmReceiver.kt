@@ -21,6 +21,13 @@ class AlarmReceiver : BroadcastReceiver() {
                 AlarmScheduler.reschedule(context)
             }
             ACTION_UPCOMING -> AlarmScheduler.showUpcoming(context)
+            ACTION_DISABLE -> {
+                AlarmLog.add(context, "herätys kytketty pois ilmoituksesta")
+                AlarmStore.save(context, AlarmStore.load(context).copy(enabled = false))
+                AlarmScheduler.cancelSnooze(context)
+                AlarmScheduler.reschedule(context)
+                AlarmScheduler.cancelUpcomingNotification(context)
+            }
             ACTION_SKIP -> {
                 AlarmLog.add(context, "seuraava kerta ohitettu")
                 AlarmScheduler.skipNext(context)
@@ -44,6 +51,7 @@ class AlarmReceiver : BroadcastReceiver() {
         const val ACTION_SNOOZE_FIRE = "fi.aalto.radio.alarm.SNOOZE_FIRE"
         const val ACTION_UPCOMING = "fi.aalto.radio.alarm.UPCOMING"
         const val ACTION_SKIP = "fi.aalto.radio.alarm.SKIP"
+        const val ACTION_DISABLE = "fi.aalto.radio.alarm.DISABLE"
     }
 }
 

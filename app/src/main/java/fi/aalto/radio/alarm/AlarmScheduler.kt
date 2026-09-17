@@ -26,6 +26,7 @@ internal object AlarmScheduler {
     private const val REQUEST_SHOW = 4203
     private const val REQUEST_UPCOMING = 4204
     private const val REQUEST_SKIP = 4205
+    private const val REQUEST_DISABLE = 4206
     private const val UPCOMING_CHANNEL_ID = "aalto_alarm_upcoming"
     private const val UPCOMING_NOTIFICATION_ID = 4102
     private const val UPCOMING_LEAD_MS = 60L * 60_000L
@@ -170,6 +171,11 @@ internal object AlarmScheduler {
                 0,
                 context.getString(R.string.alarm_skip_once),
                 firePendingIntent(context, AlarmReceiver.ACTION_SKIP, REQUEST_SKIP)
+            )
+            .addAction(
+                0,
+                context.getString(R.string.alarm_switch_off),
+                firePendingIntent(context, AlarmReceiver.ACTION_DISABLE, REQUEST_DISABLE)
             )
             .build()
         runCatching { NotificationManagerCompat.from(context).notify(UPCOMING_NOTIFICATION_ID, notification) }

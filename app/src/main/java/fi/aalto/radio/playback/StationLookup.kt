@@ -70,7 +70,9 @@ internal class StationLookup(context: Context) {
         remember(fromCatalog)
         // Built-in (Finnish) stations only belong to the Finnish list.
         val builtIn = if (countryCode == "FI") repository.stations else emptyList()
-        return (fromCatalog + builtIn).distinctBy { it.id }.take(limit)
+        val all = (fromCatalog + builtIn).distinctBy { it.id }
+        // Best-known stations of the country first, catalog order after them.
+        return CuratedStations.sort(countryCode, all).take(limit)
     }
 
     /**

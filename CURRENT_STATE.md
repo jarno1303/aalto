@@ -115,3 +115,7 @@ Testing Android Auto: install Desktop Head Unit (SDK Manager > SDK Tools > Andro
 enable Android Auto developer mode (tap version 10x), "Unknown sources" on, "Start head unit server", then run
 `desktop-head-unit.exe` from `%LOCALAPPDATA%\Android\Sdk\extras\google\auto` with the phone connected via USB and
 `adb forward tcp:5277 tcp:5277`.
+- Suositut: curated per-country top list (`playback/CuratedStations`, FI from national listening research) ranks
+  the catalog; everything else keeps catalog order. Unit tests in CuratedStationsTest.
+- Alarm can be handled without opening the app: upcoming notification has "Ohita tämä kerta" and "Kytke pois",
+  volume keys snooze a ringing alarm, and the alarm sheet warns if notifications are disabled.

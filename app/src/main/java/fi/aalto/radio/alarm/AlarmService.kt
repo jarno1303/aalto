@@ -158,8 +158,13 @@ class AlarmService : Service() {
         radioStartedAt = 0L
         retries = 0
 
+        // The normal player does not give way by itself: pause it so only the
+        // alarm station is heard.
+        pauseNormalPlayback()
+
         val url = settings.streamUrl
-        AlarmLog.add(this, "soi: ${settings.stationName ?: "-"}")
+        val host = url?.let { runCatching { android.net.Uri.parse(it).host }.getOrNull() }
+        AlarmLog.add(this, "soi: ${settings.stationName ?: "-"} (${host ?: "ei osoitetta"})")
         if (url.isNullOrBlank()) {
             AlarmLog.add(this, "ei aseman osoitetta -> hälytysääni")
             startFallback()
@@ -297,6 +302,25 @@ class AlarmService : Service() {
         super.onDestroy()
     }
 
+    private fun pauseNormalPlayback() {
+        val appContext = applicationContext
+        val token = SessionToken(appContext, ComponentName(appContext, PlaybackService::class.java))
+        val future = MediaController.Builder(appContext, token).buildAsync()
+        future.addListener(
+            {
+                runCatching {
+                    val controller = future.get()
+                    if (controller.isPlaying || controller.playWhenReady) {
+                        controller.pause()
+                        AlarmLog.add(appContext, "tavallinen toisto pysäytetty")
+                    }
+                }
+                MediaController.releaseFuture(future)
+            },
+            ContextCompat.getMainExecutor(appContext)
+        )
+    }
+
     /** Hands the station to the normal player so it keeps playing as usual. */
     private fun continueInRadio(station: AlarmSettings) {
         val url = station.streamUrl ?: return
@@ -397,9 +421,9 @@ class AlarmService : Service() {
         private const val RADIO_GIVE_UP_MS = 120_000L
         private const val RETRY_DELAY_MS = 4_000L
         private const val MAX_RETRIES = 20
-        private const val RAMP_MS = 45_000L
+        private const val RAMP_MS = 30_000L
         private const val AUTO_STOP_MS = 30L * 60_000L
-        private const val START_VOLUME = 0.08f
+        private const val START_VOLUME = 0.2f
 
         internal fun serviceIntent(context: Context, action: String, requestCode: Int): PendingIntent =
             PendingIntent.getService(

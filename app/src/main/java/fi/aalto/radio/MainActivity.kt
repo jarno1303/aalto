@@ -484,7 +484,9 @@ private fun AaltoApp() {
             log = remember { AlarmLog.read(context) },
             onTest = { testSettings ->
                 AlarmStore.save(context, testSettings)
+                AlarmScheduler.reschedule(context)
                 alarmSettings = testSettings
+                nextAlarmMillis = AlarmScheduler.nextRingMillis(context)
                 showAlarm = false
                 AlarmService.ringNow(context)
             },

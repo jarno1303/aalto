@@ -213,7 +213,7 @@ internal fun NightScreen(
                 modifier = Modifier.height(72.dp),
                 contentAlignment = Alignment.Center
             ) {
-                AnimatedVisibility(
+                androidx.compose.animation.AnimatedVisibility(
                     visible = controlsVisible,
                     enter = fadeIn(animationSpec = tween(durationMillis = 160)),
                     exit = fadeOut(animationSpec = tween(durationMillis = 300))
@@ -263,7 +263,7 @@ internal fun NightScreen(
             }
         }
 
-        AnimatedVisibility(
+        androidx.compose.animation.AnimatedVisibility(
             visible = controlsVisible,
             enter = fadeIn(animationSpec = tween(durationMillis = 160)),
             exit = fadeOut(animationSpec = tween(durationMillis = 300)),

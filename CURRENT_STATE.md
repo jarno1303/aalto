@@ -119,3 +119,10 @@ enable Android Auto developer mode (tap version 10x), "Unknown sources" on, "Sta
   the catalog; everything else keeps catalog order. Unit tests in CuratedStationsTest.
 - Alarm can be handled without opening the app: upcoming notification has "Ohita tämä kerta" and "Kytke pois",
   volume keys snooze a ringing alarm, and the alarm sheet warns if notifications are disabled.
+
+## Checkpoint known-good-2026-09-17 (main)
+ui-ux-polish merged into main (fast-forward) and tagged. Physically verified per docs/TESTILISTA.md:
+normal playback, station switching, notification/widget controls, sleep timer, alarm (lock screen, snooze,
+fallback tone, volume), Android Auto (browse, search, queue, previous/next). Unit tests green.
+Treat this behavior as protected (AGENTS.md §27). Not pushed to origin yet.
+Next: Crashlytics, Play listing requirements, closed beta (10-20 users). Later: Chromecast, more curated countries.

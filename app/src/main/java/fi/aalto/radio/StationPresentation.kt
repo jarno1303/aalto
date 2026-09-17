@@ -318,9 +318,27 @@ internal fun countryName(countryCode: String): String {
         "IT" -> "Italia"
         "NL" -> "Alankomaat"
         "TR" -> "Turkki"
+        "DK" -> "Tanska"
+        "EE" -> "Viro"
+        "AT" -> "Itävalta"
+        "CH" -> "Sveitsi"
+        "IE" -> "Irlanti"
+        "BE" -> "Belgia"
+        "PL" -> "Puola"
+        "PT" -> "Portugali"
+        "GR" -> "Kreikka"
+        "CA" -> "Kanada"
+        "AU" -> "Australia"
+        "BR" -> "Brasilia"
         else -> countryCode.uppercase()
     }
 }
+
+/** Countries offered for browsing in the car (Maat tab). */
+internal val browsableCountryCodes = listOf(
+    "FI", "SE", "NO", "DK", "EE", "DE", "AT", "CH", "GB", "IE", "NL", "BE",
+    "FR", "ES", "PT", "IT", "GR", "PL", "TR", "US", "CA", "BR", "AU"
+)
 
 /**
  * The country chosen in the app's station browser. Remembered, so the car

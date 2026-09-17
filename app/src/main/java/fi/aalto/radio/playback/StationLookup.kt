@@ -50,16 +50,16 @@ internal class StationLookup(context: Context) {
     suspend fun recents(limit: Int = 30): List<RadioStation> =
         byIds(runCatching { database.localRadioDao().recentStationIds(limit) }.getOrDefault(emptyList()))
 
-    suspend fun popular(limit: Int = 40): List<RadioStation> {
+    suspend fun popular(limit: Int = 40, countryCode: String = country()): List<RadioStation> {
         val catalog = AaltoAppContainer.stationCatalogRepository(appContext)
         val fromCatalog = when (val result = runCatching {
-            catalog.getStationsByCountry(country(), limit)
+            catalog.getStationsByCountry(countryCode, limit)
         }.getOrNull()) {
             is CatalogReadResult.Success -> result.snapshot.stations.mapNotNull { it.toPlayableRadioStationOrNull() }
             else -> emptyList()
         }
         // Built-in (Finnish) stations only belong to the Finnish list.
-        val builtIn = if (country() == "FI") repository.stations else emptyList()
+        val builtIn = if (countryCode == "FI") repository.stations else emptyList()
         return (fromCatalog + builtIn).distinctBy { it.id }.take(limit)
     }
 

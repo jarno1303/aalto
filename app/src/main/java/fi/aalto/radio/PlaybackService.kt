@@ -209,12 +209,25 @@ class PlaybackService : MediaLibraryService() {
                     StationMediaItems.folder(
                         POPULAR_ID,
                         getString(R.string.auto_popular_country, countryName(lookup.country()))
-                    )
+                    ),
+                    StationMediaItems.folder(COUNTRIES_ID, getString(R.string.auto_countries))
                 )
+                COUNTRIES_ID -> {
+                    val current = lookup.country()
+                    // The phone's country first, then the rest alphabetically.
+                    (listOf(current) + browsableCountryCodes.filter { it != current }
+                        .sortedBy { countryName(it) })
+                        .map { code -> StationMediaItems.folder(COUNTRY_PREFIX + code, countryName(code)) }
+                }
                 MINE_ID -> lookup.favorites().map { StationMediaItems.build(this@PlaybackService, it) }
                 RECENT_ID -> lookup.recents().map { StationMediaItems.build(this@PlaybackService, it) }
                 POPULAR_ID -> lookup.popular().map { StationMediaItems.build(this@PlaybackService, it) }
-                else -> emptyList()
+                else -> if (parentId.startsWith(COUNTRY_PREFIX)) {
+                    lookup.popular(countryCode = parentId.removePrefix(COUNTRY_PREFIX))
+                        .map { StationMediaItems.build(this@PlaybackService, it) }
+                } else {
+                    emptyList()
+                }
             }
             Log.d(TAG, "children parent=$parentId page=$page size=$pageSize -> ${items.size} by ${browser.packageName}")
             LibraryResult.ofItemList(paged(items, page, pageSize), params)
@@ -311,5 +324,7 @@ class PlaybackService : MediaLibraryService() {
         const val MINE_ID = "aalto_mine"
         const val RECENT_ID = "aalto_recent"
         const val POPULAR_ID = "aalto_popular"
+        const val COUNTRIES_ID = "aalto_countries"
+        const val COUNTRY_PREFIX = "aalto_country_"
     }
 }

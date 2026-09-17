@@ -79,6 +79,8 @@
     <string name="alarm_tap_for_more">Napauta: lisää valintoja</string>
     <string name="alarm_test_now">Kokeile ääntä</string>
     <string name="alarm_change_time">Muuta aikaa</string>
+    <string name="alarm_hours">Tunnit</string>
+    <string name="alarm_minutes">Minuutit</string>
     <string name="alarm_ok">OK</string>
     <string name="alarm_cancel">Peruuta</string>
     <string name="alarm_done">Valmis</string>

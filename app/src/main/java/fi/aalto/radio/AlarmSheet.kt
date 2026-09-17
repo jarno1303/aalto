@@ -27,9 +27,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimeInput
 import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -314,23 +312,30 @@ internal fun AlarmSheet(
     }
 
     if (editingTime) {
-        val timeState = rememberTimePickerState(
-            initialHour = settings.hour,
-            initialMinute = settings.minute,
-            is24Hour = true
-        )
+        // Scroll wheels: no typing needed.
+        var pickedHour by remember { mutableStateOf(settings.hour) }
+        var pickedMinute by remember { mutableStateOf(settings.minute) }
         AlertDialog(
             onDismissRequest = { editingTime = false },
             title = { Text(stringResource(R.string.alarm_change_time)) },
-            text = { TimeInput(state = timeState) },
+            text = {
+                WheelTimePicker(
+                    hour = pickedHour,
+                    minute = pickedMinute,
+                    onTimeChange = { newHour, newMinute ->
+                        pickedHour = newHour
+                        pickedMinute = newMinute
+                    }
+                )
+            },
             confirmButton = {
                 TextButton(onClick = {
                     editingTime = false
                     // Choosing a time means the user wants the alarm on.
                     onChange(
                         withStation(settings, selectedStation).copy(
-                            hour = timeState.hour,
-                            minute = timeState.minute,
+                            hour = pickedHour,
+                            minute = pickedMinute,
                             enabled = selectedStation != null
                         )
                     )

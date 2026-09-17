@@ -4,6 +4,7 @@ import android.app.PendingIntent
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.os.Bundle
+import android.util.Log
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -181,6 +182,7 @@ class PlaybackService : MediaLibraryService() {
                 )
                 putBoolean("android.media.browse.SEARCH_SUPPORTED", true)
             }
+            Log.d(TAG, "root requested by ${browser.packageName}")
             val rootParams = LibraryParams.Builder().setExtras(extras).build()
             return Futures.immediateFuture(
                 LibraryResult.ofItem(StationMediaItems.folder(ROOT_ID, getString(R.string.app_name)), rootParams)
@@ -206,6 +208,7 @@ class PlaybackService : MediaLibraryService() {
                 POPULAR_ID -> lookup.popular().map { StationMediaItems.build(this@PlaybackService, it) }
                 else -> emptyList()
             }
+            Log.d(TAG, "children parent=$parentId page=$page size=$pageSize -> ${items.size} by ${browser.packageName}")
             LibraryResult.ofItemList(paged(items, page, pageSize), params)
         }
 
@@ -287,6 +290,7 @@ class PlaybackService : MediaLibraryService() {
             try {
                 result.set(block())
             } catch (error: Throwable) {
+                Log.w(TAG, "library request failed", error)
                 result.setException(error)
             }
         }
@@ -294,6 +298,7 @@ class PlaybackService : MediaLibraryService() {
     }
 
     private companion object {
+        const val TAG = "AALTO_AUTO"
         const val ROOT_ID = "aalto_root"
         const val MINE_ID = "aalto_mine"
         const val RECENT_ID = "aalto_recent"

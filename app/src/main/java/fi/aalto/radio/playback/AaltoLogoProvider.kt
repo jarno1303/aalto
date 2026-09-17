@@ -28,10 +28,12 @@ class AaltoLogoProvider : ContentProvider() {
             ?: throw FileNotFoundException("No station")
         // Binder thread: blocking is fine here, but never for long.
         val file = runBlocking {
-            withTimeoutOrNull(LOOKUP_TIMEOUT_MS) {
-                val station = StationLookup(context).byId(stationId) ?: return@withTimeoutOrNull null
-                StationLogoResolver.resolveFile(context, station)
-            }
+            val station = withTimeoutOrNull(LOOKUP_TIMEOUT_MS) { StationLookup(context).byId(stationId) }
+                ?: return@runBlocking null
+            val logo = withTimeoutOrNull(LOOKUP_TIMEOUT_MS) { StationLogoResolver.resolveFile(context, station) }
+            // Car screens crop to a square: pad wide logos, and never show an
+            // empty tile - use the station's own coloured initials instead.
+            logo?.let { LogoTiles.square(context, it) } ?: LogoTiles.initials(context, station)
         } ?: throw FileNotFoundException("No logo for $stationId")
         return ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
     }

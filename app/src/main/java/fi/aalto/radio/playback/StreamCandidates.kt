@@ -133,12 +133,16 @@ internal object StationMediaItems {
             .build()
     }
 
+    /** Second line on the car screen and notification: "pop, nuoret · Helsinki, Suomi". */
+    fun subtitle(station: RadioStation): String =
+        fi.aalto.radio.stationMetadataLine(station).ifBlank { station.description }.ifBlank { "Aalto" }
+
     fun metadata(station: RadioStation, candidates: List<String>): MediaMetadata =
         MediaMetadata.Builder()
             .setTitle(station.name)
-            .setArtist("Aalto")
+            .setArtist(subtitle(station))
             .setStation(station.name)
-            .setSubtitle(station.location ?: station.description)
+            .setSubtitle(subtitle(station))
             .setArtworkUri(logoUri(station.id))
             .setIsBrowsable(false)
             .setIsPlayable(true)

@@ -23,6 +23,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
 import fi.aalto.radio.playback.AaltoSessionPlayer
 import fi.aalto.radio.playback.LastStationStore
+import fi.aalto.radio.playback.LogoTiles
 import fi.aalto.radio.playback.StationLookup
 import fi.aalto.radio.playback.StationMediaItems
 import fi.aalto.radio.widget.AaltoWidgetProvider
@@ -138,7 +139,11 @@ class PlaybackService : MediaLibraryService() {
                 withContext(Dispatchers.IO) {
                     runCatching {
                         val station = lookup.byId(stationId)
-                        station?.let { StationLogoResolver.resolveFile(this@PlaybackService, it) }
+                        station?.let {
+                            StationLogoResolver.resolveFile(this@PlaybackService, it)
+                                ?.let { logo -> LogoTiles.square(this@PlaybackService, logo) }
+                                ?: LogoTiles.initials(this@PlaybackService, it)
+                        }
                             ?.let { file ->
                                 BitmapFactory.decodeFile(
                                     file.absolutePath,

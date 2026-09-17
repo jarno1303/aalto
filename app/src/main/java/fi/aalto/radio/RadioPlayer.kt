@@ -290,13 +290,19 @@ class RadioPlayer(context: Context) : Player.Listener {
     }
 
     private fun trackText(metadata: MediaMetadata): String? {
-        val stationTitle = controller?.currentMediaItem?.mediaMetadata?.title?.toString()?.trim()
+        val staticMetadata = controller?.currentMediaItem?.mediaMetadata
+        val stationTitle = staticMetadata?.title?.toString()?.trim()
+        val stationDetails = staticMetadata?.artist?.toString()?.trim()
         val title = metadata.title?.toString()?.trim()
             ?.takeIf { it.length >= 2 && !it.equals(stationTitle, ignoreCase = true) }
             ?.takeUnless { it.startsWith("http", ignoreCase = true) }
             ?: return null
         val artist = metadata.artist?.toString()?.trim()
-            ?.takeIf { it.isNotEmpty() && it != "Aalto" && !it.equals(stationTitle, ignoreCase = true) }
+            ?.takeIf {
+                it.isNotEmpty() && it != "Aalto" &&
+                    !it.equals(stationTitle, ignoreCase = true) &&
+                    !it.equals(stationDetails, ignoreCase = true)
+            }
         return if (artist != null && !title.contains(artist, ignoreCase = true)) "$artist – $title" else title
     }
 

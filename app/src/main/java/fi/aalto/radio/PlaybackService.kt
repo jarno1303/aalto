@@ -10,7 +10,10 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.CommandButton
 import androidx.media3.session.LibraryResult
+import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionResult
 import androidx.media3.session.MediaConstants
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaLibraryService
@@ -54,6 +57,10 @@ class PlaybackService : MediaLibraryService() {
     /** Own stations in the user's order, for previous / next. */
     @Volatile
     private var presets: List<RadioStation> = emptyList()
+    private var favoriteIds: Set<String> = emptySet()
+
+    /** Heart button next to the playback controls (car, notification). */
+    private val favoriteCommand = SessionCommand(ACTION_TOGGLE_FAVORITE, Bundle.EMPTY)
 
     private val searchResults = mutableMapOf<String, List<RadioStation>>()
 
@@ -88,11 +95,16 @@ class PlaybackService : MediaLibraryService() {
         mediaSession = MediaLibrarySession.Builder(this, player, LibraryCallback())
             .setSessionActivity(openApp)
             .build()
+        updateFavoriteButton()
 
         scope.launch {
             AaltoAppContainer.stationRepository(this@PlaybackService)
                 .observeFavoriteOrder()
-                .collectLatest { ids -> presets = lookup.byIds(ids) }
+                .collectLatest { ids ->
+                    favoriteIds = ids.toSet()
+                    updateFavoriteButton()
+                    presets = lookup.byIds(ids)
+                }
         }
     }
 
@@ -119,6 +131,7 @@ class PlaybackService : MediaLibraryService() {
     private val widgetAndResumeListener = object : Player.Listener {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             mediaItem?.let { LastStationStore.save(this@PlaybackService, it) }
+            updateFavoriteButton()
             refreshWidget()
         }
 
@@ -128,6 +141,44 @@ class PlaybackService : MediaLibraryService() {
         }
 
         override fun onMediaMetadataChanged(mediaMetadata: androidx.media3.common.MediaMetadata) = refreshWidget()
+    }
+
+    private fun favoriteButton(isFavorite: Boolean): CommandButton =
+        CommandButton.Builder(
+            if (isFavorite) CommandButton.ICON_HEART_FILLED else CommandButton.ICON_HEART_UNFILLED
+        )
+            .setDisplayName(getString(if (isFavorite) R.string.favorite_remove else R.string.favorite_add))
+            .setSessionCommand(favoriteCommand)
+            .build()
+
+    private fun updateFavoriteButton() {
+        val session = mediaSession ?: return
+        val id = sessionPlayer?.currentMediaItem?.mediaId
+        val buttons = if (id == null) emptyList() else listOf(favoriteButton(id in favoriteIds))
+        session.setMediaButtonPreferences(buttons)
+    }
+
+    private fun toggleFavorite() {
+        val id = sessionPlayer?.currentMediaItem?.mediaId ?: return
+        val wasFavorite = id in favoriteIds
+        // Show the new state at once; the database flow confirms it.
+        favoriteIds = if (wasFavorite) favoriteIds - id else favoriteIds + id
+        updateFavoriteButton()
+        scope.launch {
+            val repository = AaltoAppContainer.stationRepository(this@PlaybackService)
+            val committed = runCatching {
+                if (repository.stationById(id) == null) {
+                    lookup.byId(id)?.let { repository.registerCatalogStations(listOf(it)) }
+                }
+                if (wasFavorite) repository.removeFavorite(id) else repository.addFavorite(id)
+            }.getOrDefault(false)
+            if (committed) {
+                runCatching { AaltoAppContainer.syncCoordinator(this@PlaybackService).requestSync() }
+            } else {
+                favoriteIds = if (wasFavorite) favoriteIds + id else favoriteIds - id
+                updateFavoriteButton()
+            }
+        }
     }
 
     private var lastRecordedId: String? = null
@@ -195,6 +246,32 @@ class PlaybackService : MediaLibraryService() {
     // ---- Library for Android Auto ------------------------------------------
 
     private inner class LibraryCallback : MediaLibrarySession.Callback {
+
+        override fun onConnect(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo
+        ): MediaSession.ConnectionResult {
+            val commands = MediaSession.ConnectionResult.DEFAULT_SESSION_AND_LIBRARY_COMMANDS
+                .buildUpon()
+                .add(favoriteCommand)
+                .build()
+            return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+                .setAvailableSessionCommands(commands)
+                .build()
+        }
+
+        override fun onCustomCommand(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            customCommand: SessionCommand,
+            args: Bundle
+        ): ListenableFuture<SessionResult> {
+            if (customCommand.customAction == ACTION_TOGGLE_FAVORITE) {
+                toggleFavorite()
+                return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+            }
+            return super.onCustomCommand(session, controller, customCommand, args)
+        }
 
         override fun onGetLibraryRoot(
             session: MediaLibrarySession,
@@ -348,6 +425,7 @@ class PlaybackService : MediaLibraryService() {
 
     private companion object {
         const val TAG = "AALTO_AUTO"
+        const val ACTION_TOGGLE_FAVORITE = "fi.aalto.radio.TOGGLE_FAVORITE"
         const val ROOT_ID = "aalto_root"
         const val MINE_ID = "aalto_mine"
         const val RECENT_ID = "aalto_recent"

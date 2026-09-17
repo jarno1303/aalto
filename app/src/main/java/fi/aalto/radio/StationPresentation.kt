@@ -396,8 +396,22 @@ internal fun stationMetadataLine(station: RadioStation): String {
 }
 
 internal fun stationLocation(station: RadioStation): String {
-    return listOfNotNull(
-        station.location?.trim()?.takeIf { it.isNotBlank() },
-        countryName(station.countryCode).takeIf { it.isNotBlank() }
-    ).distinct().joinToString(", ")
+    val country = countryName(station.countryCode).takeIf { it.isNotBlank() }
+    // The catalog often repeats the country in English ("Finland, Suomi").
+    val countryNames = if (station.countryCode.isBlank()) {
+        emptySet()
+    } else {
+        val locale = java.util.Locale("", station.countryCode)
+        setOfNotNull(
+            country,
+            locale.getDisplayCountry(java.util.Locale.ENGLISH),
+            locale.getDisplayCountry(java.util.Locale("fi"))
+        ).map { it.lowercase() }.toSet()
+    }
+    val places = station.location
+        ?.split(',')
+        ?.map { it.trim() }
+        ?.filter { it.isNotBlank() && it.lowercase() !in countryNames }
+        .orEmpty()
+    return (places + listOfNotNull(country)).distinct().joinToString(", ")
 }

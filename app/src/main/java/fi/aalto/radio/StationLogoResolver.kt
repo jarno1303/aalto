@@ -70,9 +70,62 @@ object StationLogoResolver {
             .firstOrNull()
     }
 
+    /**
+     * A logo shipped with the app: res/drawable/logo_<station id>.png
+     * (dashes become underscores), e.g. logo_yle_klassinen.png. 0 if none.
+     */
+    fun bundledLogoResId(context: Context, stationId: String): Int {
+        val name = "logo_" + stationId.lowercase().map { if (it.isLetterOrDigit()) it else '_' }.joinToString("")
+        return context.resources.getIdentifier(name, "drawable", context.packageName)
+    }
+
+    fun bundledLogo(context: Context, stationId: String): ImageBitmap? {
+        val resId = bundledLogoResId(context, stationId)
+        if (resId == 0) return null
+        return runCatching { BitmapFactory.decodeResource(context.resources, resId)?.asImageBitmap() }.getOrNull()
+    }
+
+    /**
+     * The logo as a local PNG file (for the car screen, notification and
+     * widget). Uses the same cache as the app screens.
+     */
+    suspend fun resolveFile(context: Context, station: RadioStation): File? = withContext(Dispatchers.IO) {
+        val resId = bundledLogoResId(context, station.id)
+        if (resId != 0) {
+            val file = File(File(context.cacheDir, CACHE_DIRECTORY), "bundled-${stationLogoCacheKey(station.id, "res")}.png")
+            if (!file.isFile) {
+                BitmapFactory.decodeResource(context.resources, resId)?.let { writeCacheAtomically(file, it) }
+            }
+            if (file.isFile) return@withContext file
+        }
+
+        val uuid = station.radioBrowserStationUuid ?: station.id
+        val urls = station.logoUrls.ifEmpty { lookupLogoUrls(context, station) }
+        urls.asSequence()
+            .mapNotNull(::normalizeUrl)
+            .distinct()
+            .mapNotNull { url ->
+                val key = stationLogoCacheKey(uuid, url)
+                val file = cacheFile(context, key)
+                when {
+                    file.isFile -> file
+                    key in failedKeys -> null
+                    else -> download(url)?.let { bitmap ->
+                        writeCacheAtomically(file, bitmap)
+                        file.takeIf { it.isFile }
+                    } ?: run {
+                        failedKeys += key
+                        null
+                    }
+                }
+            }
+            .firstOrNull()
+    }
+
     private const val LOOKUP_PREFS = "aalto_logo_lookup"
     private const val LOOKUP_RETRY_MS = 7L * 24 * 60 * 60 * 1000
     private const val LOOKUP_BASE_URL = "https://all.api.radio-browser.info"
+    private const val LOOKUP_KEY_PREFIX = "logos3:"
 
     /**
      * Finds a logo URL for a station that has none (the built-in stations),
@@ -81,7 +134,7 @@ object StationLogoResolver {
      */
     suspend fun lookupLogoUrls(context: Context, station: RadioStation): List<String> = withContext(Dispatchers.IO) {
         val prefs = context.applicationContext.getSharedPreferences(LOOKUP_PREFS, Context.MODE_PRIVATE)
-        val key = "logos2:${station.id}"
+        val key = "$LOOKUP_KEY_PREFIX${station.id}"
         prefs.getString(key, null)?.let { stored ->
             if (stored.startsWith("miss:")) {
                 val at = stored.removePrefix("miss:").toLongOrNull() ?: 0L
@@ -95,10 +148,31 @@ object StationLogoResolver {
         val result = runCatching { searchLogo(station) }
         if (result.isFailure) return@withContext emptyList()
         val found = result.getOrNull().orEmpty()
-        prefs.edit()
-            .putString(key, if (found.isEmpty()) "miss:${System.currentTimeMillis()}" else found.joinToString("\n"))
-            .apply()
-        found
+        // A broadcaster's shared logo (e.g. the same Yle logo on every Yle
+        // channel) does not tell channels apart: drop logos used by another
+        // station and fall back to the station's own coloured tile.
+        val others = prefs.all
+            .filterKeys { it.startsWith(LOOKUP_KEY_PREFIX) && it != key }
+            .mapValues { (_, value) -> (value as? String)?.split('\n')?.filter { it.startsWith("http") }.orEmpty() }
+        val shared = found.filter { url -> others.values.any { url in it } }.toSet()
+        val distinct = found.filterNot { it in shared }
+        val editor = prefs.edit()
+        if (shared.isNotEmpty()) {
+            others.forEach { (otherKey, urls) ->
+                if (urls.any { it in shared }) {
+                    val kept = urls.filterNot { it in shared }
+                    editor.putString(
+                        otherKey,
+                        if (kept.isEmpty()) "miss:${System.currentTimeMillis()}" else kept.joinToString("\n")
+                    )
+                }
+            }
+        }
+        editor.putString(
+            key,
+            if (distinct.isEmpty()) "miss:${System.currentTimeMillis()}" else distinct.joinToString("\n")
+        ).apply()
+        distinct
     }
 
     private fun searchLogo(station: RadioStation): List<String> {

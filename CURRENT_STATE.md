@@ -96,3 +96,22 @@ reboot with alarm set; weekday repeat; media volume 0 (alarm volume should apply
 - Alarm UX (clock-app pattern): AlarmSheet bottom sheet, big time + switch, every change saved at once,
   toast "Herätys soi X t Y min kuluttua", "Tuleva herätys" notification 1 h before with "Ohita tämä kerta"
   (skip stored in `skip_at`), "Kokeile ääntä" as a text button, event log only in debug builds.
+
+## Android Auto, stream fallback, widget, logos (ui-ux-polish)
+Touches the protected playback path (PlaybackService) - needs physical verification before merge.
+- PlaybackService is now a MediaLibraryService: browse tree Omat asemat / Viimeksi kuunnellut / Suositut,
+  search (incl. voice query), items resolved by station id (`playback/StationLookup`).
+- `playback/AaltoSessionPlayer` (ForwardingPlayer around the same ExoPlayer):
+  - stream fallback: next address on error or 12 s buffering before first audio; .pls/.m3u resolved;
+    errors hidden from controllers while a fallback is tried; working address remembered (`aalto_stream_memory`).
+  - previous/next = own stations (steering wheel, car, headset, notification, widget).
+- ExoPlayer now handles audio focus (USAGE_MEDIA) and uses WAKE_MODE_NETWORK.
+- RadioPlayer builds items via `StationMediaItems` (all addresses in metadata extras), compares by station id,
+  exposes `currentStationId`; MainActivity follows station changes made outside the app.
+- Logos: `content://fi.aalto.radio.logos/<id>` (AaltoLogoProvider); bundled override `res/drawable/logo_<id>.png`;
+  shared broadcaster logos from the name lookup are dropped so channels keep their own tile.
+- Home screen widget (`widget/AaltoWidgetProvider`, RemoteViews): logo, station, song, play/pause, next.
+Testing Android Auto: install Desktop Head Unit (SDK Manager > SDK Tools > Android Auto Desktop Head Unit Emulator),
+enable Android Auto developer mode (tap version 10x), "Unknown sources" on, "Start head unit server", then run
+`desktop-head-unit.exe` from `%LOCALAPPDATA%\Android\Sdk\extras\google\auto` with the phone connected via USB and
+`adb forward tcp:5277 tcp:5277`.

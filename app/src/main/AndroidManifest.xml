@@ -41,10 +41,35 @@
             android:foregroundServiceType="mediaPlayback">
 
             <intent-filter>
+                <action android:name="androidx.media3.session.MediaLibraryService" />
                 <action android:name="androidx.media3.session.MediaSessionService" />
+                <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
 
         </service>
+
+        <!-- Android Auto: Aalto is a media app. -->
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
+
+        <!-- Station logos for the car screen, notification and widget (read-only). -->
+        <provider
+            android:name=".playback.AaltoLogoProvider"
+            android:authorities="fi.aalto.radio.logos"
+            android:exported="true" />
+
+        <receiver
+            android:name=".widget.AaltoWidgetProvider"
+            android:exported="true"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/aalto_widget_info" />
+        </receiver>
 
         <activity
             android:name=".alarm.AlarmActivity"

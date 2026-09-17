@@ -29,6 +29,7 @@ class RadioPlayer(context: Context) : Player.Listener {
     private var pendingUrl: String? = null
     private var pendingTitle: String? = null
     private var pendingTrace: AaltoPerf.StationTrace? = null
+    private var pendingItem: MediaItem? = null
     private var activeTrace: AaltoPerf.StationTrace? = null
 
     var isPlaying by mutableStateOf(false)
@@ -51,6 +52,13 @@ class RadioPlayer(context: Context) : Player.Listener {
     var nowPlayingTrack by mutableStateOf<String?>(null)
         private set
 
+    /**
+     * Station id of what the player has loaded. Changes also when the car,
+     * steering wheel, notification or widget switches station.
+     */
+    var currentStationId by mutableStateOf<String?>(null)
+        private set
+
     init {
         val sessionToken = SessionToken(
             appContext,
@@ -69,6 +77,15 @@ class RadioPlayer(context: Context) : Player.Listener {
                     controller?.addListener(this)
 
                     isPlaying = controller?.isPlaying == true
+                    currentStationId = controller?.currentMediaItem?.mediaId
+
+                    val queuedItem = pendingItem
+                    if (queuedItem != null) {
+                        val trace = pendingTrace
+                        pendingItem = null
+                        playItem(queuedItem, trace)
+                        return@addListener
+                    }
 
                     val queuedStationId = pendingStationId
                     val queuedUrl = pendingUrl
@@ -94,12 +111,38 @@ class RadioPlayer(context: Context) : Player.Listener {
     }
 
     fun play(station: RadioStation, trace: AaltoPerf.StationTrace? = null) {
-        play(
-            stationId = station.id,
-            url = station.preferredStreamUrl,
-            title = station.name,
-            trace = trace
-        )
+        // The item carries every known address of the station; the service
+        // moves to the next one by itself if an address fails.
+        playItem(fi.aalto.radio.playback.StationMediaItems.build(appContext, station), trace)
+    }
+
+    private fun playItem(item: MediaItem, trace: AaltoPerf.StationTrace?) {
+        val currentController = controller
+        playbackError = null
+        isConnecting = true
+
+        if (currentController == null) {
+            pendingItem = item
+            pendingTrace = trace
+            AaltoPerf.reportControllerPending(trace)
+            return
+        }
+
+        pendingItem = null
+        pendingTrace = null
+        activeTrace = trace
+
+        val currentId = currentController.currentMediaItem?.mediaId
+        val isSwitch = currentId != null && currentId != item.mediaId
+        if (currentId != item.mediaId || currentController.playbackState == Player.STATE_IDLE) {
+            // New station, or the same one after an error/stop: load it again
+            // so every address gets a fresh try.
+            currentController.setMediaItem(item)
+            currentController.prepare()
+        }
+
+        AaltoPerf.reportPlaybackCommandIssued(trace = trace, isSwitch = isSwitch)
+        currentController.play()
     }
 
     fun play(url: String, title: String? = null) {
@@ -182,9 +225,9 @@ class RadioPlayer(context: Context) : Player.Listener {
             ?.uri
             ?.toString()
 
-        // play(station) uses preferredStreamUrl, so the pause check must compare the same URL.
+        // Compare by station id: the playing address may be a fallback address.
         val isActive = currentController.isPlaying || isConnecting
-        if (isActive && currentUrl == station.preferredStreamUrl) {
+        if (isActive && currentController.currentMediaItem?.mediaId == station.id) {
             currentController.pause()
             isConnecting = false
         } else {
@@ -219,6 +262,7 @@ class RadioPlayer(context: Context) : Player.Listener {
 
         if (isPlaying) {
             isConnecting = false
+            playbackError = null
             AaltoPerf.reportPlaybackStarted(activeTrace)
         }
     }
@@ -241,7 +285,8 @@ class RadioPlayer(context: Context) : Player.Listener {
     }
 
     override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-        nowPlayingTrack = null
+        if (mediaItem?.mediaId != currentStationId) nowPlayingTrack = null
+        currentStationId = mediaItem?.mediaId
     }
 
     private fun trackText(metadata: MediaMetadata): String? {

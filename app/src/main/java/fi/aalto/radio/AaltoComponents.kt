@@ -542,6 +542,11 @@ internal fun rememberStationLogo(station: RadioStation): ImageBitmap? {
     }
 
     LaunchedEffect(station.id, stationUuid, logoUrls) {
+        // A logo shipped with the app always wins.
+        StationLogoResolver.bundledLogo(context, station.id)?.let {
+            logo = it
+            return@LaunchedEffect
+        }
         // Built-in stations have no logo URL; borrow one from Radio Browser by name.
         val urls = logoUrls.ifEmpty {
             StationLogoResolver.lookupLogoUrls(context, station)

@@ -16,6 +16,9 @@ abstract class LocalRadioDao {
     @Upsert
     abstract suspend fun upsertStation(station: StationEntity)
 
+    @Query("SELECT * FROM stations WHERE id IN (:stationIds)")
+    abstract suspend fun stationsByIds(stationIds: List<String>): List<StationEntity>
+
     @Query("SELECT id FROM stations WHERE id = :stationId LIMIT 1")
     abstract suspend fun stationExists(stationId: String): String?
 

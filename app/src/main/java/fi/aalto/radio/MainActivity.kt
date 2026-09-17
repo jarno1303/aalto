@@ -452,6 +452,19 @@ private fun AaltoApp() {
         }
     }
 
+    // The car, steering wheel, notification or widget can switch station:
+    // follow it so the app shows what is actually playing.
+    val playerStationId = radioPlayer.currentStationId
+    LaunchedEffect(playerStationId) {
+        val id = playerStationId ?: return@LaunchedEffect
+        if (id == selectedStationId) return@LaunchedEffect
+        if (repository.stationById(id) == null) {
+            fi.aalto.radio.playback.StationLookup(context).byId(id)
+                ?.let { repository.registerCatalogStations(listOf(it)) }
+        }
+        if (repository.stationById(id) != null) selectedStationId = id
+    }
+
     // "Jatka kuuntelua" from the alarm: play the alarm station through the normal path.
     val alarmHandoff = AlarmHandoff.pending
     LaunchedEffect(alarmHandoff) {

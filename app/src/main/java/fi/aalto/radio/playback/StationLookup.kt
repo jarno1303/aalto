@@ -3,7 +3,7 @@ package fi.aalto.radio.playback
 import android.content.Context
 import fi.aalto.radio.AaltoAppContainer
 import fi.aalto.radio.AaltoDatabase
-import fi.aalto.radio.RadioCountryPreference
+import fi.aalto.radio.defaultRadioCountryCode
 import fi.aalto.radio.RadioStation
 import fi.aalto.radio.catalog.CatalogReadResult
 import fi.aalto.radio.catalog.toDomain
@@ -50,7 +50,7 @@ internal class StationLookup(context: Context) {
     suspend fun recents(limit: Int = 30): List<RadioStation> =
         byIds(runCatching { database.localRadioDao().recentStationIds(limit) }.getOrDefault(emptyList()))
 
-    suspend fun popular(limit: Int = 40, countryCode: String = country()): List<RadioStation> {
+    suspend fun popular(limit: Int = 40, countryCode: String = homeCountry()): List<RadioStation> {
         val catalog = AaltoAppContainer.stationCatalogRepository(appContext)
         val fromCatalog = when (val result = runCatching {
             catalog.getStationsByCountry(countryCode, limit)
@@ -63,8 +63,11 @@ internal class StationLookup(context: Context) {
         return (fromCatalog + builtIn).distinctBy { it.id }.take(limit)
     }
 
-    /** Country chosen in the phone app. */
-    fun country(): String = RadioCountryPreference.get(appContext)
+    /**
+     * The user's home country (phone region). The car's "Suositut" tab always
+     * shows it; a temporary country filter in the phone app does not change it.
+     */
+    fun homeCountry(): String = defaultRadioCountryCode()
 
     suspend fun search(query: String, limit: Int = 40): List<RadioStation> {
         val terms = query.trim().lowercase()
@@ -77,9 +80,8 @@ internal class StationLookup(context: Context) {
                 is CatalogReadResult.Success -> result.snapshot.stations.mapNotNull { it.toPlayableRadioStationOrNull() }
                 else -> emptyList()
             }
-        // Chosen country first, then the whole world (e.g. "Radio Bob" while the
-        // phone is set to Finland).
-        val inCountry = remote(country())
+        // Home country first, then the whole world (e.g. "Radio Bob" from Finland).
+        val inCountry = remote(homeCountry())
         val worldwide = if (inCountry.size < limit / 2) remote(null) else emptyList()
         return (local + inCountry + worldwide).distinctBy { it.id }.take(limit)
     }

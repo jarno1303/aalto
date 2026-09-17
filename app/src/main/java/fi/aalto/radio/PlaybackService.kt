@@ -206,13 +206,14 @@ class PlaybackService : MediaLibraryService() {
                 ROOT_ID -> listOf(
                     StationMediaItems.folder(MINE_ID, getString(R.string.home_mine)),
                     StationMediaItems.folder(RECENT_ID, getString(R.string.auto_recent)),
-                    // Short tab labels: the car shows at most four tabs in one row.
-                    StationMediaItems.folder(POPULAR_ID, countryName(lookup.country())),
+                    // Stable, short tab labels: the car shows at most four tabs in one row,
+                    // and a driver relies on them staying the same.
+                    StationMediaItems.folder(POPULAR_ID, getString(R.string.auto_popular)),
                     StationMediaItems.folder(COUNTRIES_ID, getString(R.string.auto_countries))
                 )
                 COUNTRIES_ID -> {
-                    val current = lookup.country()
-                    // The phone's country first, then the rest alphabetically.
+                    val current = lookup.homeCountry()
+                    // Home country first, then the rest alphabetically.
                     (listOf(current) + browsableCountryCodes.filter { it != current }
                         .sortedBy { countryName(it) })
                         .map { code -> StationMediaItems.folder(COUNTRY_PREFIX + code, countryName(code)) }

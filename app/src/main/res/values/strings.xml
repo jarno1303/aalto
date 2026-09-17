@@ -100,7 +100,7 @@
     <string name="alarm_exact_permission">Salli tarkat hälytykset, jotta herätys soi ajallaan.</string>
 
     <!-- Android Auto -->
-    <string name="auto_popular_country">Suositut · %1$s</string>
+    <string name="auto_popular">Suositut</string>
     <string name="auto_recent">Viimeisimmät</string>
     <string name="auto_countries">Maat</string>
 

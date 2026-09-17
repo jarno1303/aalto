@@ -13,6 +13,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -44,12 +45,24 @@ internal fun AlarmDialog(
     initial: AlarmSettings,
     stations: List<RadioStation>,
     onSave: (AlarmSettings) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onTest: ((AlarmSettings) -> Unit)? = null,
+    log: List<String> = emptyList()
 ) {
     var enabled by remember { mutableStateOf(initial.enabled || !initial.hasStation) }
     var days by remember { mutableStateOf(initial.days) }
     var stationId by remember {
         mutableStateOf(initial.stationId ?: stations.firstOrNull()?.id)
+    }
+    fun current(): AlarmSettings? {
+        val station = stations.firstOrNull { it.id == stationId } ?: return null
+        return initial.copy(
+            enabled = enabled,
+            days = days,
+            stationId = station.id,
+            stationName = station.name,
+            streamUrl = station.preferredStreamUrl
+        )
     }
     val timeState = rememberTimePickerState(
         initialHour = initial.hour,
@@ -132,6 +145,31 @@ internal fun AlarmDialog(
                             )
                         }
                     }
+                }
+
+                if (onTest != null) {
+                    OutlinedButton(
+                        enabled = stations.any { it.id == stationId },
+                        onClick = {
+                            current()?.let {
+                                onTest(it.copy(hour = timeState.hour, minute = timeState.minute))
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text(stringResource(R.string.alarm_test_now)) }
+                }
+
+                if (log.isNotEmpty()) {
+                    Text(
+                        text = stringResource(R.string.alarm_log_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(top = AaltoSpaceS)
+                    )
+                    Text(
+                        text = log.takeLast(8).reversed().joinToString("\n"),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         },

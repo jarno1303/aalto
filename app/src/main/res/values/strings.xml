@@ -80,6 +80,8 @@
     <string name="alarm_fallback_note">Asemaan ei saatu yhteyttä – soitetaan hälytysääni</string>
     <string name="alarm_open">Herätys</string>
     <string name="alarm_next">Herätys %1$s</string>
+    <string name="alarm_test_now">Testaa herätys nyt</string>
+    <string name="alarm_log_title">Viimeisimmät tapahtumat</string>
     <string name="alarm_exact_permission">Salli tarkat hälytykset, jotta herätys soi ajallaan.</string>
 
     <!-- Settings -->

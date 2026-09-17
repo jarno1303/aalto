@@ -34,6 +34,56 @@ import androidx.media3.session.SessionToken
 import fi.aalto.radio.PlaybackService
 import fi.aalto.radio.R
 
+/** Short on-device log of the last alarms, shown in the alarm dialog for troubleshooting. */
+internal object AlarmLog {
+    private const val PREFS = "aalto_alarm_log"
+    private const val KEY = "lines"
+    private const val MAX_LINES = 12
+
+    fun add(context: Context, message: String) {
+        val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val time = java.time.LocalDateTime.now()
+        val stamp = "%d.%d. %d.%02d.%02d".format(
+            time.dayOfMonth, time.monthValue, time.hour, time.minute, time.second
+        )
+        val lines = (prefs.getString(KEY, "").orEmpty().lines().filter { it.isNotBlank() } +
+            "$stamp $message").takeLast(MAX_LINES)
+        prefs.edit().putString(KEY, lines.joinToString("\n")).apply()
+    }
+
+    fun read(context: Context): List<String> =
+        context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getString(KEY, "").orEmpty().lines().filter { it.isNotBlank() }
+}
+
+/**
+ * "Jatka kuuntelua": the alarm stops and the normal app opens and plays the
+ * alarm station through its usual path, so the app shows the right station.
+ */
+internal object AlarmHandoff {
+    private const val ACTION_CONTINUE_IN_APP = "fi.aalto.radio.alarm.CONTINUE_IN_APP"
+
+    var pending by mutableStateOf<AlarmSettings?>(null)
+
+    fun continueIntent(context: Context): Intent =
+        Intent(context, fi.aalto.radio.MainActivity::class.java)
+            .setAction(ACTION_CONTINUE_IN_APP)
+            .addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP
+            )
+
+    /** Called by MainActivity for every incoming intent. */
+    fun consume(context: Context, intent: Intent?) {
+        if (intent?.action != ACTION_CONTINUE_IN_APP) return
+        intent.action = null
+        if (AlarmRuntime.ringing) AlarmService.send(context, AlarmService.ACTION_DISMISS)
+        pending = AlarmStore.load(context)
+        AlarmLog.add(context, "jatka kuuntelua sovelluksessa")
+    }
+}
+
 /** Ringing state shared with the lock-screen AlarmActivity (same process). */
 internal object AlarmRuntime {
     var ringing by mutableStateOf(false)
@@ -55,6 +105,8 @@ class AlarmService : Service() {
     private var player: ExoPlayer? = null
     private var fallbackPlayer: MediaPlayer? = null
     private var startedAt = 0L
+    private var radioStartedAt = 0L
+    private var retries = 0
     private var settings = AlarmSettings()
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -63,13 +115,19 @@ class AlarmService : Service() {
         when (intent?.action) {
             ACTION_START -> startAlarm()
             ACTION_SNOOZE -> {
+                AlarmLog.add(this, "torkku $SNOOZE_MINUTES min")
                 AlarmScheduler.scheduleSnooze(this, SNOOZE_MINUTES)
                 stopAlarm()
             }
             ACTION_CONTINUE -> {
+                AlarmLog.add(this, "jatka kuuntelua")
                 val station = settings
                 stopPlayers()
                 continueInRadio(station)
+                stopAlarm()
+            }
+            ACTION_DISMISS -> {
+                AlarmLog.add(this, "lopetettu")
                 stopAlarm()
             }
             else -> stopAlarm()
@@ -97,19 +155,29 @@ class AlarmService : Service() {
 
         if (player != null || fallbackPlayer != null) return
         startedAt = SystemClock.elapsedRealtime()
+        radioStartedAt = 0L
+        retries = 0
 
         val url = settings.streamUrl
+        AlarmLog.add(this, "soi: ${settings.stationName ?: "-"}")
         if (url.isNullOrBlank()) {
+            AlarmLog.add(this, "ei aseman osoitetta -> hälytysääni")
             startFallback()
         } else {
             startRadio(url)
-            handler.postDelayed(::checkStarted, START_TIMEOUT_MS)
-            handler.post(rampStep)
+            // The network can take a while to wake up with the phone. The tone
+            // starts after a short wait, but the radio keeps trying and takes
+            // over as soon as it plays.
+            handler.postDelayed(::checkStarted, FALLBACK_AFTER_MS)
         }
-        handler.postDelayed(::stopAlarm, AUTO_STOP_MS)
+        handler.postDelayed({
+            AlarmLog.add(this, "hiljennetty automaattisesti")
+            stopAlarm()
+        }, AUTO_STOP_MS)
     }
 
     private fun startRadio(url: String) {
+        player?.release()
         val exo = ExoPlayer.Builder(this).build()
         exo.setAudioAttributes(
             AudioAttributes.Builder()
@@ -121,8 +189,12 @@ class AlarmService : Service() {
         exo.setWakeMode(C.WAKE_MODE_NETWORK)
         exo.volume = START_VOLUME
         exo.addListener(object : Player.Listener {
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                if (isPlaying) onRadioPlaying()
+            }
+
             override fun onPlayerError(error: PlaybackException) {
-                startFallback()
+                onRadioError(url, error)
             }
         })
         exo.setMediaItem(MediaItem.fromUri(url))
@@ -131,14 +203,42 @@ class AlarmService : Service() {
         player = exo
     }
 
+    private fun onRadioPlaying() {
+        if (radioStartedAt != 0L) return
+        radioStartedAt = SystemClock.elapsedRealtime()
+        val seconds = (radioStartedAt - startedAt) / 1000
+        AlarmLog.add(this, "radio soi ${seconds} s kohdalla")
+        stopFallback()
+        handler.post(rampStep)
+    }
+
+    private fun onRadioError(url: String, error: PlaybackException) {
+        val elapsed = SystemClock.elapsedRealtime() - startedAt
+        if (retries < 3) AlarmLog.add(this, "virhe: ${error.errorCodeName}, yritetään uudelleen")
+        if (radioStartedAt == 0L && elapsed >= FALLBACK_AFTER_MS) startFallback()
+        if (elapsed < RADIO_GIVE_UP_MS && retries < MAX_RETRIES) {
+            retries++
+            radioStartedAt = 0L
+            handler.postDelayed({ if (AlarmRuntime.ringing) startRadio(url) }, RETRY_DELAY_MS)
+        } else {
+            AlarmLog.add(this, "radio ei käynnisty -> hälytysääni")
+            player?.release()
+            player = null
+            startFallback()
+        }
+    }
+
     private fun checkStarted() {
-        if (player?.isPlaying != true) startFallback()
+        if (player?.isPlaying != true) {
+            AlarmLog.add(this, "radio ei soi ${FALLBACK_AFTER_MS / 1000} s -> hälytysääni, radio yrittää yhä")
+            startFallback()
+        }
     }
 
     private val rampStep = object : Runnable {
         override fun run() {
             val exo = player ?: return
-            val elapsed = SystemClock.elapsedRealtime() - startedAt
+            val elapsed = SystemClock.elapsedRealtime() - radioStartedAt
             val volume = (START_VOLUME + (1f - START_VOLUME) * elapsed / RAMP_MS.toFloat())
                 .coerceIn(START_VOLUME, 1f)
             exo.volume = volume
@@ -149,8 +249,6 @@ class AlarmService : Service() {
     /** Built-in alarm tone: the alarm must never stay silent. */
     private fun startFallback() {
         if (fallbackPlayer != null) return
-        player?.release()
-        player = null
         AlarmRuntime.usingFallback = true
 
         val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
@@ -170,6 +268,12 @@ class AlarmService : Service() {
                 start()
             }
         }
+    }
+
+    private fun stopFallback() {
+        fallbackPlayer?.let { runCatching { it.stop() }; it.release() }
+        fallbackPlayer = null
+        AlarmRuntime.usingFallback = false
     }
 
     private fun stopPlayers() {
@@ -264,7 +368,16 @@ class AlarmService : Service() {
             .setFullScreenIntent(fullScreen, true)
             .addAction(0, getString(R.string.alarm_snooze), serviceIntent(this, ACTION_SNOOZE, 1))
             .addAction(0, getString(R.string.alarm_dismiss), serviceIntent(this, ACTION_DISMISS, 2))
-            .addAction(0, getString(R.string.alarm_continue), serviceIntent(this, ACTION_CONTINUE, 3))
+            .addAction(
+                0,
+                getString(R.string.alarm_continue),
+                PendingIntent.getActivity(
+                    this,
+                    3,
+                    AlarmHandoff.continueIntent(this),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+            )
             .build()
     }
 
@@ -274,10 +387,22 @@ class AlarmService : Service() {
         const val ACTION_DISMISS = "fi.aalto.radio.alarm.DISMISS"
         const val ACTION_CONTINUE = "fi.aalto.radio.alarm.CONTINUE"
 
+        /** Rings right away with the saved settings (test button in the dialog). */
+        internal fun ringNow(context: Context) {
+            AlarmLog.add(context, "testiherätys")
+            ContextCompat.startForegroundService(
+                context,
+                Intent(context, AlarmService::class.java).setAction(ACTION_START)
+            )
+        }
+
         const val SNOOZE_MINUTES = 9
         private const val CHANNEL_ID = "aalto_alarm"
         private const val NOTIFICATION_ID = 4101
-        private const val START_TIMEOUT_MS = 15_000L
+        private const val FALLBACK_AFTER_MS = 20_000L
+        private const val RADIO_GIVE_UP_MS = 120_000L
+        private const val RETRY_DELAY_MS = 4_000L
+        private const val MAX_RETRIES = 20
         private const val RAMP_MS = 45_000L
         private const val AUTO_STOP_MS = 30L * 60_000L
         private const val START_VOLUME = 0.08f

@@ -11,7 +11,10 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import fi.aalto.radio.alarm.AlarmHandoff
+import fi.aalto.radio.alarm.AlarmLog
 import fi.aalto.radio.alarm.AlarmScheduler
+import fi.aalto.radio.alarm.AlarmService
 import fi.aalto.radio.alarm.AlarmStore
 import fi.aalto.radio.alarm.finnishDayShort
 import fi.aalto.radio.alarm.formatClock
@@ -61,6 +64,7 @@ class MainActivity : ComponentActivity() {
         AaltoPerf.markAppStart()
         super.onCreate(savedInstanceState)
         AaltoThemePreferences.load(this)
+        AlarmHandoff.consume(this, intent)
         enableEdgeToEdge()
         setContent {
             val darkTheme = AaltoThemePreferences.mode.isDark()
@@ -80,6 +84,12 @@ class MainActivity : ComponentActivity() {
                 AaltoApp()
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        AlarmHandoff.consume(this, intent)
     }
 
     override fun onStart() {
@@ -442,6 +452,26 @@ private fun AaltoApp() {
         }
     }
 
+    // "Jatka kuuntelua" from the alarm: play the alarm station through the normal path.
+    val alarmHandoff = AlarmHandoff.pending
+    LaunchedEffect(alarmHandoff) {
+        val request = alarmHandoff ?: return@LaunchedEffect
+        AlarmHandoff.pending = null
+        val url = request.streamUrl ?: return@LaunchedEffect
+        val station = request.stationId?.let { repository.stationById(it) } ?: RadioStation(
+            id = request.stationId ?: url,
+            name = request.stationName ?: "Aalto Radio",
+            description = "",
+            initials = (request.stationName ?: "A").take(3).uppercase(),
+            logoColorArgb = 0xFF1769FF,
+            streamUrl = url,
+            countryCode = "FI",
+            tags = emptyList(),
+            category = ""
+        )
+        playStation(station, openNowPlaying = true)
+    }
+
     if (showAlarm) {
         val alarmStations = buildList {
             addAll(favoriteStations)
@@ -451,6 +481,13 @@ private fun AaltoApp() {
         AlarmDialog(
             initial = alarmSettings,
             stations = alarmStations,
+            log = remember { AlarmLog.read(context) },
+            onTest = { testSettings ->
+                AlarmStore.save(context, testSettings)
+                alarmSettings = testSettings
+                showAlarm = false
+                AlarmService.ringNow(context)
+            },
             onSave = { updated ->
                 AlarmStore.save(context, updated)
                 if (!updated.enabled) AlarmScheduler.cancelSnooze(context)

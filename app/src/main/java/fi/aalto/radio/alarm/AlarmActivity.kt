@@ -1,5 +1,6 @@
 package fi.aalto.radio.alarm
 
+import android.app.KeyguardManager
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
@@ -66,10 +67,18 @@ class AlarmActivity : ComponentActivity() {
                     usingFallback = AlarmRuntime.usingFallback,
                     onSnooze = { send(AlarmService.ACTION_SNOOZE) },
                     onDismiss = { send(AlarmService.ACTION_DISMISS) },
-                    onContinue = { send(AlarmService.ACTION_CONTINUE) }
+                    onContinue = ::continueInApp
                 )
             }
         }
+    }
+
+    private fun continueInApp() {
+        // Ask the user to unlock; the app opens and plays the alarm station.
+        AlarmService.send(this, AlarmService.ACTION_DISMISS)
+        getSystemService(KeyguardManager::class.java)?.requestDismissKeyguard(this, null)
+        startActivity(AlarmHandoff.continueIntent(this))
+        finish()
     }
 
     private fun send(action: String) {

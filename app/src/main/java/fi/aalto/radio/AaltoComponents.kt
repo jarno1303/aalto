@@ -12,6 +12,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -62,6 +63,8 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -562,6 +565,7 @@ internal fun rememberStationLogo(station: RadioStation): ImageBitmap? {
 // =============================================================
 
 @Composable
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 internal fun StationCard(
     station: RadioStation,
     isSelected: Boolean,
@@ -571,16 +575,25 @@ internal fun StationCard(
     onFavoriteClick: () -> Unit,
     modifier: Modifier = Modifier,
     width: Dp = 112.dp,
-    showFavoriteButton: Boolean = true
+    showFavoriteButton: Boolean = true,
+    onLongClick: (() -> Unit)? = null
 ) {
+    val haptics = LocalHapticFeedback.current
     val logoSize = width - AaltoSpaceXs * 2
 
     Surface(
         modifier = modifier
             .width(width)
             .clip(RoundedCornerShape(AaltoSurfaceRadius))
-            .clickable(
+            .combinedClickable(
                 onClickLabel = stringResource(R.string.action_play_station, station.name),
+                onLongClickLabel = stringResource(R.string.favorite_remove),
+                onLongClick = onLongClick?.let {
+                    {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        it()
+                    }
+                },
                 onClick = onClick
             ),
         shape = RoundedCornerShape(AaltoSurfaceRadius),

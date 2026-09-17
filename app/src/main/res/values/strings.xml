@@ -35,6 +35,10 @@
     <string name="home_mine">Omat asemat</string>
     <string name="home_popular_hint">Lisää omia asemia napauttamalla sydäntä.</string>
     <string name="home_popular">Suositut asemat</string>
+    <string name="home_hide_list">Piilota asemalista</string>
+    <string name="home_show_list">Näytä asemalista</string>
+    <string name="home_removed">%1$s poistettu omista asemista</string>
+    <string name="action_undo">Kumoa</string>
 
     <!-- Search -->
     <string name="search_placeholder">Asema tai genre</string>

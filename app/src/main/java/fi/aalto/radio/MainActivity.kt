@@ -118,6 +118,7 @@ private fun AaltoApp() {
     val syncState by syncCoordinator.state.collectAsState()
     var showSettings by rememberSaveable { mutableStateOf(false) }
     var showAlarm by rememberSaveable { mutableStateOf(false) }
+    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
     var alarmSettings by remember { mutableStateOf(AlarmStore.load(context)) }
     var nextAlarmMillis by remember { mutableStateOf(AlarmScheduler.nextRingMillis(context)) }
     // Refresh the top bar label after an alarm has rung or a snooze ended.
@@ -323,6 +324,37 @@ private fun AaltoApp() {
         }
     }
 
+    /**
+     * Long press on the home screen removes an own station. Destructive, so
+     * it is undoable instead of asking for confirmation first.
+     */
+    fun removeOwnStation(station: RadioStation) {
+        val previousOrder = favoriteOrder
+        val previousIds = favoriteIds
+        favoriteIds = favoriteIds - station.id
+        coroutineScope.launch {
+            val removed = runCatching { repository.removeFavorite(station.id) }.getOrDefault(false)
+            if (!removed) {
+                favoriteIds = previousIds
+                return@launch
+            }
+            syncCoordinator.requestSync()
+            val result = snackbarHostState.showSnackbar(
+                message = context.getString(R.string.home_removed, station.name),
+                actionLabel = context.getString(R.string.action_undo),
+                duration = androidx.compose.material3.SnackbarDuration.Short
+            )
+            if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+                runCatching {
+                    repository.addFavorite(station.id)
+                    // Put it back where it was.
+                    repository.reorderFavorites(previousOrder)
+                }
+                syncCoordinator.requestSync()
+            }
+        }
+    }
+
     NightScreenSystemBars(active = nightScreenActive)
     BackHandler(enabled = nightScreenActive) {
         nightScreenActive = false
@@ -331,6 +363,7 @@ private fun AaltoApp() {
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
+            snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
             bottomBar = {
                 Column {
                     AnimatedVisibility(
@@ -372,6 +405,7 @@ private fun AaltoApp() {
                     onFind = { selectedTab = TAB_SEARCH },
                     onEditOwnStations = { selectedTab = TAB_FAVORITES },
                     onOpenAlarm = { showAlarm = true },
+                    onRemoveOwnStation = { station -> removeOwnStation(station) },
                     alarmLabel = nextAlarmMillis?.let(::alarmLabel),
                     onStationClick = { station ->
                         playStation(station, openNowPlaying = false)

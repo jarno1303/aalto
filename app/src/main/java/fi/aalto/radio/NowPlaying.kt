@@ -474,7 +474,8 @@ internal fun NowPlayingCard(
     modifier: Modifier = Modifier,
     onPrevious: (() -> Unit)? = null,
     onNext: (() -> Unit)? = null,
-    trackTitle: String? = null
+    trackTitle: String? = null,
+    expanded: Boolean = false
 ) {
     stationTrace("ui_current_state", station)
     val canSkip = onPrevious != null && onNext != null
@@ -496,7 +497,12 @@ internal fun NowPlayingCard(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 val logo: @Composable () -> Unit = {
-                    NowPlayingLogo(station = station, isPlaying = isPlaying, logoSize = 64.dp, showHalo = false)
+                    NowPlayingLogo(
+                        station = station,
+                        isPlaying = isPlaying,
+                        logoSize = if (expanded) 112.dp else 64.dp,
+                        showHalo = expanded
+                    )
                 }
                 if (canSkip) {
                     SwipeableStation(onPrevious = onPrevious!!, onNext = onNext!!, content = logo)
@@ -511,8 +517,8 @@ internal fun NowPlayingCard(
                         text = station.name,
                         color = MaterialTheme.colorScheme.onSurface,
                         style = MaterialTheme.typography.titleMedium,
-                        fontSize = 18.sp,
-                        maxLines = 1,
+                        fontSize = if (expanded) 24.sp else 18.sp,
+                        maxLines = if (expanded) 2 else 1,
                         overflow = TextOverflow.Ellipsis
                     )
                     Spacer(modifier = Modifier.height(2.dp))
@@ -606,7 +612,7 @@ internal fun NowPlayingCard(
                     NowPlayingPlayPauseButton(
                         isPlaying = isPlaying,
                         isConnecting = isConnecting,
-                        playSize = 56.dp,
+                        playSize = if (expanded) 72.dp else 56.dp,
                         onClick = onPlayPause
                     )
                     SkipButton(visible = canSkip, isNext = true, onClick = { onNext?.invoke() })

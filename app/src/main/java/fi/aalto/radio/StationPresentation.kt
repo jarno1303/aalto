@@ -344,6 +344,23 @@ internal val browsableCountryCodes = listOf(
  * The country chosen in the app's station browser. Remembered, so the car
  * screen shows popular stations from the same country as the phone.
  */
+/** Whether the own-stations list is shown on the home screen. Remembered. */
+internal object StationListPreference {
+    private const val PREFS = "aalto_home"
+    private const val KEY = "list_visible"
+
+    fun get(context: android.content.Context): Boolean =
+        context.applicationContext.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
+            .getBoolean(KEY, true)
+
+    fun set(context: android.content.Context, visible: Boolean) {
+        context.applicationContext.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY, visible)
+            .apply()
+    }
+}
+
 internal object RadioCountryPreference {
     private const val PREFS = "aalto_catalog"
     private const val KEY = "country"

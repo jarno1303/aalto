@@ -13,10 +13,28 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material3.Icon
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.lazy.grid.items as gridItems
@@ -53,7 +71,8 @@ internal fun RadioScreen(
     trackTitle: String? = null,
     onEditOwnStations: (() -> Unit)? = null,
     onOpenAlarm: (() -> Unit)? = null,
-    alarmLabel: String? = null
+    alarmLabel: String? = null,
+    onRemoveOwnStation: ((RadioStation) -> Unit)? = null
 ) {
     val showOwnStations = favoriteStations.isNotEmpty()
     val shelfStations = (if (showOwnStations) favoriteStations else popularStations)
@@ -151,6 +170,9 @@ internal fun RadioScreen(
             // Four or more tiles per row: at least two full rows stay visible.
             val columns = ((maxWidth + gridGap) / (84.dp + gridGap)).toInt().coerceIn(4, 7)
             val cellWidth = (maxWidth - gridGap * (columns - 1)) / columns
+            val context = LocalContext.current
+            var listVisible by rememberSaveable { mutableStateOf(StationListPreference.get(context)) }
+            val gridState = rememberLazyGridState()
 
             Column(
                 modifier = Modifier.fillMaxSize(),
@@ -170,12 +192,18 @@ internal fun RadioScreen(
                     onNightScreen = onNightScreen,
                     onPrevious = onPrevious,
                     onNext = onNext,
-                    trackTitle = trackTitle
+                    trackTitle = trackTitle,
+                    expanded = !listVisible
                 )
 
-                // Search lives in the bottom bar; the header only offers editing.
-                SectionHeader(
+                // The list can be folded away for a calm screen; the choice is remembered.
+                StationListHeader(
                     title = shelfTitle,
+                    listVisible = listVisible,
+                    onToggle = {
+                        listVisible = !listVisible
+                        StationListPreference.set(context, listVisible)
+                    },
                     action = if (showOwnStations && onEditOwnStations != null) {
                         stringResource(R.string.action_edit_own_stations)
                     } else {
@@ -184,34 +212,51 @@ internal fun RadioScreen(
                     onAction = if (showOwnStations) onEditOwnStations else null
                 )
 
-                if (!showOwnStations) {
-                    OwnStationsHint()
-                }
+                if (!listVisible) {
+                    Spacer(modifier = Modifier.weight(1f))
+                } else {
+                    if (!showOwnStations) {
+                        OwnStationsHint()
+                    }
 
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(columns),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentPadding = PaddingValues(top = AaltoSpaceXs, bottom = AaltoSpaceS),
-                    horizontalArrangement = Arrangement.spacedBy(gridGap),
-                    verticalArrangement = Arrangement.spacedBy(gridGap)
-                ) {
-                    gridItems(
-                        items = shelfStations,
-                        key = { it.stableId },
-                        contentType = { "station-card" }
-                    ) { station ->
-                        StationCard(
-                            station = station,
-                            isSelected = station.stableId == selectedStation.stableId,
-                            isPlaying = isPlaying,
-                            isFavorite = station.stableId in favoriteIds,
-                            onClick = { onStationClick(station) },
-                            onFavoriteClick = { onStationFavoriteClick(station) },
-                            width = cellWidth,
-                            showFavoriteButton = !showOwnStations
-                        )
+                    // Keep the playing station in view when the list opens.
+                    LaunchedEffect(listVisible, selectedStation.stableId, shelfStations.size) {
+                        val index = shelfStations.indexOfFirst { it.stableId == selectedStation.stableId }
+                        if (index >= 0) runCatching { gridState.animateScrollToItem(index) }
+                    }
+
+                    LazyVerticalGrid(
+                        state = gridState,
+                        columns = GridCells.Fixed(columns),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentPadding = PaddingValues(top = AaltoSpaceXs, bottom = AaltoSpaceS),
+                        horizontalArrangement = Arrangement.spacedBy(gridGap),
+                        verticalArrangement = Arrangement.spacedBy(gridGap)
+                    ) {
+                        gridItems(
+                            items = shelfStations,
+                            key = { it.stableId },
+                            contentType = { "station-card" }
+                        ) { station ->
+                            StationCard(
+                                station = station,
+                                isSelected = station.stableId == selectedStation.stableId,
+                                isPlaying = isPlaying,
+                                isFavorite = station.stableId in favoriteIds,
+                                onClick = { onStationClick(station) },
+                                onFavoriteClick = { onStationFavoriteClick(station) },
+                                width = cellWidth,
+                                showFavoriteButton = !showOwnStations,
+                                // Long press removes an own station (with undo).
+                                onLongClick = if (showOwnStations && onRemoveOwnStation != null) {
+                                    { onRemoveOwnStation(station) }
+                                } else {
+                                    null
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -227,4 +272,62 @@ private fun OwnStationsHint() {
         style = MaterialTheme.typography.bodySmall,
         modifier = Modifier.padding(start = AaltoSpaceXs)
     )
+}
+
+/** Header of the own-stations list, with a chevron that folds the list away. */
+@Composable
+private fun StationListHeader(
+    title: String,
+    listVisible: Boolean,
+    onToggle: () -> Unit,
+    action: String?,
+    onAction: (() -> Unit)?
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = AaltoSpaceXs),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .heightIn(min = 48.dp)
+                .clip(RoundedCornerShape(AaltoSpaceS))
+                .clickable(
+                    onClickLabel = stringResource(
+                        if (listVisible) R.string.home_hide_list else R.string.home_show_list
+                    ),
+                    role = Role.Button,
+                    onClick = onToggle
+                )
+                .padding(start = AaltoSpaceXs),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.titleMedium
+            )
+            Icon(
+                imageVector = if (listVisible) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 2.dp)
+            )
+        }
+        if (action != null && onAction != null) {
+            Box(
+                modifier = Modifier
+                    .heightIn(min = 48.dp)
+                    .clip(RoundedCornerShape(AaltoSpaceS))
+                    .clickable(onClickLabel = action, role = Role.Button, onClick = onAction)
+                    .padding(horizontal = AaltoSpaceS),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = action, color = AaltoBlue, style = MaterialTheme.typography.labelLarge)
+            }
+        }
+    }
 }

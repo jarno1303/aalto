@@ -1,10 +1,13 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!--
+        System bar colours are handled by enableEdgeToEdge() in MainActivity,
+        so they follow the light/dark theme automatically.
+        windowBackground matches the Compose background to avoid a flash on start.
+    -->
     <style name="Theme.Aalto" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:fontFamily">sans</item>
-        <item name="android:windowLightStatusBar">true</item>
-        <item name="android:statusBarColor">#F4F6F8</item>
-        <item name="android:navigationBarColor">#FFFFFF</item>
+        <item name="android:windowBackground">@color/aalto_window_background</item>
         <item name="android:windowActionModeOverlay">true</item>
     </style>
 </resources>

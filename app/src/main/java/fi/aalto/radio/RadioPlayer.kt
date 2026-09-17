@@ -37,6 +37,13 @@ class RadioPlayer(context: Context) : Player.Listener {
     var playbackError by mutableStateOf<String?>(null)
         private set
 
+    /**
+     * True from the moment a play command is issued until audio starts,
+     * the user pauses, or playback fails. Drives the "Yhdistetään…" state.
+     */
+    var isConnecting by mutableStateOf(false)
+        private set
+
     init {
         val sessionToken = SessionToken(
             appContext,
@@ -71,7 +78,8 @@ class RadioPlayer(context: Context) : Player.Listener {
                     }
                 } catch (_: Exception) {
                     isPlaying = false
-                    playbackError = "Toisto ei ole kaytettavissa."
+                    isConnecting = false
+                    playbackError = appContext.getString(R.string.playback_error_unavailable)
                 }
             },
             MoreExecutors.directExecutor()
@@ -104,6 +112,7 @@ class RadioPlayer(context: Context) : Player.Listener {
     ) {
         val currentController = controller
         playbackError = null
+        isConnecting = true
 
         if (currentController == null) {
             pendingStationId = stationId
@@ -139,6 +148,10 @@ class RadioPlayer(context: Context) : Player.Listener {
                 .build()
             currentController.setMediaItem(mediaItem)
             currentController.prepare()
+        } else if (currentController.playbackState == Player.STATE_IDLE) {
+            // Same stream after an error or stop: the player must be prepared again,
+            // otherwise play() does nothing and "retry" appears broken.
+            currentController.prepare()
         }
 
         AaltoPerf.reportPlaybackCommandIssued(
@@ -150,7 +163,26 @@ class RadioPlayer(context: Context) : Player.Listener {
     }
 
     fun toggle(station: RadioStation) {
-        toggle(station.streamUrl, station.name)
+        val currentController = controller
+
+        if (currentController == null) {
+            play(station)
+            return
+        }
+
+        val currentUrl = currentController.currentMediaItem
+            ?.localConfiguration
+            ?.uri
+            ?.toString()
+
+        // play(station) uses preferredStreamUrl, so the pause check must compare the same URL.
+        val isActive = currentController.isPlaying || isConnecting
+        if (isActive && currentUrl == station.preferredStreamUrl) {
+            currentController.pause()
+            isConnecting = false
+        } else {
+            play(station)
+        }
     }
 
     fun toggle(url: String, title: String? = null) {
@@ -169,6 +201,7 @@ class RadioPlayer(context: Context) : Player.Listener {
 
         if (currentController.isPlaying && currentUrl == url) {
             currentController.pause()
+            isConnecting = false
         } else {
             play(url, title)
         }
@@ -178,19 +211,28 @@ class RadioPlayer(context: Context) : Player.Listener {
         this.isPlaying = isPlaying
 
         if (isPlaying) {
+            isConnecting = false
             AaltoPerf.reportPlaybackStarted(activeTrace)
         }
     }
 
     override fun onPlaybackStateChanged(playbackState: Int) {
-        if (playbackState == Player.STATE_READY) {
-            AaltoPerf.reportPlayerReady(activeTrace)
+        when (playbackState) {
+            Player.STATE_BUFFERING -> {
+                if (controller?.playWhenReady == true) isConnecting = true
+            }
+            Player.STATE_READY -> {
+                AaltoPerf.reportPlayerReady(activeTrace)
+                if (controller?.playWhenReady != true) isConnecting = false
+            }
+            Player.STATE_IDLE, Player.STATE_ENDED -> isConnecting = false
         }
     }
 
     override fun onPlayerError(error: PlaybackException) {
         isPlaying = false
-        playbackError = "Toisto ei kaynnistynyt."
+        isConnecting = false
+        playbackError = appContext.getString(R.string.playback_error_start)
         AaltoPerf.reportPlayerError(activeTrace, error)
     }
 

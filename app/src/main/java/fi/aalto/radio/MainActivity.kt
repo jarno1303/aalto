@@ -9,6 +9,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -63,6 +64,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -71,6 +73,7 @@ import androidx.compose.material.icons.outlined.Radio
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
@@ -112,6 +115,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -141,6 +145,9 @@ private val AaltoDarkText = Color(0xFFF3F6F8)
 private val AaltoDarkMuted = Color(0xFF9BA6B2)
 private val AaltoDarkLogoSurface = Color(0xFF232A31)
 private val AaltoNightBlack = Color(0xFF000000)
+private val AaltoLightError = Color(0xFFC62828)
+private val AaltoDarkError = Color(0xFFFF8A80)
+private val AaltoNightError = Color(0xFFFFB8B8)
 private val AaltoSpaceXs = 4.dp
 private val AaltoSpaceS = 8.dp
 private val AaltoSpaceM = 12.dp
@@ -399,6 +406,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         AaltoPerf.markAppStart()
         super.onCreate(savedInstanceState)
+        // System bar icons follow the light/dark theme; content draws behind the bars.
+        enableEdgeToEdge()
         setContent {
             AaltoTheme {
                 AaltoApp()
@@ -610,10 +619,26 @@ private fun AaltoApp() {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
             bottomBar = {
-                AaltoBottomNavigation(
-                    selectedTab = selectedTab,
-                    onTabSelected = { selectedTab = it }
-                )
+                Column {
+                    AnimatedVisibility(
+                        visible = selectedTab != 0,
+                        enter = fadeIn(animationSpec = tween(durationMillis = 140)),
+                        exit = fadeOut(animationSpec = tween(durationMillis = 100))
+                    ) {
+                        MiniPlayer(
+                            station = selectedStation,
+                            isPlaying = radioPlayer.isPlaying,
+                            isConnecting = radioPlayer.isConnecting,
+                            hasError = radioPlayer.playbackError != null,
+                            onPlayPause = { radioPlayer.toggle(selectedStation) },
+                            onOpen = { selectedTab = 0 }
+                        )
+                    }
+                    AaltoBottomNavigation(
+                        selectedTab = selectedTab,
+                        onTabSelected = { selectedTab = it }
+                    )
+                }
             }
         ) { paddingValues ->
             when (selectedTab) {
@@ -621,10 +646,12 @@ private fun AaltoApp() {
                     paddingValues = paddingValues,
                     selectedStation = selectedStation,
                     isPlaying = radioPlayer.isPlaying,
+                    isConnecting = radioPlayer.isConnecting,
                     playbackError = radioPlayer.playbackError,
                     favoriteIds = favoriteIds,
                     stations = radioHomeStations,
                     onPlayPause = { radioPlayer.toggle(selectedStation) },
+                    onRetry = { playStation(selectedStation, openNowPlaying = false) },
                     onFavorite = { toggleFavorite(selectedStation) },
                     onFind = { selectedTab = 1 },
                     onStationClick = { station ->
@@ -653,7 +680,8 @@ private fun AaltoApp() {
                             station = station,
                             detail = "requestedId=${station.id} found=true"
                         )
-                        playStation(station, openNowPlaying = true)
+                        // Stay in search so the user can try several stations; the mini player shows what plays.
+                        playStation(station, openNowPlaying = false)
                     },
                     onStationFavoriteClick = ::toggleFavorite
                 )
@@ -663,7 +691,7 @@ private fun AaltoApp() {
                     favoriteStations = favoriteStations,
                     selectedStation = selectedStation,
                     onStationClick = { station ->
-                        playStation(station, openNowPlaying = true)
+                        playStation(station, openNowPlaying = false)
                     },
                     onStationFavoriteClick = ::toggleFavorite,
                     onReorder = { orderedIds ->
@@ -712,10 +740,12 @@ private fun RadioScreen(
     paddingValues: PaddingValues,
     selectedStation: RadioStation,
     isPlaying: Boolean,
+    isConnecting: Boolean,
     playbackError: String?,
     favoriteIds: Set<String>,
     stations: List<RadioStation>,
     onPlayPause: () -> Unit,
+    onRetry: () -> Unit,
     onFavorite: () -> Unit,
     onFind: () -> Unit,
     onStationClick: (RadioStation) -> Unit,
@@ -741,8 +771,10 @@ private fun RadioScreen(
             station = selectedStation,
             isPlaying = isPlaying,
             isFavorite = selectedStation.stableId in favoriteIds,
+            isConnecting = isConnecting,
             playbackError = playbackError,
             onPlayPause = onPlayPause,
+            onRetry = onRetry,
             onFavorite = onFavorite,
             onNightScreen = onNightScreen,
             modifier = Modifier
@@ -751,8 +783,8 @@ private fun RadioScreen(
         )
 
         SectionHeader(
-            title = "Suositut asemat",
-            action = "Hae",
+            title = stringResource(R.string.home_popular),
+            action = stringResource(R.string.tab_search),
             onAction = onFind
         )
 
@@ -842,7 +874,7 @@ private fun SearchScreen(
     ) {
         item {
             Text(
-                text = "Hae",
+                text = stringResource(R.string.tab_search),
                 color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 21.sp,
                 fontWeight = FontWeight.SemiBold
@@ -854,7 +886,7 @@ private fun SearchScreen(
                 value = searchQuery,
                 onValueChange = onSearchQueryChange,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Asema tai genre") },
+                placeholder = { Text(stringResource(R.string.search_placeholder)) },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
@@ -916,7 +948,7 @@ private fun SearchScreen(
         if (catalogLoading) {
             item {
                 Text(
-                    text = "Ladataan asemia...",
+                    text = stringResource(R.string.catalog_loading),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp
                 )
@@ -926,7 +958,7 @@ private fun SearchScreen(
         if (catalogError != null && catalogStations.isEmpty()) {
             item {
                 Text(
-                    text = "Katalogi ei ole saatavilla. Paikalliset asemat toimivat silti.",
+                    text = stringResource(R.string.catalog_unavailable),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp
                 )
@@ -953,7 +985,9 @@ private fun SearchScreen(
 
         item {
             Text(
-                text = if (searchQuery.isBlank() && categoryFilter == "Kaikki") "Asemat" else "Tulokset",
+                text = stringResource(
+                    if (searchQuery.isBlank() && categoryFilter == "Kaikki") R.string.search_stations else R.string.search_results
+                ),
                 color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -982,7 +1016,7 @@ private fun SearchScreen(
         if (resultStations.isEmpty()) {
             item {
                 Text(
-                    text = "Ei asemia tällä rajauksella",
+                    text = stringResource(R.string.search_no_results),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 13.sp,
                     modifier = Modifier.padding(vertical = AaltoSpaceL)
@@ -1139,7 +1173,7 @@ private fun FavoritesScreen(
     ) {
         item {
             Text(
-                text = "Suosikit",
+                text = stringResource(R.string.tab_favorites),
                 color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 21.sp,
                 fontWeight = FontWeight.SemiBold
@@ -1149,7 +1183,7 @@ private fun FavoritesScreen(
         if (favoriteStations.isEmpty()) {
             item {
                 Text(
-                    text = "Ei suosikkeja viela",
+                    text = stringResource(R.string.favorites_empty),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 13.sp,
                     modifier = Modifier.padding(start = AaltoSpaceXs, bottom = AaltoSpaceXs)
@@ -1300,19 +1334,19 @@ private fun AaltoBottomNavigation(
         ) {
             AaltoNavigationItem(
                 selected = selectedTab == 0,
-                label = "Radio",
+                label = stringResource(R.string.tab_radio),
                 icon = Icons.Outlined.Radio,
                 onClick = { onTabSelected(0) }
             )
             AaltoNavigationItem(
                 selected = selectedTab == 1,
-                label = "Hae",
+                label = stringResource(R.string.tab_search),
                 icon = Icons.Default.Search,
                 onClick = { onTabSelected(1) }
             )
             AaltoNavigationItem(
                 selected = selectedTab == 2,
-                label = "Suosikit",
+                label = stringResource(R.string.tab_favorites),
                 icon = Icons.Outlined.FavoriteBorder,
                 onClick = { onTabSelected(2) }
             )
@@ -1395,7 +1429,7 @@ private fun TopBar(onOpenSync: () -> Unit) {
         Spacer(modifier = Modifier.width(AaltoSpaceS))
 
         Text(
-            text = "Aalto",
+            text = stringResource(R.string.app_name),
             color = MaterialTheme.colorScheme.onSurface,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
@@ -1405,7 +1439,7 @@ private fun TopBar(onOpenSync: () -> Unit) {
         IconButton(onClick = onOpenSync) {
             Icon(
                 imageVector = Icons.Outlined.Settings,
-                contentDescription = "Aalto Sync",
+                contentDescription = stringResource(R.string.sync_title),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -1421,23 +1455,34 @@ private fun SyncSettingsDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Aalto Sync") },
+        title = { Text(stringResource(R.string.sync_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Keep your stations on all your devices.")
+                Text(stringResource(R.string.sync_body))
                 if (state.accountEmail != null) Text(state.accountEmail)
-                Text(state.error ?: state.status, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(syncStatusText(state), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
         confirmButton = {
             if (state.accountEmail == null) {
-                Button(onClick = onSignIn) { Text("Sign in with Google") }
+                Button(onClick = onSignIn) { Text(stringResource(R.string.sync_sign_in)) }
             } else {
-                TextButton(onClick = onSignOut) { Text("Sign out") }
+                TextButton(onClick = onSignOut) { Text(stringResource(R.string.sync_sign_out)) }
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Close") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.sync_close)) } }
     )
+}
+
+/** Maps the coordinator's internal (English) status values to user-facing Finnish text. */
+@Composable
+private fun syncStatusText(state: SyncUiState): String = when (state.status) {
+    "Connected" -> stringResource(R.string.sync_status_connected)
+    "Sync pending" -> stringResource(R.string.sync_status_pending)
+    "Sync problem" -> stringResource(R.string.sync_status_problem)
+    "Account mismatch" -> stringResource(R.string.sync_status_account_mismatch)
+    "Signed out" -> stringResource(R.string.sync_status_signed_out)
+    else -> state.status
 }
 
 @Composable
@@ -1477,11 +1522,13 @@ private fun NightScreen(
     onExit: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-    val playbackText = when {
-        playbackError != null -> "Toisto keskeytynyt"
-        isPlaying -> "Toistaa"
-        else -> "Tauko"
-    }
+    val playbackText = stringResource(
+        when {
+            playbackError != null -> R.string.night_state_error
+            isPlaying -> R.string.night_state_playing
+            else -> R.string.state_paused
+        }
+    )
 
     Box(
         modifier = Modifier
@@ -1490,7 +1537,7 @@ private fun NightScreen(
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
-                onClickLabel = "Palaa normaaliin näkymään",
+                onClickLabel = stringResource(R.string.night_screen_exit),
                 onClick = onExit
             )
             .statusBarsPadding()
@@ -1533,7 +1580,7 @@ private fun NightScreen(
                 color = if (playbackError == null) {
                     Color.White.copy(alpha = 0.36f)
                 } else {
-                    Color(0xFFFFB8B8).copy(alpha = 0.58f)
+                    AaltoNightError.copy(alpha = 0.58f)
                 },
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium
@@ -1639,8 +1686,10 @@ private fun NowPlaying(
     station: RadioStation,
     isPlaying: Boolean,
     isFavorite: Boolean,
+    isConnecting: Boolean,
     playbackError: String?,
     onPlayPause: () -> Unit,
+    onRetry: () -> Unit,
     onFavorite: () -> Unit,
     onNightScreen: () -> Unit,
     modifier: Modifier = Modifier
@@ -1666,9 +1715,9 @@ private fun NowPlaying(
                         Icons.Outlined.FavoriteBorder
                     },
                     contentDescription = if (isFavorite) {
-                        "Poista suosikeista"
+                        stringResource(R.string.favorite_remove)
                     } else {
-                        "Lisaa suosikki"
+                        stringResource(R.string.favorite_add)
                     },
                     tint = if (isFavorite) {
                         AaltoBlue
@@ -1716,24 +1765,39 @@ private fun NowPlaying(
                 Spacer(modifier = Modifier.height(AaltoSpaceS))
 
                 Text(
-                    text = when {
-                        playbackError != null -> "Häiriö"
-                        isPlaying -> "Nyt soi"
-                        else -> "Tauko"
-                    },
+                    text = playbackStateText(
+                        isPlaying = isPlaying,
+                        isConnecting = isConnecting,
+                        hasError = playbackError != null
+                    ),
                     color = when {
-                        playbackError != null -> Color(0xFFFFB8B8)
+                        playbackError != null -> MaterialTheme.colorScheme.error
                         else -> MaterialTheme.colorScheme.onSurfaceVariant
                     },
                     fontSize = 15.sp,
                     lineHeight = 18.sp,
-                    fontWeight = FontWeight.Light
+                    fontWeight = if (playbackError != null) FontWeight.Medium else FontWeight.Light
                 )
-
-                Spacer(modifier = Modifier.height(AaltoSpaceXxl))
-
+                if (playbackError != null) {
+                    TextButton(
+                        onClick = onRetry,
+                        modifier = Modifier.heightIn(min = 48.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Refresh,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(AaltoSpaceS))
+                        Text(stringResource(R.string.action_retry))
+                    }
+                    Spacer(modifier = Modifier.height(AaltoSpaceM))
+                } else {
+                    Spacer(modifier = Modifier.height(AaltoSpaceXxl))
+                }
                 NowPlayingPlayPauseButton(
                     isPlaying = isPlaying,
+                    isConnecting = isConnecting,
                     playSize = playSize,
                     onClick = onPlayPause
                 )
@@ -1824,9 +1888,12 @@ private fun NowPlayingLogo(
 @Composable
 private fun NowPlayingPlayPauseButton(
     isPlaying: Boolean,
+    isConnecting: Boolean,
     playSize: Dp,
     onClick: () -> Unit
 ) {
+    val showPause = isPlaying || isConnecting
+    val actionLabel = stringResource(if (showPause) R.string.action_pause else R.string.action_play)
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
@@ -1847,20 +1914,131 @@ private fun NowPlayingPlayPauseButton(
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
-                onClickLabel = if (isPlaying) "Tauko" else "Jatka",
+                onClickLabel = actionLabel,
                 role = Role.Button,
                 onClick = onClick
             ),
         contentAlignment = Alignment.Center
     ) {
+        if (isConnecting) {
+            CircularProgressIndicator(
+                color = Color.White.copy(alpha = 0.9f),
+                strokeWidth = 2.5.dp,
+                modifier = Modifier.size(playSize * 0.78f)
+            )
+        }
         Icon(
-            imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-            contentDescription = if (isPlaying) "Tauko" else "Jatka",
+            imageVector = if (showPause) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+            contentDescription = actionLabel,
             tint = Color.White,
             modifier = Modifier
-                .size(playSize * 0.5f)
-                .padding(start = if (isPlaying) 0.dp else 3.dp)
+                .size(if (isConnecting) playSize * 0.36f else playSize * 0.5f)
+                .padding(start = if (showPause) 0.dp else 3.dp)
         )
+    }
+}
+
+@Composable
+private fun playbackStateText(
+    isPlaying: Boolean,
+    isConnecting: Boolean,
+    hasError: Boolean
+): String = stringResource(
+    when {
+        hasError -> R.string.state_error
+        isConnecting -> R.string.state_connecting
+        isPlaying -> R.string.state_playing
+        else -> R.string.state_paused
+    }
+)
+
+/**
+ * Compact now-playing bar shown above the bottom navigation on Search and Favorites,
+ * so the user always sees what plays and can pause without leaving the list.
+ */
+@Composable
+private fun MiniPlayer(
+    station: RadioStation,
+    isPlaying: Boolean,
+    isConnecting: Boolean,
+    hasError: Boolean,
+    onPlayPause: () -> Unit,
+    onOpen: () -> Unit
+) {
+    val showPause = isPlaying || isConnecting
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(MaterialTheme.colorScheme.outline)
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(64.dp)
+                    .clickable(
+                        onClickLabel = stringResource(R.string.action_open_now_playing),
+                        onClick = onOpen
+                    )
+                    .padding(start = AaltoSpaceL, end = AaltoSpaceS),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                StationLogo(
+                    station = station,
+                    size = 40.dp,
+                    cornerRadius = 10.dp
+                )
+                Spacer(modifier = Modifier.width(AaltoSpaceM))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = station.name,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 15.sp,
+                        lineHeight = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = playbackStateText(isPlaying, isConnecting, hasError),
+                        color = if (hasError) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp,
+                        maxLines = 1
+                    )
+                }
+                Box(
+                    modifier = Modifier.size(48.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isConnecting) {
+                        CircularProgressIndicator(
+                            color = AaltoBlue,
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
+                    IconButton(onClick = onPlayPause) {
+                        Icon(
+                            imageVector = if (showPause) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                            contentDescription = stringResource(
+                                if (showPause) R.string.action_pause else R.string.action_play
+                            ),
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -1897,7 +2075,7 @@ private fun NightScreenTrigger(
     ) {
         Icon(
             imageVector = Icons.Outlined.DarkMode,
-            contentDescription = "Pimennä näyttö",
+            contentDescription = stringResource(R.string.night_screen_open),
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = iconAlpha),
             modifier = Modifier.size(22.dp)
         )
@@ -1966,7 +2144,7 @@ private fun StationCard(
             .width(104.dp)
             .height(164.dp)
             .clickable(
-                onClickLabel = "Toista ${station.name}",
+                onClickLabel = stringResource(R.string.action_play_station, station.name),
                 onClick = onClick
             ),
         shape = RoundedCornerShape(AaltoSurfaceRadius),
@@ -2011,7 +2189,7 @@ private fun StationCard(
                 ) {
                     Icon(
                         imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                        contentDescription = if (isFavorite) "Poista suosikeista" else "Lisaa suosikki",
+                        contentDescription = if (isFavorite) stringResource(R.string.favorite_remove) else stringResource(R.string.favorite_add),
                         tint = if (isFavorite) AaltoBlue else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp)
                     )
@@ -2075,7 +2253,7 @@ private fun StationRow(
                 scaleY = scale
             }
             .clickable(
-                onClickLabel = "Toista ${station.name}",
+                onClickLabel = stringResource(R.string.action_play_station, station.name),
                 onClick = onClick
             ),
         shape = if (isSelected || isDragging) {
@@ -2143,9 +2321,9 @@ private fun StationRow(
                         Icons.Outlined.FavoriteBorder
                     },
                     contentDescription = if (isFavorite) {
-                        "Poista suosikeista"
+                        stringResource(R.string.favorite_remove)
                     } else {
-                        "Lisaa suosikki"
+                        stringResource(R.string.favorite_add)
                     },
                     tint = if (isFavorite) {
                         AaltoBlue
@@ -2177,7 +2355,9 @@ private fun AaltoTheme(
                 onSurfaceVariant = AaltoDarkMuted,
                 outline = AaltoDarkLine,
                 primaryContainer = AaltoDarkSelectedSurface,
-                onPrimaryContainer = AaltoDarkText
+                onPrimaryContainer = AaltoDarkText,
+                error = AaltoDarkError,
+                onError = AaltoDarkBackground
             )
         } else {
             androidx.compose.material3.lightColorScheme(
@@ -2191,7 +2371,9 @@ private fun AaltoTheme(
                 onSurfaceVariant = AaltoLightMuted,
                 outline = AaltoLightLine,
                 primaryContainer = AaltoLightSelectedSurface,
-                onPrimaryContainer = AaltoLightText
+                onPrimaryContainer = AaltoLightText,
+                error = AaltoLightError,
+                onError = Color.White
             )
         },
         content = content

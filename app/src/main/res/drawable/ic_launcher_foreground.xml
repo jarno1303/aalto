@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Aalto: a signal dot with three radio waves. 108dp adaptive-icon canvas, glyph inside the 66dp safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M46,54m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0" />
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:pathData="M53.71,44.81A12,12 0,0 1,53.71 63.19" />
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:strokeAlpha="0.85"
+        android:pathData="M58.86,38.68A20,20 0,0 1,58.86 69.32" />
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:strokeAlpha="0.7"
+        android:pathData="M64,32.55A28,28 0,0 1,64 75.45" />
+</vector>

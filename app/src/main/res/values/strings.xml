@@ -1,3 +1,56 @@
-﻿<resources>
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
     <string name="app_name">Aalto</string>
+
+    <!-- Navigation -->
+    <string name="tab_radio">Radio</string>
+    <string name="tab_search">Hae</string>
+    <string name="tab_favorites">Suosikit</string>
+
+    <!-- Playback state -->
+    <string name="state_playing">Nyt soi</string>
+    <string name="state_paused">Tauko</string>
+    <string name="state_connecting">Yhdistetään…</string>
+    <string name="state_error">Asemaan ei saatu yhteyttä</string>
+    <string name="action_retry">Yritä uudelleen</string>
+    <string name="action_play">Toista</string>
+    <string name="action_pause">Tauko</string>
+    <string name="action_play_station">Toista %1$s</string>
+    <string name="action_open_now_playing">Avaa toistonäkymä</string>
+    <string name="playback_error_start">Asemaan ei saatu yhteyttä.</string>
+    <string name="playback_error_unavailable">Toisto ei ole käytettävissä.</string>
+
+    <!-- Favorites -->
+    <string name="favorite_add">Lisää suosikkeihin</string>
+    <string name="favorite_remove">Poista suosikeista</string>
+    <string name="favorites_empty">Ei suosikkeja vielä</string>
+
+    <!-- Home -->
+    <string name="home_popular">Suositut asemat</string>
+
+    <!-- Search -->
+    <string name="search_placeholder">Asema tai genre</string>
+    <string name="search_stations">Asemat</string>
+    <string name="search_results">Tulokset</string>
+    <string name="search_no_results">Ei asemia tällä rajauksella</string>
+    <string name="catalog_loading">Ladataan asemia…</string>
+    <string name="catalog_unavailable">Asemaluettelo ei ole nyt saatavilla. Omat asemasi toimivat silti.</string>
+
+    <!-- Night Screen -->
+    <string name="night_screen_open">Pimennä näyttö</string>
+    <string name="night_screen_exit">Palaa normaaliin näkymään</string>
+    <string name="night_state_playing">Toistaa</string>
+    <string name="night_state_error">Toisto keskeytynyt</string>
+
+    <!-- Sync -->
+    <string name="sync_title">Aalto Sync</string>
+    <string name="sync_body">Omat asemasi kaikilla laitteillasi.</string>
+    <string name="sync_sign_in">Kirjaudu Googlella</string>
+    <string name="sync_sign_out">Kirjaudu ulos</string>
+    <string name="sync_close">Sulje</string>
+    <string name="sync_status_signed_out">Ei kirjautunut</string>
+    <string name="sync_status_connected">Synkronoitu</string>
+    <string name="sync_status_pending">Synkronointi odottaa</string>
+    <string name="sync_status_problem">Synkronointi ei onnistunut. Yritetään myöhemmin uudelleen.</string>
+    <string name="sync_status_account_mismatch">Tämän laitteen asemat on liitetty toiseen Aalto-tiliin.</string>
 </resources>

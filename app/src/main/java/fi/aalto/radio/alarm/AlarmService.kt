@@ -247,10 +247,12 @@ class AlarmService : Service() {
         override fun run() {
             val exo = player ?: return
             val elapsed = SystemClock.elapsedRealtime() - radioStartedAt
-            val volume = (START_VOLUME + (1f - START_VOLUME) * elapsed / RAMP_MS.toFloat())
-                .coerceIn(START_VOLUME, 1f)
+            // Hearing is logarithmic: a linear gain ramp sounds almost full at
+            // once. Ramp in decibels instead, from -36 dB (very quiet) to 0 dB.
+            val progress = (elapsed / RAMP_MS.toFloat()).coerceIn(0f, 1f)
+            val volume = rampGain(progress)
             exo.volume = volume
-            if (volume < 1f) handler.postDelayed(this, 1_000L)
+            if (progress < 1f) handler.postDelayed(this, RAMP_STEP_MS)
         }
     }
 
@@ -431,9 +433,17 @@ class AlarmService : Service() {
         private const val RADIO_GIVE_UP_MS = 120_000L
         private const val RETRY_DELAY_MS = 4_000L
         private const val MAX_RETRIES = 20
-        private const val RAMP_MS = 30_000L
+        private const val RAMP_MS = 45_000L
+        private const val RAMP_STEP_MS = 250L
+        private const val RAMP_START_DB = -36f
+
+        /** Gain for ramp progress 0..1, linear in decibels. */
+        internal fun rampGain(progress: Float): Float {
+            val db = RAMP_START_DB * (1f - progress.coerceIn(0f, 1f))
+            return Math.pow(10.0, db / 20.0).toFloat().coerceIn(0f, 1f)
+        }
         private const val AUTO_STOP_MS = 30L * 60_000L
-        private const val START_VOLUME = 0.2f
+        private val START_VOLUME = rampGain(0f)
 
         internal fun serviceIntent(context: Context, action: String, requestCode: Int): PendingIntent =
             PendingIntent.getService(

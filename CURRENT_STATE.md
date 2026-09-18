@@ -126,3 +126,29 @@ normal playback, station switching, notification/widget controls, sleep timer, a
 fallback tone, volume), Android Auto (browse, search, queue, previous/next). Unit tests green.
 Treat this behavior as protected (AGENTS.md §27). Not pushed to origin yet.
 Next: Crashlytics, Play listing requirements, closed beta (10-20 users). Later: Chromecast, more curated countries.
+
+## Played songs / stream metadata (branch `ui-calm`, 2026-09-18)
+
+"Soitetut kappaleet" reads the stream's own ICY / ID3 announcements
+(`StreamTrack`), stores them through `TrackHistory` in Room (schema 6,
+`played_tracks`, newest 300 rows) and offers a Spotify / YouTube search link
+per row. Recording happens in `PlaybackService`, so it keeps working while the
+app is in the background.
+
+Why the song does not come from the player's combined `MediaMetadata`: the
+MediaItem's own title (the station name) takes precedence there, so the stream's
+announcement is never visible in it. The service therefore listens to
+`onMetadata` and hands the line to controllers in the session extras
+(`EXTRA_NOW_PLAYING_TRACK`).
+
+What stations actually deliver (measured 2026-09-18, logcat tag `AALTO_TRACK`):
+
+- **Kiss, Nova and other Bauer streams**: ICY works, but the title arrives only
+  at a song boundary. Connecting mid-song gives `title=""` plus a `StreamUrl`
+  ending in `eventdata/-1`, which is their "no current song" placeholder — that
+  API answers `invalid paramaters`, so it is no help. Waiting for the next song
+  is the only option, and it is correct behaviour, not a bug.
+- **Radio Rock (Nelonen, HLS)**: no metadata at all. Its TS segments produce
+  `PesReader: Unexpected start code prefix` every six seconds, i.e. an
+  unreadable stream where the timed metadata would be. No player can show the
+  song for it. Do not re-investigate.

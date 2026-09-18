@@ -161,7 +161,13 @@ class PlaybackService : MediaLibraryService() {
          * appears in it.
          */
         override fun onMetadata(metadata: androidx.media3.common.Metadata) {
-            val announcement = StreamTrack.from(metadata) ?: return
+            val announcement = StreamTrack.from(metadata)
+            if (announcement == null) {
+                // Something arrived but carried no song: worth seeing, because
+                // it separates "the station sends nothing" from "we drop it".
+                Log.d(TRACK_TAG, "no song in ${StreamTrack.describe(metadata)}")
+                return
+            }
             val item = sessionPlayer?.currentMediaItem ?: return
             val stationId = item.mediaId.takeIf { it.isNotBlank() } ?: return
             val stationName = item.mediaMetadata.title?.toString()

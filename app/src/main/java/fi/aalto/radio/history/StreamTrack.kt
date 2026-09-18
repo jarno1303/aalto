@@ -18,6 +18,12 @@ internal object StreamTrack {
 
     data class Announcement(val title: String?, val artist: String?)
 
+    /** What the stream sent, for the log, when nothing usable came out of it. */
+    fun describe(metadata: Metadata): String =
+        (0 until metadata.length()).joinToString(", ") { index ->
+            metadata.get(index).let { "${it.javaClass.simpleName}[$it]" }
+        }.ifBlank { "empty metadata" }
+
     fun from(metadata: Metadata): Announcement? {
         var title: String? = null
         var artist: String? = null

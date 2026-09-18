@@ -10,13 +10,13 @@ class StreamTrackTest {
 
     @Test
     fun `reads the icy stream title`() {
-        val metadata = Metadata(IcyInfo("Abba - Waterloo", "https://example.fi"))
+        val metadata = Metadata(icy("Abba - Waterloo"))
         assertEquals("Abba - Waterloo", StreamTrack.from(metadata)?.title)
     }
 
     @Test
     fun `ignores an empty icy title`() {
-        assertNull(StreamTrack.from(Metadata(IcyInfo("", "https://example.fi"))))
+        assertNull(StreamTrack.from(Metadata(icy(""))))
     }
 
     @Test
@@ -26,7 +26,7 @@ class StreamTrackTest {
 
     @Test
     fun `an icy title becomes a history line`() {
-        val metadata = Metadata(IcyInfo("Now Playing: Abba - Waterloo", "https://example.fi"))
+        val metadata = Metadata(icy("Now Playing: Abba - Waterloo"))
         val announcement = StreamTrack.from(metadata)
         val line = TrackTitle.format(
             title = announcement?.title,
@@ -36,4 +36,7 @@ class StreamTrackTest {
         )
         assertEquals("Abba - Waterloo", TrackTitle.forHistory(line, "Radio Nova"))
     }
+
+    /** Media3's IcyInfo carries the raw bytes first; the test only needs the title. */
+    private fun icy(title: String) = IcyInfo(ByteArray(0), title, "https://example.fi")
 }

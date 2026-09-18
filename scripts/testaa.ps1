@@ -46,12 +46,16 @@ if (-not (Test-Path $gradle)) {
 }
 
 function Invoke-Vaihe {
+    [OutputType([bool])]
     param([string]$Nimi, [string[]]$Argumentit)
 
     Write-Host ""
     Write-Host "== $Nimi ==" -ForegroundColor Cyan
     $alku = Get-Date
-    & $gradle @Argumentit --console=plain
+    # Out-Host on tarkea: ilman sita Gradlen tuloste menee funktion
+    # paluuarvoksi, jolloin kutsuja saa taysinaisen taulukon eika totuusarvoa
+    # - ja epaonnistunut vaihe nayttaa onnistuneelta.
+    & $gradle @Argumentit --console=plain | Out-Host
     $koodi = $LASTEXITCODE
     $kesto = [int]((Get-Date) - $alku).TotalSeconds
     if ($koodi -ne 0) {

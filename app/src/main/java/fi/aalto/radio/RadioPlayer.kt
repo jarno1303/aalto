@@ -2,6 +2,7 @@ package fi.aalto.radio
 
 import android.content.ComponentName
 import android.content.Context
+import android.os.Bundle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -11,7 +12,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
-import fi.aalto.radio.history.TrackTitle
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
@@ -67,6 +67,14 @@ class RadioPlayer(context: Context) : Player.Listener {
         )
 
         val future = MediaController.Builder(appContext, sessionToken)
+            // The song travels in the session extras, because the media
+            // metadata's title is the station name (PlaybackService).
+            .setListener(object : MediaController.Listener {
+                override fun onExtrasChanged(controller: MediaController, extras: Bundle) {
+                    nowPlayingTrack = extras.getString(PlaybackService.EXTRA_NOW_PLAYING_TRACK)
+                        ?.takeIf { it.isNotBlank() }
+                }
+            })
             .buildAsync()
 
         controllerFuture = future
@@ -79,6 +87,10 @@ class RadioPlayer(context: Context) : Player.Listener {
 
                     isPlaying = controller?.isPlaying == true
                     currentStationId = controller?.currentMediaItem?.mediaId
+                    // Whatever is already playing when the screen opens.
+                    nowPlayingTrack = controller?.sessionExtras
+                        ?.getString(PlaybackService.EXTRA_NOW_PLAYING_TRACK)
+                        ?.takeIf { it.isNotBlank() }
 
                     val queuedItem = pendingItem
                     if (queuedItem != null) {
@@ -281,24 +293,15 @@ class RadioPlayer(context: Context) : Player.Listener {
         }
     }
 
-    override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
-        nowPlayingTrack = trackText(mediaMetadata)
-    }
+    // Note: the song does not arrive here. A MediaController only ever sees
+    // the combined media metadata, where the MediaItem's own title (the
+    // station name) wins over the stream's announcement, so what is playing
+    // comes through the session extras instead.
+    override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) = Unit
 
     override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
         if (mediaItem?.mediaId != currentStationId) nowPlayingTrack = null
         currentStationId = mediaItem?.mediaId
-    }
-
-    // The same rules the history uses, so what is shown and what is stored agree.
-    private fun trackText(metadata: MediaMetadata): String? {
-        val staticMetadata = controller?.currentMediaItem?.mediaMetadata
-        return TrackTitle.format(
-            title = metadata.title?.toString(),
-            artist = metadata.artist?.toString(),
-            stationTitle = staticMetadata?.title?.toString()?.trim(),
-            stationDetails = staticMetadata?.artist?.toString()?.trim()
-        )
     }
 
     override fun onPlayerError(error: PlaybackException) {

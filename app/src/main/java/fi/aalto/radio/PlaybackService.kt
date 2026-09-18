@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
+import fi.aalto.radio.history.StreamTrack
 import fi.aalto.radio.history.TrackHistory
 import fi.aalto.radio.history.TrackTitle
 import fi.aalto.radio.playback.AaltoSessionPlayer
@@ -66,6 +67,10 @@ class PlaybackService : MediaLibraryService() {
     private val favoriteCommand = SessionCommand(ACTION_TOGGLE_FAVORITE, Bundle.EMPTY)
 
     private val searchResults = mutableMapOf<String, List<RadioStation>>()
+
+    /** The song the current station last announced, or null. */
+    @Volatile
+    private var currentTrack: String? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -135,6 +140,9 @@ class PlaybackService : MediaLibraryService() {
     private val widgetAndResumeListener = object : Player.Listener {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             mediaItem?.let { LastStationStore.save(this@PlaybackService, it) }
+            // A new station has not announced anything yet.
+            currentTrack = null
+            publishTrack(null)
             updateFavoriteButton()
             refreshWidget()
         }
@@ -144,9 +152,35 @@ class PlaybackService : MediaLibraryService() {
             if (isPlaying) recordRecent()
         }
 
-        override fun onMediaMetadataChanged(mediaMetadata: androidx.media3.common.MediaMetadata) {
+        override fun onMediaMetadataChanged(mediaMetadata: androidx.media3.common.MediaMetadata) = refreshWidget()
+
+        /**
+         * ICY and ID3 announcements from the stream itself. The player's
+         * combined MediaMetadata cannot be used for this: the MediaItem's own
+         * title (the station name) takes precedence there, so the song never
+         * appears in it.
+         */
+        override fun onMetadata(metadata: androidx.media3.common.Metadata) {
+            val announcement = StreamTrack.from(metadata) ?: return
+            val item = sessionPlayer?.currentMediaItem ?: return
+            val stationId = item.mediaId.takeIf { it.isNotBlank() } ?: return
+            val stationName = item.mediaMetadata.title?.toString()
+            val line = TrackTitle.format(
+                title = announcement.title,
+                artist = announcement.artist,
+                stationTitle = stationName,
+                stationDetails = item.mediaMetadata.artist?.toString()
+            )
+            Log.d(TRACK_TAG, "station=$stationName announced=$announcement line=$line")
+            if (line == currentTrack) return
+            currentTrack = line
+            publishTrack(line)
             refreshWidget()
-            recordTrack(mediaMetadata)
+            if (line != null) {
+                scope.launch {
+                    runCatching { TrackHistory.record(this@PlaybackService, stationId, stationName, line) }
+                }
+            }
         }
     }
 
@@ -213,22 +247,16 @@ class PlaybackService : MediaLibraryService() {
     }
 
     /**
-     * Stores what the station says is playing. Done here rather than in the UI
-     * so it keeps working while the app is in the background, which is where
-     * radio is listened to most of the time.
+     * Tells every controller (the app, and anything else connected) what is
+     * playing. Session extras, because the song cannot travel in the media
+     * metadata without taking the station name's place there.
      */
-    private fun recordTrack(metadata: androidx.media3.common.MediaMetadata) {
-        val item = sessionPlayer?.currentMediaItem ?: return
-        val stationId = item.mediaId.takeIf { it.isNotBlank() } ?: return
-        val stationName = item.mediaMetadata.title?.toString()
-        val line = TrackTitle.format(
-            title = metadata.title?.toString(),
-            artist = metadata.artist?.toString(),
-            stationTitle = stationName,
-            stationDetails = item.mediaMetadata.artist?.toString()
-        ) ?: return
-        scope.launch {
-            runCatching { TrackHistory.record(this@PlaybackService, stationId, stationName, line) }
+    private fun publishTrack(line: String?) {
+        val session = mediaSession ?: return
+        runCatching {
+            session.setSessionExtras(
+                Bundle().apply { if (line != null) putString(EXTRA_NOW_PLAYING_TRACK, line) }
+            )
         }
     }
 
@@ -237,7 +265,7 @@ class PlaybackService : MediaLibraryService() {
         val item = player.currentMediaItem
         val stationId = item?.mediaId
         val stationName = item?.mediaMetadata?.title?.toString()
-        val track = player.mediaMetadata.title?.toString()?.takeIf { it != stationName }
+        val track = currentTrack
         val playing = player.isPlaying
         scope.launch {
             val logo = if (stationId != null) {
@@ -471,14 +499,18 @@ class PlaybackService : MediaLibraryService() {
         return result
     }
 
-    private companion object {
-        const val TAG = "AALTO_AUTO"
-        const val ACTION_TOGGLE_FAVORITE = "fi.aalto.radio.TOGGLE_FAVORITE"
-        const val ROOT_ID = "aalto_root"
-        const val MINE_ID = "aalto_mine"
-        const val RECENT_ID = "aalto_recent"
-        const val POPULAR_ID = "aalto_popular"
-        const val COUNTRIES_ID = "aalto_countries"
-        const val COUNTRY_PREFIX = "aalto_country_"
+    companion object {
+        /** Session extra carrying "Artist – Title" to the controllers. */
+        const val EXTRA_NOW_PLAYING_TRACK = "fi.aalto.radio.NOW_PLAYING_TRACK"
+
+        private const val TRACK_TAG = "AALTO_TRACK"
+        private const val TAG = "AALTO_AUTO"
+        private const val ACTION_TOGGLE_FAVORITE = "fi.aalto.radio.TOGGLE_FAVORITE"
+        private const val ROOT_ID = "aalto_root"
+        private const val MINE_ID = "aalto_mine"
+        private const val RECENT_ID = "aalto_recent"
+        private const val POPULAR_ID = "aalto_popular"
+        private const val COUNTRIES_ID = "aalto_countries"
+        private const val COUNTRY_PREFIX = "aalto_country_"
     }
 }

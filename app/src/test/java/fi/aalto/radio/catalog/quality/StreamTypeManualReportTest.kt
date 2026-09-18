@@ -6,6 +6,9 @@ import fi.aalto.radio.catalog.radiobrowser.RadioBrowserCatalogSource
 import kotlinx.coroutines.runBlocking
 import org.junit.Assume
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /**
  * Answers one question before any work starts on rewinding live radio: how
@@ -23,6 +26,10 @@ import org.junit.Test
  * In PowerShell the -D argument has to be quoted, or AALTO_MANUAL=true can be
  * set in the environment instead.
  */
+// Robolectric, because the Radio Browser response is parsed with org.json,
+// which is a stub on a plain JVM unit test and yields an empty station list.
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
 class StreamTypeManualReportTest {
 
     @Test

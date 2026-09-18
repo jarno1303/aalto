@@ -5,8 +5,14 @@ import fi.aalto.radio.catalog.radiobrowser.RadioBrowserCatalogSource
 import kotlinx.coroutines.runBlocking
 import org.junit.Ignore
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 @Ignore("Manual real Radio Browser quality report; never part of the offline unit suite")
+// org.json is a stub without Robolectric, which turns every response into an error.
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
 class CatalogQualityManualReportTest {
     @Test
     fun reportsTopStationsForCandidateCountries() = runBlocking {

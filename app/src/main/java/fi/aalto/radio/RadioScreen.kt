@@ -141,6 +141,11 @@ internal fun RadioScreen(
         }
 
         if (landscape) {
+            // Read here, not inside Row: both scopes carry the same DSL marker,
+            // so the outer BoxWithConstraints receiver is hidden in there.
+            val paneWidth = (maxWidth - AaltoSpaceL) / 2
+            val paneColumns = ((paneWidth + gridGap) / (96.dp + gridGap)).toInt().coerceIn(2, 5)
+            val paneCellWidth = (paneWidth - gridGap * (paneColumns - 1)) / paneColumns
             Row(
                 modifier = Modifier.fillMaxSize(),
                 horizontalArrangement = Arrangement.spacedBy(AaltoSpaceL)
@@ -163,9 +168,6 @@ internal fun RadioScreen(
                     }
                 }
 
-                val paneWidth = (maxWidth - AaltoSpaceL) / 2
-                val columns = ((paneWidth + gridGap) / (96.dp + gridGap)).toInt().coerceIn(2, 5)
-                val cellWidth = (paneWidth - gridGap * (columns - 1)) / columns
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -193,8 +195,8 @@ internal fun RadioScreen(
                         isPlaying = isPlaying,
                         favoriteIds = favoriteIds,
                         showFavoriteButton = !showOwnStations,
-                        columns = columns,
-                        cellWidth = cellWidth,
+                        columns = paneColumns,
+                        cellWidth = paneCellWidth,
                         gap = gridGap,
                         state = gridState,
                         onStationClick = onStationClick,

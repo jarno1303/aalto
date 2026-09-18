@@ -51,3 +51,6 @@ AGENTS.backup-*.md
 
 # Local agent scratch
 .codex/
+
+# Epaonnistuneiden testiajojen lokit: paikallisia, ei versionhallintaan.
+testilokit/

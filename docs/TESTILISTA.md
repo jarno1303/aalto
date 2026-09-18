@@ -12,7 +12,12 @@ Kaikki tämän osion vaiheet yhdellä komennolla:
 ```
 
 Se kääntää, ajaa yksikkötestit, asentaa puhelimeen päivityksenä ja tulostaa
-lopuksi tämän listan otsikot. Pysähtyy ensimmäiseen virheeseen. Jos PowerShell
+lopuksi tämän listan otsikot. Pysähtyy ensimmäiseen virheeseen.
+
+Jos jokin vaihe kaatuu, koko tuloste tallentuu tiedostoon
+`testilokit\viimeisin.log`. Silloin riittää sanoa Claudelle **"testi kaatui"**
+— se lukee lokin itse. Onnistunut ajo ei jätä lokia, joten tiedoston olemassaolo
+tarkoittaa aina nykyistä ongelmaa. Jos PowerShell
 estää skriptin ajamisen, kerran istunnossa:
 `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`
 

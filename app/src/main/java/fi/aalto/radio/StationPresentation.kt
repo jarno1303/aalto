@@ -367,6 +367,51 @@ internal object HomeHintPreference {
  * Whether the "you seem to be in X" suggestion has been turned down for that
  * country. Asked once per country, never again.
  */
+/**
+ * The countries the user keeps an eye on, in the order they chose. Shown as
+ * chips in Search, so switching between them is one tap instead of a menu and
+ * a fresh search.
+ *
+ * Deliberately a list of countries rather than one merged list: merging by
+ * listener count would let a big market bury a small one, and a Finn looking
+ * for Finnish stations would find German ones.
+ */
+internal object OwnCountriesPreference {
+    private const val PREFS = "aalto_catalog"
+    private const val KEY = "own_countries"
+    const val MAX = 8
+
+    fun get(context: android.content.Context): List<String> {
+        val stored = context.applicationContext
+            .getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
+            .getString(KEY, null)
+            ?.split(',')
+            ?.map { it.trim().uppercase() }
+            ?.filter { it.matches(Regex("[A-Z]{2}")) }
+            ?.distinct()
+            .orEmpty()
+        // Nothing chosen yet: the country the phone is in is a good first one.
+        return stored.ifEmpty { listOf(RadioCountryPreference.get(context)) }
+    }
+
+    fun set(context: android.content.Context, countryCodes: List<String>) {
+        val cleaned = countryCodes
+            .map { it.trim().uppercase() }
+            .filter { it.matches(Regex("[A-Z]{2}")) }
+            .distinct()
+            .take(MAX)
+        context.applicationContext
+            .getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
+            .edit()
+            .putString(KEY, cleaned.joinToString(","))
+            .apply()
+    }
+
+    fun add(context: android.content.Context, countryCode: String) {
+        set(context, get(context) + countryCode)
+    }
+}
+
 internal object TravelSuggestion {
     private const val PREFS = "aalto_catalog"
     private const val KEY_PREFIX = "travel_declined_"

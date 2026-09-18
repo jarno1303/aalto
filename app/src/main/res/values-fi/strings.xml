@@ -174,4 +174,6 @@
     <string name="travel_hint">Näytät olevan maassa %1$s. Näytetäänkö sen asemat?</string>
     <string name="travel_hint_show">Näytä</string>
     <string name="travel_hint_decline">Ei nyt</string>
+    <string name="countries_title">Maat</string>
+    <string name="countries_edit">Maat</string>
 </resources>

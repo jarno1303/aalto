@@ -154,8 +154,18 @@ cd ..\extras\google\auto
 
 ## 7b. Kieli
 
-- [ ] Vaihda puhelimen kieleksi englanti (Asetukset -> Kieli): sovellus on
-      kokonaan englanniksi, ei yhtään suomenkielistä sanaa.
+Nopein tapa: sovelluskohtainen kieli adb:lla, jolloin puhelimen oma kieli ei
+muutu. Vaatii Android 13:n tai uudemman.
+
+```
+.\scripts\testaa.ps1 -Kieli en      # englanti
+.\scripts\testaa.ps1 -Kieli de      # saksa (pitaa nayttaa englantia)
+.\scripts\testaa.ps1 -Kieli fi      # suomi
+.\scripts\testaa.ps1 -Kieli system  # takaisin puhelimen kieleen
+```
+
+- [ ] Vaihda kieleksi englanti: sovellus on kokonaan englanniksi, ei yhtään
+      suomenkielistä sanaa.
 - [ ] Kellonajat: englanniksi 7:30, suomeksi 7.30. Sama herätyspaneelissa,
       rullassa, yläpalkissa ja ilmoituksissa.
 - [ ] Herätyksen päivälyhenteet ovat kielen mukaiset (ma/ti vs. Mon/Tue).

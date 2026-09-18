@@ -1030,6 +1030,35 @@ For currently verified Aalto behavior, especially protect:
 
 ---
 
+## 27b. PAYWALL BOUNDARY RULE
+
+Aalto Plus is additive only. Anything that is free today stays free forever:
+a paid feature is never created by taking something away.
+
+The boundary is specified in `docs/AALTO_PLUS.md`. Two rules bind the code:
+
+1. **One entitlement check per feature, at its entry point.** Never inside a
+   feature, never in a loop, never duplicated. If `isActive()` starts
+   appearing in scattered places, stop and move it back to the boundary.
+2. **The check fails open.** If billing is unreachable, a paying user keeps
+   access. Locking a paying customer out on a plane is worse than letting a
+   few free users in.
+
+The paywall must never touch:
+
+- the playback path (RadioPlayer, PlaybackService, AaltoSessionPlayer):
+  the radio never stops or refuses to play because of an entitlement,
+  not even when the entitlement check itself fails;
+- the alarm: it must ring and be dismissable whatever the entitlement says,
+  because an alarm is a promise, not a feature;
+- Android Auto and the widget: no purchase prompts in a car, ever;
+- Sync: the user's own stations are never locked to one device.
+
+An agent that finds itself adding an entitlement check inside any of those
+four has misread the task.
+
+---
+
 ## 28. AGENT EFFICIENCY / CODEX USAGE RULES
 
 Use reasoning budget on solving the problem, not repeatedly rediscovering the project.

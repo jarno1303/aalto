@@ -22,11 +22,17 @@
 .EXAMPLE
     .\scripts\testaa.ps1 -Verkkoraportit
     Ajaa myös ne manuaaliraportit, jotka kutsuvat oikeaa Radio Browseria.
+
+.EXAMPLE
+    .\scripts\testaa.ps1 -Kieli de
+    Asettaa sovellukselle saksan ja käynnistää sen uudelleen. Ei käännä eikä
+    asenna mitään. Puhelimen oma kieli ei muutu. Palautus: -Kieli system
 #>
 param(
     [switch]$Asenna,
     [switch]$Puhdas,
-    [switch]$Verkkoraportit
+    [switch]$Verkkoraportit,
+    [string]$Kieli
 )
 
 $ErrorActionPreference = "Stop"
@@ -55,6 +61,23 @@ function Invoke-Vaihe {
     }
     Write-Host "$Nimi OK ($kesto s)" -ForegroundColor Green
     return $true
+}
+
+# Sovelluskohtainen kieli: nopein tapa kokeilla kaannoksia ilman etta
+# puhelimen oma kieli vaihdetaan edestakaisin. Vaatii Android 13:n tai uudemman.
+if ($Kieli) {
+    $paketti = "fi.aalto.radio"
+    $arvo = if ($Kieli -eq "system" -or $Kieli -eq "oletus") { '""' } else { $Kieli }
+    Write-Host "Asetetaan sovelluksen kieleksi: $Kieli" -ForegroundColor Cyan
+    & adb shell cmd locale set-app-locales $paketti --locales $arvo
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "adb epaonnistui. Onko puhelin kiinni ja Android 13 tai uudempi?" -ForegroundColor Red
+        exit 1
+    }
+    & adb shell am force-stop $paketti | Out-Null
+    & adb shell monkey -p $paketti -c android.intent.category.LAUNCHER 1 2>&1 | Out-Null
+    Write-Host "Voimassa nyt: $(& adb shell cmd locale get-app-locales $paketti)" -ForegroundColor Green
+    exit 0
 }
 
 Write-Host "Aalto – testiajo" -ForegroundColor White

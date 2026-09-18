@@ -361,6 +361,26 @@ internal object StationListPreference {
     }
 }
 
+/**
+ * Whether the one-time "long press removes a station" hint has been seen.
+ * A hint that never goes away is noise, so it is shown once.
+ */
+internal object HomeHintPreference {
+    private const val PREFS = "aalto_home"
+    private const val KEY = "long_press_hint_seen"
+
+    fun seen(context: android.content.Context): Boolean =
+        context.applicationContext.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
+            .getBoolean(KEY, false)
+
+    fun markSeen(context: android.content.Context) {
+        context.applicationContext.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY, true)
+            .apply()
+    }
+}
+
 internal object RadioCountryPreference {
     private const val PREFS = "aalto_catalog"
     private const val KEY = "country"

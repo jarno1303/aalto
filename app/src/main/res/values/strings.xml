@@ -141,4 +141,8 @@
     <string name="sync_status_pending">Synkronointi odottaa</string>
     <string name="sync_status_problem">Synkronointi ei onnistunut. Yritetään myöhemmin uudelleen.</string>
     <string name="sync_status_account_mismatch">Tämän laitteen asemat on liitetty toiseen Aalto-tiliin.</string>
+    <!-- UI hints -->
+    <string name="alarm_advanced">Lisäasetukset</string>
+    <string name="home_hint_long_press">Vinkki: poista asema listalta pitkällä painalluksella.</string>
+    <string name="home_hint_dismiss">Selvä</string>
 </resources>

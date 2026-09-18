@@ -14,6 +14,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material3.Icon
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -73,6 +78,8 @@ internal fun AlarmSheet(
     val context = LocalContext.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var editingTime by remember { mutableStateOf(false) }
+    var editingSnooze by remember { mutableStateOf(false) }
+    var advancedOpen by rememberSaveable { mutableStateOf(false) }
 
     // Without a saved station the first own station is used.
     val selectedStation = stations.firstOrNull { it.id == settings.stationId } ?: stations.firstOrNull()
@@ -203,54 +210,6 @@ internal fun AlarmSheet(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            // Snooze length
-            Text(
-                text = stringResource(R.string.alarm_snooze_length),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(top = AaltoSpaceL)
-            )
-            Spacer(modifier = Modifier.height(AaltoSpaceXs))
-            Row(horizontalArrangement = Arrangement.spacedBy(AaltoSpaceS)) {
-                snoozeChoicesMinutes.forEach { minutes ->
-                    FilterChip(
-                        selected = settings.snoozeMinutes == minutes,
-                        onClick = {
-                            onChange(withStation(settings, selectedStation).copy(snoozeMinutes = minutes))
-                        },
-                        label = {
-                            Text(
-                                if (minutes == 0) {
-                                    stringResource(R.string.alarm_snooze_off)
-                                } else {
-                                    stringResource(R.string.sleep_timer_minutes, minutes)
-                                }
-                            )
-                        }
-                    )
-                }
-            }
-
-            // Loudness
-            Text(
-                text = stringResource(R.string.alarm_volume, settings.volumePercent),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(top = AaltoSpaceL)
-            )
-            Slider(
-                value = settings.volumePercent.toFloat(),
-                onValueChange = { value ->
-                    onChange(withStation(settings, selectedStation).copy(volumePercent = value.toInt()))
-                },
-                valueRange = 10f..100f,
-                steps = 8,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Text(
-                text = stringResource(R.string.alarm_volume_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
             // Station
             Text(
                 text = stringResource(R.string.alarm_station),
@@ -286,6 +245,89 @@ internal fun AlarmSheet(
                 }
             }
 
+            // Advanced: rarely changed, so folded away by default.
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+                    .padding(top = AaltoSpaceS)
+                    .clickable(role = Role.Button) { advancedOpen = !advancedOpen },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.alarm_advanced),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = if (advancedOpen) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            if (advancedOpen) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp)
+                        .clickable(role = Role.Button) { editingSnooze = true },
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.alarm_snooze_length),
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        text = if (settings.snoozeMinutes == 0) {
+                            stringResource(R.string.alarm_snooze_off)
+                        } else {
+                            stringResource(R.string.sleep_timer_minutes, settings.snoozeMinutes)
+                        },
+                        color = AaltoBlue
+                    )
+                }
+
+                Text(
+                    text = stringResource(R.string.alarm_volume, settings.volumePercent),
+                    modifier = Modifier.padding(top = AaltoSpaceS)
+                )
+                Slider(
+                    value = settings.volumePercent.toFloat(),
+                    onValueChange = { value ->
+                        onChange(withStation(settings, selectedStation).copy(volumePercent = value.toInt()))
+                    },
+                    valueRange = 10f..100f,
+                    steps = 8,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text(
+                    text = stringResource(R.string.alarm_volume_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                TextButton(
+                    onClick = onTest,
+                    enabled = selectedStation != null,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) { Text(stringResource(R.string.alarm_test_now)) }
+
+                if (log.isNotEmpty()) {
+                    Text(
+                        text = stringResource(R.string.alarm_log_title),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = AaltoSpaceS)
+                    )
+                    Text(
+                        text = log.takeLast(8).reversed().joinToString("\n"),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.height(AaltoSpaceL))
             Button(
                 onClick = onDismiss,
@@ -294,29 +336,30 @@ internal fun AlarmSheet(
                     .heightIn(min = 48.dp)
             ) { Text(stringResource(R.string.alarm_done)) }
 
-            // Secondary: try the sound
-            TextButton(
-                onClick = onTest,
-                enabled = selectedStation != null,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            ) { Text(stringResource(R.string.alarm_test_now)) }
-
-            // Troubleshooting log, debug builds only
-            if (log.isNotEmpty()) {
-                Text(
-                    text = stringResource(R.string.alarm_log_title),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = AaltoSpaceS)
-                )
-                Text(
-                    text = log.takeLast(8).reversed().joinToString("\n"),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
             Spacer(modifier = Modifier.height(AaltoSpaceL))
         }
+    }
+
+    if (editingSnooze) {
+        val options = snoozeChoicesMinutes.map { minutes ->
+            if (minutes == 0) {
+                stringResource(R.string.alarm_snooze_off)
+            } else {
+                stringResource(R.string.sleep_timer_minutes, minutes)
+            }
+        }
+        WheelChoiceDialog(
+            title = stringResource(R.string.alarm_snooze_length),
+            options = options,
+            selectedIndex = snoozeChoicesMinutes.indexOf(settings.snoozeMinutes).coerceAtLeast(0),
+            onConfirm = { index ->
+                editingSnooze = false
+                onChange(
+                    withStation(settings, selectedStation).copy(snoozeMinutes = snoozeChoicesMinutes[index])
+                )
+            },
+            onDismiss = { editingSnooze = false }
+        )
     }
 
     if (editingTime) {

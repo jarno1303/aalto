@@ -25,6 +25,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.material3.TextButton
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
@@ -172,6 +174,7 @@ internal fun RadioScreen(
             val cellWidth = (maxWidth - gridGap * (columns - 1)) / columns
             val context = LocalContext.current
             var listVisible by rememberSaveable { mutableStateOf(StationListPreference.get(context)) }
+            var hintSeen by rememberSaveable { mutableStateOf(HomeHintPreference.seen(context)) }
             val gridState = rememberLazyGridState()
 
             Column(
@@ -212,11 +215,23 @@ internal fun RadioScreen(
                     onAction = if (showOwnStations) onEditOwnStations else null
                 )
 
+                val canRemoveOwn = showOwnStations && onRemoveOwnStation != null
+
                 if (!listVisible) {
                     Spacer(modifier = Modifier.weight(1f))
                 } else {
                     if (!showOwnStations) {
                         OwnStationsHint()
+                    }
+
+                    // Shown once: long press is invisible until someone says so.
+                    if (canRemoveOwn && !hintSeen && shelfStations.size >= 2) {
+                        LongPressHint(
+                            onDismiss = {
+                                hintSeen = true
+                                HomeHintPreference.markSeen(context)
+                            }
+                        )
                     }
 
                     // Keep the playing station in view when the list opens.
@@ -250,8 +265,14 @@ internal fun RadioScreen(
                                 width = cellWidth,
                                 showFavoriteButton = !showOwnStations,
                                 // Long press removes an own station (with undo).
-                                onLongClick = if (showOwnStations && onRemoveOwnStation != null) {
-                                    { onRemoveOwnStation(station) }
+                                onLongClick = if (canRemoveOwn) {
+                                    {
+                                        if (!hintSeen) {
+                                            hintSeen = true
+                                            HomeHintPreference.markSeen(context)
+                                        }
+                                        onRemoveOwnStation?.invoke(station)
+                                    }
                                 } else {
                                     null
                                 }
@@ -260,6 +281,31 @@ internal fun RadioScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+/** One-time tip about removing a station by long press. Dismissible. */
+@Composable
+private fun LongPressHint(onDismiss: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = AaltoSpaceXs)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(horizontal = AaltoSpaceS, vertical = AaltoSpaceXs),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(AaltoSpaceXs)
+    ) {
+        Text(
+            text = stringResource(R.string.home_hint_long_press),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.weight(1f)
+        )
+        TextButton(onClick = onDismiss) {
+            Text(text = stringResource(R.string.home_hint_dismiss))
         }
     }
 }

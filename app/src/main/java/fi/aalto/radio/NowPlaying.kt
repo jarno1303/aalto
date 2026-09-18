@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -51,6 +50,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
@@ -63,8 +63,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.offset
 import androidx.compose.material.icons.outlined.Timer
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.setValue
@@ -404,16 +402,6 @@ internal fun NowPlayingPlayPauseButton(
 }
 
 @Composable
-private fun SelectedMark() {
-    Icon(
-        imageVector = Icons.Filled.Check,
-        contentDescription = null,
-        tint = AaltoBlue,
-        modifier = Modifier.size(18.dp)
-    )
-}
-
-@Composable
 internal fun NightScreenTrigger(
     onNightScreen: () -> Unit
 ) {
@@ -481,6 +469,27 @@ internal fun NowPlayingCard(
     val canSkip = onPrevious != null && onNext != null
     val sleepMinutes = rememberSleepTimerMinutes()
     val showTrack = trackTitle != null && isPlaying && playbackError == null
+    // Small screens and large system fonts get a slightly smaller card, so
+    // nothing is pushed off the edge or clipped.
+    val configuration = LocalConfiguration.current
+    val tight = configuration.screenWidthDp < 360 || configuration.fontScale > 1.3f
+    val sidePadding = if (tight) AaltoSpaceM else AaltoSpaceL
+    val logoSize = when {
+        expanded && tight -> 88.dp
+        expanded -> 112.dp
+        tight -> 56.dp
+        else -> 64.dp
+    }
+    val nameSize = when {
+        expanded && tight -> 20.sp
+        expanded -> 24.sp
+        else -> 18.sp
+    }
+    val playSize = when {
+        expanded && tight -> 64.dp
+        expanded -> 72.dp
+        else -> 56.dp
+    }
 
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -489,8 +498,8 @@ internal fun NowPlayingCard(
     ) {
         Column(
             modifier = Modifier.padding(
-                start = AaltoSpaceL,
-                end = AaltoSpaceL,
+                start = sidePadding,
+                end = sidePadding,
                 top = AaltoSpaceM,
                 bottom = AaltoSpaceS
             )
@@ -500,7 +509,7 @@ internal fun NowPlayingCard(
                     NowPlayingLogo(
                         station = station,
                         isPlaying = isPlaying,
-                        logoSize = if (expanded) 112.dp else 64.dp,
+                        logoSize = logoSize,
                         showHalo = expanded
                     )
                 }
@@ -510,14 +519,14 @@ internal fun NowPlayingCard(
                     logo()
                 }
 
-                Spacer(modifier = Modifier.width(AaltoSpaceM))
+                Spacer(modifier = Modifier.width(if (tight) AaltoSpaceS else AaltoSpaceM))
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = station.name,
                         color = MaterialTheme.colorScheme.onSurface,
                         style = MaterialTheme.typography.titleMedium,
-                        fontSize = if (expanded) 24.sp else 18.sp,
+                        fontSize = nameSize,
                         maxLines = if (expanded) 2 else 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -606,13 +615,13 @@ internal fun NowPlayingCard(
                 SleepTimerButton(active = sleepMinutes != null)
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(AaltoSpaceS)
+                    horizontalArrangement = Arrangement.spacedBy(if (tight) 0.dp else AaltoSpaceS)
                 ) {
                     SkipButton(visible = canSkip, isNext = false, onClick = { onPrevious?.invoke() })
                     NowPlayingPlayPauseButton(
                         isPlaying = isPlaying,
                         isConnecting = isConnecting,
-                        playSize = if (expanded) 72.dp else 56.dp,
+                        playSize = playSize,
                         onClick = onPlayPause
                     )
                     SkipButton(visible = canSkip, isNext = true, onClick = { onNext?.invoke() })
@@ -643,52 +652,41 @@ internal fun SleepTimerButton(
     tint: Color = MaterialTheme.colorScheme.onSurfaceVariant
 ) {
     val context = LocalContext.current
-    var menuOpen by remember { mutableStateOf(false) }
+    var pickerOpen by remember { mutableStateOf(false) }
 
-    Box {
-        IconButton(
-            onClick = { menuOpen = true },
-            modifier = Modifier.size(48.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Timer,
-                contentDescription = stringResource(R.string.sleep_timer),
-                tint = if (active) AaltoBlue else tint,
-                modifier = Modifier.size(24.dp)
-            )
-        }
-        DropdownMenu(
-            expanded = menuOpen,
-            onDismissRequest = { menuOpen = false }
-        ) {
-            Text(
-                text = stringResource(R.string.sleep_timer),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(horizontal = AaltoSpaceL, vertical = AaltoSpaceS)
-            )
-            // Always offered, so the timer can be switched off at any time.
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.sleep_timer_off)) },
-                trailingIcon = if (!active) { { SelectedMark() } } else null,
-                onClick = {
+    IconButton(
+        onClick = { pickerOpen = true },
+        modifier = Modifier.size(48.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.Timer,
+            contentDescription = stringResource(R.string.sleep_timer),
+            tint = if (active) AaltoBlue else tint,
+            modifier = Modifier.size(24.dp)
+        )
+    }
+
+    if (pickerOpen) {
+        // The same dial as the alarm time, so every time choice feels alike.
+        val options = listOf(stringResource(R.string.sleep_timer_off)) +
+            SleepTimer.choicesMinutes.map { stringResource(R.string.sleep_timer_minutes, it) }
+        val selectedIndex = SleepTimer.selectedMinutes
+            ?.let { SleepTimer.choicesMinutes.indexOf(it) + 1 }
+            ?.takeIf { it > 0 }
+            ?: 0
+        WheelChoiceDialog(
+            title = stringResource(R.string.sleep_timer),
+            options = options,
+            selectedIndex = selectedIndex,
+            onConfirm = { index ->
+                pickerOpen = false
+                if (index == 0) {
                     SleepTimer.cancel()
-                    menuOpen = false
+                } else {
+                    SleepTimer.start(context, SleepTimer.choicesMinutes[index - 1])
                 }
-            )
-            SleepTimer.choicesMinutes.forEach { minutes ->
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.sleep_timer_minutes, minutes)) },
-                    trailingIcon = if (active && SleepTimer.selectedMinutes == minutes) {
-                        { SelectedMark() }
-                    } else {
-                        null
-                    },
-                    onClick = {
-                        SleepTimer.start(context, minutes)
-                        menuOpen = false
-                    }
-                )
-            }
-        }
+            },
+            onDismiss = { pickerOpen = false }
+        )
     }
 }

@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -221,3 +222,147 @@ private fun Modifier.fadeEdges(): Modifier = this
             blendMode = BlendMode.DstIn
         )
     }
+
+
+/**
+ * The same dial for a short list of choices (snooze length, sleep timer).
+ * Does not wrap around, because the list has a first and a last item.
+ */
+@Composable
+internal fun WheelOptionPicker(
+    options: List<String>,
+    selectedIndex: Int,
+    onSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val state = rememberLazyListState(initialFirstVisibleItemIndex = selectedIndex.coerceAtLeast(0))
+    val flingBehavior = rememberSnapFlingBehavior(state)
+    val haptics = LocalHapticFeedback.current
+    val rowHeightPx = with(LocalDensity.current) { ROW_HEIGHT.toPx() }
+
+    LaunchedEffect(state, options.size) {
+        snapshotFlow {
+            val offsetRows = (state.firstVisibleItemScrollOffset / rowHeightPx).roundToInt()
+            (state.firstVisibleItemIndex + offsetRows).coerceIn(0, options.lastIndex)
+        }
+            .collect { index ->
+                if (index != selectedIndex) {
+                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onSelected(index)
+                }
+            }
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(ROW_HEIGHT * VISIBLE_ROWS),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(ROW_HEIGHT)
+                .padding(horizontal = 24.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = RoundedCornerShape(12.dp)
+                )
+        )
+        LazyColumn(
+            state = state,
+            flingBehavior = flingBehavior,
+            contentPadding = PaddingValues(vertical = ROW_HEIGHT * (VISIBLE_ROWS / 2)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(ROW_HEIGHT * VISIBLE_ROWS)
+                .fadeEdges()
+        ) {
+            items(options.size) { index ->
+                OptionRow(
+                    text = options[index],
+                    index = index,
+                    state = state,
+                    rowHeightPx = rowHeightPx
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun OptionRow(
+    text: String,
+    index: Int,
+    state: LazyListState,
+    rowHeightPx: Float
+) {
+    val distance by remember(index) {
+        androidx.compose.runtime.derivedStateOf {
+            val layout = state.layoutInfo
+            val item = layout.visibleItemsInfo.firstOrNull { it.index == index }
+            if (item == null) {
+                2f
+            } else {
+                val viewportCenter = (layout.viewportStartOffset + layout.viewportEndOffset) / 2f
+                abs(item.offset + rowHeightPx / 2f - viewportCenter) / rowHeightPx
+            }
+        }
+    }
+    val scale = (1f - distance * 0.16f).coerceIn(0.66f, 1f)
+    val alpha = (1f - distance * 0.34f).coerceIn(0.22f, 1f)
+
+    Box(
+        modifier = Modifier
+            .height(ROW_HEIGHT)
+            .fillMaxWidth(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            fontSize = 22.sp,
+            fontWeight = if (distance < 0.5f) FontWeight.SemiBold else FontWeight.Normal,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+                this.alpha = alpha
+            }
+        )
+    }
+}
+
+/** Dialog with one dial: used for snooze length and the sleep timer. */
+@Composable
+internal fun WheelChoiceDialog(
+    title: String,
+    options: List<String>,
+    selectedIndex: Int,
+    onConfirm: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var picked by androidx.compose.runtime.remember {
+        androidx.compose.runtime.mutableStateOf(selectedIndex.coerceAtLeast(0))
+    }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            WheelOptionPicker(
+                options = options,
+                selectedIndex = picked,
+                onSelected = { picked = it }
+            )
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = { onConfirm(picked) }) {
+                Text(stringResource(R.string.alarm_ok))
+            }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.alarm_cancel))
+            }
+        }
+    )
+}

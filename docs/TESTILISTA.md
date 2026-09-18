@@ -5,6 +5,19 @@ Merkitse jokaiseen kohtaan OK tai kirjoita, mitä tapahtui.
 
 ## 0. Käännös ja automaattitestit (10 min)
 
+Kaikki tämän osion vaiheet yhdellä komennolla:
+
+```
+.\scripts\testaa.ps1 -Asenna
+```
+
+Se kääntää, ajaa yksikkötestit, asentaa puhelimeen päivityksenä ja tulostaa
+lopuksi tämän listan otsikot. Pysähtyy ensimmäiseen virheeseen. Jos PowerShell
+estää skriptin ajamisen, kerran istunnossa:
+`Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`
+
+Käsin sama asia:
+
 1. Android Studio: **Build → Rebuild Project**. Ei virheitä.
 2. Terminal:
    ```

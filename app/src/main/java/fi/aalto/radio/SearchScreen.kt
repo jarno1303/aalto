@@ -25,6 +25,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Public
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,11 +50,8 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.Surface
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -70,6 +71,8 @@ internal fun SearchScreen(
     recentStations: List<RadioStation>,
     radioCountryCode: String,
     onRadioCountryChange: (String) -> Unit,
+    ownCountries: List<String>,
+    onEditCountries: () -> Unit,
     selectedStation: RadioStation,
     isPlaying: Boolean,
     favoriteIds: Set<String>,
@@ -79,9 +82,7 @@ internal fun SearchScreen(
     onStationClick: (RadioStation) -> Unit,
     onStationFavoriteClick: (RadioStation) -> Unit
 ) {
-    val screenContext = LocalContext.current
-    var ownCountries by remember { mutableStateOf(OwnCountriesPreference.get(screenContext)) }
-    var choosingCountries by remember { mutableStateOf(false) }
+    var countryMenuExpanded by remember { mutableStateOf(false) }
     var categoryFilter by rememberSaveable { mutableStateOf(ALL_CATEGORIES) }
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
@@ -99,7 +100,7 @@ internal fun SearchScreen(
     val activeCountryCode = radioCountryCode.takeIf { it in countryCodes } ?: countryCodes.firstOrNull().orEmpty()
     // The playing country is always visible as a chip, even when it is not one
     // of the user's own (chosen in the car, or accepted from the travel bar).
-    val chipCountries = (ownCountries + activeCountryCode)
+    val menuCountries = (ownCountries + activeCountryCode)
         .filter { it.isNotBlank() }
         .distinct()
     val activeCategory = DiscoveryCategories.firstOrNull { it.label == categoryFilter }
@@ -206,43 +207,53 @@ internal fun SearchScreen(
             }
         }
 
-        // One tap per country instead of a menu and a fresh search.
+        // The browsing screen stays as it was: one country line. Which
+        // countries are on offer is chosen once, in Settings.
         item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(AaltoSpaceS),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                chipCountries.forEach { countryCode ->
-                    FilterChip(
-                        selected = countryCode == activeCountryCode,
+            Box {
+                TextButton(onClick = { countryMenuExpanded = true }) {
+                    Icon(
+                        imageVector = Icons.Outlined.Public,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(AaltoSpaceS))
+                    Text(
+                        text = stringResource(R.string.search_country, countryName(activeCountryCode)),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                    Icon(
+                        imageVector = Icons.Filled.KeyboardArrowDown,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                DropdownMenu(
+                    expanded = countryMenuExpanded,
+                    onDismissRequest = { countryMenuExpanded = false }
+                ) {
+                    menuCountries.forEach { countryCode ->
+                        DropdownMenuItem(
+                            text = { Text(countryName(countryCode)) },
+                            onClick = {
+                                onRadioCountryChange(countryCode)
+                                countryMenuExpanded = false
+                                hideKeyboard()
+                            }
+                        )
+                    }
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.countries_edit)) },
                         onClick = {
-                            onRadioCountryChange(countryCode)
-                            hideKeyboard()
-                        },
-                        label = {
-                            Text(
-                                text = countryName(countryCode),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                            countryMenuExpanded = false
+                            onEditCountries()
                         }
                     )
                 }
-                FilterChip(
-                    selected = false,
-                    onClick = { choosingCountries = true },
-                    label = { Text(stringResource(R.string.countries_edit), maxLines = 1) },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Outlined.Public,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                )
             }
         }
 
@@ -331,21 +342,6 @@ internal fun SearchScreen(
             }
         }
     }
-
-    if (choosingCountries) {
-        CountryPickerDialog(
-            selected = ownCountries,
-            onSelectedChange = { updated ->
-                ownCountries = updated
-                OwnCountriesPreference.set(screenContext, updated)
-                // A country that is no longer on the list should not stay open.
-                if (activeCountryCode !in updated) {
-                    updated.firstOrNull()?.let(onRadioCountryChange)
-                }
-            },
-            onDismiss = { choosingCountries = false }
-        )
-    }
 }
 
 @Composable
@@ -425,56 +421,4 @@ private fun TravelSuggestionRow(
             }
         }
     }
-}
-
-/**
- * Which countries get a chip. A plain list of checkboxes: nothing is merged,
- * so each country keeps its own most-listened order.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun CountryPickerDialog(
-    selected: List<String>,
-    onSelectedChange: (List<String>) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val codes = remember(selected) {
-        (selected + browsableCountryCodes).distinct()
-    }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.countries_title)) },
-        text = {
-            LazyColumn(modifier = Modifier.heightIn(max = 420.dp)) {
-                items(items = codes, key = { it }) { code ->
-                    val isOn = code in selected
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 48.dp)
-                            .clickable(role = Role.Checkbox) {
-                                val updated = if (isOn) selected - code else selected + code
-                                // At least one country, or the row would be empty.
-                                if (updated.isNotEmpty()) onSelectedChange(updated)
-                            },
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(checked = isOn, onCheckedChange = null)
-                        Spacer(modifier = Modifier.width(AaltoSpaceS))
-                        Text(
-                            text = countryName(code),
-                            style = MaterialTheme.typography.bodyLarge,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.alarm_done))
-            }
-        }
-    )
 }

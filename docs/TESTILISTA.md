@@ -191,10 +191,10 @@ muutu. Vaatii Android 13:n tai uudemman.
 
 ## 7d. Omat maat
 
-- [ ] Haussa on sirurivi, jossa oma maa on valmiina ja korostettuna.
-- [ ] Maat-siru avaa listan, josta voi valita useita maita.
-- [ ] Valitut maat ilmestyvät siruriviin, ja yksi napautus vaihtaa maan
-      ilman valikkoa tai uutta hakua.
+- [ ] Hakunäkymä näyttää samalta kuin ennen: yksi maarivi, ei sirurivejä.
+- [ ] Asetuksissa on Maat-rivi, joka avaa monivalinnan.
+- [ ] Valitut maat näkyvät maarivin valikossa, ja vaihto on yksi napautus.
+- [ ] Valikon lopussa on "Muokkaa maita…", joka avaa saman monivalinnan.
 - [ ] Jokainen maa näyttää omat kuunnelluimpansa: pieni maa ei huku isoon.
 - [ ] Valinnat säilyvät sovelluksen uudelleenkäynnistyksen yli.
 - [ ] Viimeistä maata ei voi ottaa pois (rivi ei saa jäädä tyhjäksi).

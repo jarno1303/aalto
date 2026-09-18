@@ -183,5 +183,5 @@
     <string name="travel_hint_show">Show</string>
     <string name="travel_hint_decline">Not now</string>
     <string name="countries_title">Countries</string>
-    <string name="countries_edit">Countries</string>
+    <string name="countries_edit">Edit countries…</string>
 </resources>

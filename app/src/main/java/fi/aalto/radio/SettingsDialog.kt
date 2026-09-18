@@ -39,6 +39,7 @@ internal fun SettingsDialog(
     onSignOut: () -> Unit,
     onOpenAudio: () -> Unit,
     onOpenLanguage: (() -> Unit)?,
+    onOpenCountries: () -> Unit,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
@@ -46,6 +47,26 @@ internal fun SettingsDialog(
         title = { Text(stringResource(R.string.settings_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(AaltoSpaceM)) {
+                // What someone looks for first when the app is in a language
+                // they cannot read: put it at the top, not in the middle.
+                if (onOpenLanguage != null) {
+                    SettingsRow(
+                        title = stringResource(R.string.language_title),
+                        action = stringResource(R.string.language_open),
+                        onClick = onOpenLanguage
+                    )
+                }
+                SettingsRow(
+                    title = stringResource(R.string.countries_title),
+                    action = stringResource(R.string.audio_open),
+                    onClick = onOpenCountries
+                )
+
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.padding(vertical = AaltoSpaceXs)
+                )
+
                 SettingsSectionTitle(stringResource(R.string.theme_title))
                 // A flow row, not a plain row: in a plain row the long first
                 // label eats the width and "Tumma" wraps onto three lines.
@@ -64,56 +85,12 @@ internal fun SettingsDialog(
                     modifier = Modifier.padding(vertical = AaltoSpaceXs)
                 )
 
-                // Android 13+ keeps per-app language in its own settings; we
-                // only open the door, so there is no screen of our own before
-                // the radio plays.
-                if (onOpenLanguage != null) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 48.dp)
-                            .clickable(role = Role.Button, onClick = onOpenLanguage),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = stringResource(R.string.language_title),
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Text(
-                            text = stringResource(R.string.language_open),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = AaltoBlue,
-                            maxLines = 1
-                        )
-                    }
-
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.padding(vertical = AaltoSpaceXs)
-                    )
-                }
-
                 SettingsSectionTitle(stringResource(R.string.audio_title))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 48.dp)
-                        .clickable(role = Role.Button, onClick = onOpenAudio),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(R.string.audio_settings_row),
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Text(
-                        text = stringResource(R.string.audio_open),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = AaltoBlue,
-                        maxLines = 1
-                    )
-                }
+                SettingsRow(
+                    title = stringResource(R.string.audio_settings_row),
+                    action = stringResource(R.string.audio_open),
+                    onClick = onOpenAudio
+                )
 
                 HorizontalDivider(
                     color = MaterialTheme.colorScheme.outline,
@@ -192,4 +169,30 @@ internal fun syncStatusText(state: SyncUiState): String = when (state.status) {
     "Account mismatch" -> stringResource(R.string.sync_status_account_mismatch)
     "Signed out" -> stringResource(R.string.sync_status_signed_out)
     else -> state.status
+}
+
+/** One settings line: what it is on the left, what tapping does on the right. */
+@Composable
+private fun SettingsRow(title: String, action: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .clickable(role = Role.Button, onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = action,
+            style = MaterialTheme.typography.labelLarge,
+            color = AaltoBlue,
+            maxLines = 1
+        )
+    }
 }

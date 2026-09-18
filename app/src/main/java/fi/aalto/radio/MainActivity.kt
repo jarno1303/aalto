@@ -116,6 +116,8 @@ private fun AaltoApp() {
     var showAlarm by rememberSaveable { mutableStateOf(false) }
     var showHistory by rememberSaveable { mutableStateOf(false) }
     var showAudio by rememberSaveable { mutableStateOf(false) }
+    var showCountries by rememberSaveable { mutableStateOf(false) }
+    var ownCountries by remember { mutableStateOf(OwnCountriesPreference.get(context)) }
     val trackHistory = rememberTrackHistory()
     val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
     var alarmSettings by remember { mutableStateOf(AlarmStore.load(context)) }
@@ -428,6 +430,8 @@ private fun AaltoApp() {
                     stations = stations,
                     recentStations = recentStations,
                     radioCountryCode = radioCountryCode,
+                    ownCountries = ownCountries,
+                    onEditCountries = { showCountries = true },
                     onRadioCountryChange = {
                         radioCountryCode = it
                         RadioCountryPreference.set(context, it)
@@ -515,6 +519,24 @@ private fun AaltoApp() {
             onSnooze = { AlarmService.send(context, AlarmService.ACTION_SNOOZE) },
             onContinue = { AlarmService.send(context, AlarmService.ACTION_CONTINUE) },
             onDismiss = { AlarmService.send(context, AlarmService.ACTION_DISMISS) }
+        )
+    }
+
+    if (showCountries) {
+        CountryPickerDialog(
+            selected = ownCountries,
+            onSelectedChange = { updated ->
+                ownCountries = updated
+                OwnCountriesPreference.set(context, updated)
+                // A country that is no longer followed should not stay open.
+                if (radioCountryCode !in updated) {
+                    updated.firstOrNull()?.let { code ->
+                        RadioCountryPreference.set(context, code)
+                        radioCountryCode = code
+                    }
+                }
+            },
+            onDismiss = { showCountries = false }
         )
     }
 
@@ -639,6 +661,10 @@ private fun AaltoApp() {
             onOpenAudio = {
                 showSettings = false
                 showAudio = true
+            },
+            onOpenCountries = {
+                showSettings = false
+                showCountries = true
             },
             onOpenLanguage = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 {

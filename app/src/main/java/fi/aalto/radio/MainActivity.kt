@@ -15,6 +15,7 @@ import fi.aalto.radio.alarm.AlarmLog
 import fi.aalto.radio.alarm.AlarmScheduler
 import fi.aalto.radio.alarm.AlarmService
 import fi.aalto.radio.alarm.AlarmStore
+import fi.aalto.radio.alarm.rememberNotificationsEnabled
 import fi.aalto.radio.alarm.finnishDayShort
 import fi.aalto.radio.alarm.formatClock
 import java.time.Instant
@@ -121,9 +122,12 @@ private fun AaltoApp() {
             nextAlarmMillis = AlarmScheduler.nextRingMillis(context)
         }
     }
+    // The alarm rings either way; the permission only makes its screen visible.
+    // The state is followed so the warning goes the moment permission is given.
+    val notifications = rememberNotificationsEnabled()
     val notificationPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { /* The alarm rings either way; the permission only makes its screen visible. */ }
+    ) { notifications.refresh() }
     // Saveable so the Night Screen survives rotation (e.g. mounting the phone in a car holder).
     var nightScreenActive by rememberSaveable { mutableStateOf(false) }
     var catalogStations by remember { mutableStateOf<List<CatalogStation>>(emptyList()) }
@@ -521,8 +525,7 @@ private fun AaltoApp() {
             nextRingMillis = nextAlarmMillis,
             stations = alarmStations,
             log = if (isDebugBuild) AlarmLog.read(context) else emptyList(),
-            notificationsEnabled = androidx.core.app.NotificationManagerCompat.from(context)
-                .areNotificationsEnabled(),
+            notificationsEnabled = notifications.enabled,
             onEnableNotifications = {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                     ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=

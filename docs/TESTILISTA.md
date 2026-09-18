@@ -58,7 +58,9 @@ Jos 1 tai 2 epäonnistuu, älä jatka: korjaa ensin.
 - [ ] Herätyspaneeli aukeaa yläpalkin kellosta.
 - [ ] Aika valitaan rullilla; kytkin, päivät, torkku ja äänenvoimakkuus tallentuvat heti.
 - [ ] Päälle kytkiessä tulee viesti "Herätys soi X t Y min kuluttua".
-- [ ] Jos paneelissa näkyy varoitus ilmoituksista, salli ne.
+- [ ] Jos paneelissa näkyy punainen varoitus ilmoituksista, salli ne: varoituksen
+      pitää kadota heti luvan myöntämisen jälkeen, ilman että paneelin sulkee.
+- [ ] Sama myös silloin kun luvan antaa järjestelmän asetuksista ja palaa Aaltoon.
 - [ ] **Kokeile ääntä**: valittu kanava soi, ääni nousee vähitellen, Torkku ja Lopeta toimivat.
 - [ ] Laita puhelimen hälytysääni hiljaiseksi ja kokeile uudelleen: ääni nousee kuuluvaksi ja palautuu jälkeenpäin.
 - [ ] Aseta herätys 3 min päähän, lukitse puhelin: lukitusnäytölle aukeaa herätysnäkymä.

@@ -6,6 +6,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -484,9 +485,25 @@ internal fun StationLogo(
         null
     }
 
+    // A station change turns the tile round, like a card turning to face you.
+    // Defined here, so the small player, the big card and the tiles all do the
+    // same thing; a tile whose station never changes never turns.
+    val turn = remember { Animatable(0f) }
+    var shownStation by remember { mutableStateOf(station.stableId) }
+    LaunchedEffect(station.stableId) {
+        if (shownStation == station.stableId) return@LaunchedEffect
+        shownStation = station.stableId
+        turn.snapTo(-90f)
+        turn.animateTo(0f, animationSpec = tween(durationMillis = 300))
+    }
+
     Box(
         modifier = Modifier
             .size(size)
+            .graphicsLayer {
+                rotationY = turn.value
+                cameraDistance = 12f * density
+            }
             .clip(shape)
             .background(logoSurfaceColor)
             .then(

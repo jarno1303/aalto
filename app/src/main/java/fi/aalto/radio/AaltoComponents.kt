@@ -165,7 +165,9 @@ internal fun RowScope.AaltoNavigationItem(
             text = label,
             color = contentColor,
             style = MaterialTheme.typography.labelSmall,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
@@ -207,13 +209,16 @@ internal fun TopBar(
             text = stringResource(R.string.app_name),
             color = MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.titleMedium,
-            fontSize = 18.sp
+            fontSize = 18.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
 
         Spacer(modifier = Modifier.weight(1f))
 
         if (onOpenAlarm != null) {
-            // Shows the next wake-up time when one is set.
+            // Shows the next wake-up time when one is set. Unweighted, so it
+            // takes the width it needs and the spacer gives way, not the label.
             Row(
                 modifier = Modifier
                     .heightIn(min = 48.dp)
@@ -236,7 +241,9 @@ internal fun TopBar(
                     Text(
                         text = alarmLabel,
                         color = AaltoBlue,
-                        style = MaterialTheme.typography.labelLarge
+                        style = MaterialTheme.typography.labelLarge,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
@@ -273,7 +280,10 @@ internal fun SectionHeader(
         Text(
             text = title,
             color = MaterialTheme.colorScheme.onSurface,
-            style = MaterialTheme.typography.titleMedium
+            style = MaterialTheme.typography.titleMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false)
         )
         if (action != null && onAction != null) {
             Box(
@@ -291,7 +301,8 @@ internal fun SectionHeader(
                 Text(
                     text = action,
                     color = AaltoBlue,
-                    style = MaterialTheme.typography.labelLarge
+                    style = MaterialTheme.typography.labelLarge,
+                    maxLines = 1
                 )
             }
         }

@@ -16,6 +16,8 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.SystemClock
+import android.view.View
+import android.widget.RemoteViews
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -387,6 +389,43 @@ class AlarmService : Service() {
         )
     }
 
+    /**
+     * The alarm notification's own content. Full-width rows, so every label
+     * fits whatever the screen width and the system font size are.
+     */
+    private fun alarmViews(expanded: Boolean): RemoteViews {
+        val layout = if (expanded) {
+            R.layout.notification_alarm_expanded
+        } else {
+            R.layout.notification_alarm
+        }
+        val views = RemoteViews(packageName, layout)
+        views.setTextViewText(
+            R.id.alarm_notification_station,
+            settings.stationName ?: getString(R.string.alarm_title)
+        )
+        if (expanded) {
+            if (settings.snoozeMinutes > 0) {
+                views.setViewVisibility(R.id.alarm_action_snooze, View.VISIBLE)
+                views.setOnClickPendingIntent(
+                    R.id.alarm_action_snooze,
+                    serviceIntent(this, ACTION_SNOOZE, 1)
+                )
+            } else {
+                views.setViewVisibility(R.id.alarm_action_snooze, View.GONE)
+            }
+            views.setOnClickPendingIntent(
+                R.id.alarm_action_continue,
+                serviceIntent(this, ACTION_CONTINUE, 3)
+            )
+            views.setOnClickPendingIntent(
+                R.id.alarm_action_dismiss,
+                serviceIntent(this, ACTION_DISMISS, 2)
+            )
+        }
+        return views
+    }
+
     private fun buildNotification(): Notification {
         val manager = getSystemService(NotificationManager::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && manager != null) {
@@ -410,8 +449,8 @@ class AlarmService : Service() {
         )
 
         val title = getString(R.string.alarm_title)
-        val text = listOfNotNull(settings.stationName, getString(R.string.alarm_tap_for_more))
-            .joinToString(" · ")
+        // Used where the custom layout is not shown (Wear, older launchers).
+        val text = settings.stationName ?: getString(R.string.alarm_tap_for_more)
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
@@ -423,16 +462,12 @@ class AlarmService : Service() {
             .setOngoing(true)
             .setContentIntent(fullScreen)
             .setFullScreenIntent(fullScreen, true)
-            // When the phone is in use Android shows a small heads-up instead of
-            // the full-screen view. Three short actions fit there, so all three
-            // ways out of an alarm are reachable without opening anything.
-            .apply {
-                if (settings.snoozeMinutes > 0) {
-                    addAction(0, getString(R.string.alarm_snooze), serviceIntent(this@AlarmService, ACTION_SNOOZE, 1))
-                }
-            }
-            .addAction(0, getString(R.string.alarm_continue_short), serviceIntent(this, ACTION_CONTINUE, 3))
-            .addAction(0, getString(R.string.alarm_dismiss), serviceIntent(this, ACTION_DISMISS, 2))
+            // The three choices live in a layout of our own: as system actions
+            // they share one narrow row and get cut to "T... Jat... Lo...".
+            .setStyle(NotificationCompat.DecoratedCustomViewStyle())
+            .setCustomContentView(alarmViews(expanded = false))
+            .setCustomBigContentView(alarmViews(expanded = true))
+            .setCustomHeadsUpContentView(alarmViews(expanded = true))
             .build()
     }
 

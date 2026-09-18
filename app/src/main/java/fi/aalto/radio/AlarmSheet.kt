@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -61,7 +63,7 @@ import java.time.ZonedDateTime
  * big time + switch on one row, every change is saved at once
  * (no Save button), a one-line summary, and "Valmis" to close.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 internal fun AlarmSheet(
     settings: AlarmSettings,
@@ -112,6 +114,7 @@ internal fun AlarmSheet(
                     text = formatClock(settings.hour, settings.minute),
                     fontSize = 56.sp,
                     fontWeight = FontWeight.Light,
+                    maxLines = 1,
                     color = if (settings.enabled) {
                         MaterialTheme.colorScheme.onSurface
                     } else {
@@ -188,19 +191,28 @@ internal fun AlarmSheet(
                 style = MaterialTheme.typography.titleMedium
             )
             Spacer(modifier = Modifier.height(AaltoSpaceXs))
-            val week = DayOfWeek.values().toList()
-            listOf(week.take(4), week.drop(4)).forEach { rowDays ->
-                Row(horizontalArrangement = Arrangement.spacedBy(AaltoSpaceS)) {
-                    rowDays.forEach { day ->
-                        FilterChip(
-                            selected = day in settings.days,
-                            onClick = {
-                                val days = if (day in settings.days) settings.days - day else settings.days + day
-                                onChange(withStation(settings, selectedStation).copy(days = days))
-                            },
-                            label = { Text(finnishDayShort.getValue(day)) }
-                        )
-                    }
+            // A flow row wraps by itself, so the chips stay readable at any
+            // screen width and system font size.
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(AaltoSpaceS),
+                verticalArrangement = Arrangement.spacedBy(AaltoSpaceXs)
+            ) {
+                DayOfWeek.values().forEach { day ->
+                    FilterChip(
+                        selected = day in settings.days,
+                        onClick = {
+                            val days = if (day in settings.days) settings.days - day else settings.days + day
+                            onChange(withStation(settings, selectedStation).copy(days = days))
+                        },
+                        label = {
+                            Text(
+                                text = finnishDayShort.getValue(day),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    )
                 }
             }
             Text(

@@ -49,6 +49,10 @@ Jos 1 tai 2 epäonnistuu, älä jatka: korjaa ensin.
 - [ ] Ääni hiljenee pehmeästi noin 30 s ja toisto pysähtyy; soittimen ilmoitus poistuu.
 - [ ] Seuraava kuuntelu alkaa normaalilla äänenvoimakkuudella.
 
+- [ ] Aseta Androidin tekstikoko suurimmaksi: missään näkymässä ei ole sanaa,
+      joka katkeaa usealle riville tai kolmeksi kirjaimeksi (asetukset, herätys,
+      alapalkki, otsikkorivit).
+
 ## 5. Herätys (tärkeä, osa yön yli)
 
 - [ ] Herätyspaneeli aukeaa yläpalkin kellosta.
@@ -63,6 +67,8 @@ Jos 1 tai 2 epäonnistuu, älä jatka: korjaa ensin.
 - [ ] Jatka kuuntelua (lukitusnäyttö): radio jää soimaan normaalina toistona,
       puhelinta ei tarvitse avata, ja medianäppäimet ohjaavat sitä.
 - [ ] Jatka kuuntelua toimii myös ilmoituksen "Jatka"-napista, kun puhelin on käytössä.
+- [ ] Ilmoituksen kolme nappia näkyvät kokonaisina sanoina (Torkku · Jatka · Lopeta),
+      myös isolla järjestelmän tekstikoolla.
 - [ ] Jatka kuuntelua toimii myös silloin kun Aalto on auki (herätysdialogi).
 - [ ] Jos median äänenvoimakkuus on nollassa, jatkaminen nostaa sen kuuluvaksi.
 - [ ] Tunti ennen herätystä tulee ilmoitus, jossa toimivat "Ohita tämä kerta" ja "Kytke pois".

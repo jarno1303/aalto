@@ -38,6 +38,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.lazy.grid.items as gridItems
 
@@ -354,7 +355,10 @@ private fun StationListHeader(
             Text(
                 text = title,
                 color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
             )
             Icon(
                 imageVector = if (listVisible) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
@@ -372,7 +376,12 @@ private fun StationListHeader(
                     .padding(horizontal = AaltoSpaceS),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = action, color = AaltoBlue, style = MaterialTheme.typography.labelLarge)
+                Text(
+                    text = action,
+                    color = AaltoBlue,
+                    style = MaterialTheme.typography.labelLarge,
+                    maxLines = 1
+                )
             }
         }
     }

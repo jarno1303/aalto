@@ -3,6 +3,8 @@ package fi.aalto.radio
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
@@ -16,12 +18,14 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 /**
  * Settings: appearance and Aalto Sync. Kept to one small dialog so settings
  * never compete with the listening surface.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun SettingsDialog(
     themeMode: AaltoThemeMode,
@@ -37,9 +41,12 @@ internal fun SettingsDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(AaltoSpaceM)) {
                 SettingsSectionTitle(stringResource(R.string.theme_title))
-                Row(
+                // A flow row, not a plain row: in a plain row the long first
+                // label eats the width and "Tumma" wraps onto three lines.
+                FlowRow(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(AaltoSpaceS)
+                    horizontalArrangement = Arrangement.spacedBy(AaltoSpaceS),
+                    verticalArrangement = Arrangement.spacedBy(AaltoSpaceXs)
                 ) {
                     ThemeChoice(AaltoThemeMode.SYSTEM, R.string.theme_system, themeMode, onThemeModeChange)
                     ThemeChoice(AaltoThemeMode.LIGHT, R.string.theme_light, themeMode, onThemeModeChange)
@@ -104,7 +111,13 @@ private fun ThemeChoice(
     FilterChip(
         selected = mode == selectedMode,
         onClick = { onSelect(mode) },
-        label = { Text(stringResource(labelRes)) }
+        label = {
+            Text(
+                text = stringResource(labelRes),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     )
 }
 

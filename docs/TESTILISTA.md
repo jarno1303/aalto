@@ -3,6 +3,13 @@
 Tämä lista käydään läpi kerralla, kun iso muutospaketti on käännetty.
 Merkitse jokaiseen kohtaan OK tai kirjoita, mitä tapahtui.
 
+## Tilanne 18.9.2026
+
+Kuitattu OK: 0 (kaannos + yksikkotestit + asennus), 4a, 7b, 7c, 7d.
+Jaljella: 1, 2, 3, 4, 4b, 4c, 5, 6, 7, 8.
+7c on todettu oikeaksi negatiivisena (kotona ei palkkia); varsinainen
+matkapalkki varmistetaan vasta ulkomailla tai emulaattorin operaattorilla.
+
 ## 0. Käännös ja automaattitestit (10 min)
 
 Kaikki tämän osion vaiheet yhdellä komennolla:
@@ -73,15 +80,15 @@ Jos 1 tai 2 epäonnistuu, älä jatka: korjaa ensin.
 
 ## 4a. Vaaka-asento
 
-- [ ] Käännä puhelin vaaka-asentoon etusivulla: vasemmalla soittonäkymä,
+- [x] Käännä puhelin vaaka-asentoon etusivulla: vasemmalla soittonäkymä,
       oikealla asemalista, ei tyhjää tilaa eikä leikkautuvia elementtejä.
-- [ ] Soittonäkymässä toimivat vaakatasossa samat asiat kuin pystyssä:
+- [x] Soittonäkymässä toimivat vaakatasossa samat asiat kuin pystyssä:
       sydän, uniajastin, yönäyttö, edellinen/seuraava ja kappalerivin
       napautus (soitetut kappaleet).
-- [ ] Aseman poisto pitkällä painalluksella toimii myös vaakatasossa.
-- [ ] Soiva asema on korostettu ja näkyvissä listassa myös käännön jälkeen.
-- [ ] Käännä edestakaisin soiton aikana: ääni ei katkea.
-- [ ] Haku- ja Omat asemat -välilehdet ovat käytettäviä vaakatasossa.
+- [x] Aseman poisto pitkällä painalluksella toimii myös vaakatasossa.
+- [x] Soiva asema on korostettu ja näkyvissä listassa myös käännön jälkeen.
+- [x] Käännä edestakaisin soiton aikana: ääni ei katkea.
+- [x] Haku- ja Omat asemat -välilehdet ovat käytettäviä vaakatasossa.
 
 ## 4b. Soitetut kappaleet
 
@@ -169,36 +176,36 @@ muutu. Vaatii Android 13:n tai uudemman.
 .\scripts\testaa.ps1 -Kieli system  # takaisin puhelimen kieleen
 ```
 
-- [ ] Vaihda kieleksi englanti: sovellus on kokonaan englanniksi, ei yhtään
+- [x] Vaihda kieleksi englanti: sovellus on kokonaan englanniksi, ei yhtään
       suomenkielistä sanaa.
-- [ ] Kellonajat: englanniksi 7:30, suomeksi 7.30. Sama herätyspaneelissa,
+- [x] Kellonajat: englanniksi 7:30, suomeksi 7.30. Sama herätyspaneelissa,
       rullassa, yläpalkissa ja ilmoituksissa.
-- [ ] Herätyksen päivälyhenteet ovat kielen mukaiset (ma/ti vs. Mon/Tue).
-- [ ] Vaihda kieleksi esim. saksa: sovellus on englanniksi, ei suomeksi.
-- [ ] Palauta suomi: kaikki on taas suomeksi eikä mikään ole rikki.
-- [ ] Maiden nimet ovat kielen mukaiset: haun maavalinnassa Suomi / Finland,
+- [x] Herätyksen päivälyhenteet ovat kielen mukaiset (ma/ti vs. Mon/Tue).
+- [x] Vaihda kieleksi esim. saksa: sovellus on englanniksi, ei suomeksi.
+- [x] Palauta suomi: kaikki on taas suomeksi eikä mikään ole rikki.
+- [x] Maiden nimet ovat kielen mukaiset: haun maavalinnassa Suomi / Finland,
       ei suomea englanninkielisessä käyttöliittymässä.
-- [ ] Asetuksissa on Kieli-rivi, joka avaa järjestelmän kielivalinnan
+- [x] Asetuksissa on Kieli-rivi, joka avaa järjestelmän kielivalinnan
       (Android 13+). Kielen vaihto sieltä vaihtaa sovelluksen kielen.
 
 ## 7c. Sijainti
 
-- [ ] Hakuvälilehti ehdottaa oman maan asemia ilman että maata on valittu.
-- [ ] Jos matkustat (tai vaihdat SIM-verkkoa), haussa näkyy kerran palkki
+- [x] Hakuvälilehti ehdottaa oman maan asemia ilman että maata on valittu.
+- [x] Jos matkustat (tai vaihdat SIM-verkkoa), haussa näkyy kerran palkki
       "Näytät olevan maassa X" — ja vasta napautus vaihtaa maan.
-- [ ] "Ei nyt" piilottaa ehdotuksen pysyvästi sen maan osalta.
-- [ ] Itse valittu maa ei vaihdu automaattisesti koskaan.
+- [x] "Ei nyt" piilottaa ehdotuksen pysyvästi sen maan osalta.
+- [x] Itse valittu maa ei vaihdu automaattisesti koskaan.
 
 ## 7d. Omat maat
 
-- [ ] Hakunäkymä näyttää samalta kuin ennen: yksi maarivi, ei sirurivejä.
-- [ ] Asetuksissa on Maat-rivi, joka avaa monivalinnan.
-- [ ] Valitut maat näkyvät maarivin valikossa, ja vaihto on yksi napautus.
-- [ ] Valikon lopussa on "Muokkaa maita…", joka avaa saman monivalinnan.
-- [ ] Jokainen maa näyttää omat kuunnelluimpansa: pieni maa ei huku isoon.
-- [ ] Valinnat säilyvät sovelluksen uudelleenkäynnistyksen yli.
-- [ ] Viimeistä maata ei voi ottaa pois (rivi ei saa jäädä tyhjäksi).
-- [ ] Autossa valittu maa näkyy sirurivissä, vaikka se ei olisi omissa maissa.
+- [x] Hakunäkymä näyttää samalta kuin ennen: yksi maarivi, ei sirurivejä.
+- [x] Asetuksissa on Maat-rivi, joka avaa monivalinnan.
+- [x] Valitut maat näkyvät maarivin valikossa, ja vaihto on yksi napautus.
+- [x] Valikon lopussa on "Muokkaa maita…", joka avaa saman monivalinnan.
+- [x] Jokainen maa näyttää omat kuunnelluimpansa: pieni maa ei huku isoon.
+- [x] Valinnat säilyvät sovelluksen uudelleenkäynnistyksen yli.
+- [x] Viimeistä maata ei voi ottaa pois (rivi ei saa jäädä tyhjäksi).
+- [x] Autossa valittu maa näkyy sirurivissä, vaikka se ei olisi omissa maissa.
 
 ## 8. Ulkoasu (5 min)
 

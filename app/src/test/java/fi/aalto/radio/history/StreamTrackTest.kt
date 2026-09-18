@@ -10,19 +10,23 @@ class StreamTrackTest {
 
     @Test
     fun `reads the icy stream title`() {
-        val metadata = Metadata(IcyInfo("Abba - Waterloo", null))
+        val metadata = Metadata(IcyInfo("Abba - Waterloo", "https://example.fi"))
         assertEquals("Abba - Waterloo", StreamTrack.from(metadata)?.title)
     }
 
     @Test
     fun `ignores an empty icy title`() {
-        assertNull(StreamTrack.from(Metadata(IcyInfo("", null))))
-        assertNull(StreamTrack.from(Metadata(IcyInfo(null, "https://example.fi"))))
+        assertNull(StreamTrack.from(Metadata(IcyInfo("", "https://example.fi"))))
+    }
+
+    @Test
+    fun `ignores metadata with nothing in it`() {
+        assertNull(StreamTrack.from(Metadata()))
     }
 
     @Test
     fun `an icy title becomes a history line`() {
-        val metadata = Metadata(IcyInfo("Now Playing: Abba - Waterloo", null))
+        val metadata = Metadata(IcyInfo("Now Playing: Abba - Waterloo", "https://example.fi"))
         val announcement = StreamTrack.from(metadata)
         val line = TrackTitle.format(
             title = announcement?.title,

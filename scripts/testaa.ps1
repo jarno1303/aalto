@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Aallon testiajo: puhdas käännös, yksikkötestit ja asennus puhelimeen.
 

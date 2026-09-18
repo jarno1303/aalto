@@ -38,6 +38,7 @@ internal fun SettingsDialog(
     onSignIn: () -> Unit,
     onSignOut: () -> Unit,
     onOpenAudio: () -> Unit,
+    onOpenLanguage: (() -> Unit)?,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
@@ -62,6 +63,36 @@ internal fun SettingsDialog(
                     color = MaterialTheme.colorScheme.outline,
                     modifier = Modifier.padding(vertical = AaltoSpaceXs)
                 )
+
+                // Android 13+ keeps per-app language in its own settings; we
+                // only open the door, so there is no screen of our own before
+                // the radio plays.
+                if (onOpenLanguage != null) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 48.dp)
+                            .clickable(role = Role.Button, onClick = onOpenLanguage),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.language_title),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = stringResource(R.string.language_open),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = AaltoBlue,
+                            maxLines = 1
+                        )
+                    }
+
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.padding(vertical = AaltoSpaceXs)
+                    )
+                }
 
                 SettingsSectionTitle(stringResource(R.string.audio_title))
                 Row(

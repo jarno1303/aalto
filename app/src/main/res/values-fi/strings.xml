@@ -168,4 +168,10 @@
     <string name="audio_reset">Nollaa</string>
     <!-- Time -->
     <string name="time_separator">.</string>
+    <!-- Kieli ja matkustus -->
+    <string name="language_title">Kieli</string>
+    <string name="language_open">Vaihda</string>
+    <string name="travel_hint">Näytät olevan maassa %1$s. Näytetäänkö sen asemat?</string>
+    <string name="travel_hint_show">Näytä</string>
+    <string name="travel_hint_decline">Ei nyt</string>
 </resources>

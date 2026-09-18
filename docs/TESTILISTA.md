@@ -171,6 +171,18 @@ muutu. Vaatii Android 13:n tai uudemman.
 - [ ] Herätyksen päivälyhenteet ovat kielen mukaiset (ma/ti vs. Mon/Tue).
 - [ ] Vaihda kieleksi esim. saksa: sovellus on englanniksi, ei suomeksi.
 - [ ] Palauta suomi: kaikki on taas suomeksi eikä mikään ole rikki.
+- [ ] Maiden nimet ovat kielen mukaiset: haun maavalinnassa Suomi / Finland,
+      ei suomea englanninkielisessä käyttöliittymässä.
+- [ ] Asetuksissa on Kieli-rivi, joka avaa järjestelmän kielivalinnan
+      (Android 13+). Kielen vaihto sieltä vaihtaa sovelluksen kielen.
+
+## 7c. Sijainti
+
+- [ ] Hakuvälilehti ehdottaa oman maan asemia ilman että maata on valittu.
+- [ ] Jos matkustat (tai vaihdat SIM-verkkoa), haussa näkyy kerran palkki
+      "Näytät olevan maassa X" — ja vasta napautus vaihtaa maan.
+- [ ] "Ei nyt" piilottaa ehdotuksen pysyvästi sen maan osalta.
+- [ ] Itse valittu maa ei vaihdu automaattisesti koskaan.
 
 ## 8. Ulkoasu (5 min)
 

@@ -640,6 +640,19 @@ private fun AaltoApp() {
                 showSettings = false
                 showAudio = true
             },
+            onOpenLanguage = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                {
+                    runCatching {
+                        context.startActivity(
+                            Intent(Settings.ACTION_APP_LOCALE_SETTINGS)
+                                .setData(android.net.Uri.fromParts("package", context.packageName, null))
+                        )
+                    }
+                    Unit
+                }
+            } else {
+                null
+            },
             onDismiss = { showSettings = false }
         )
     }

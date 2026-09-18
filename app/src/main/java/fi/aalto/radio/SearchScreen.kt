@@ -47,6 +47,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.Surface
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -169,6 +171,28 @@ internal fun SearchScreen(
                     unfocusedBorderColor = MaterialTheme.colorScheme.outline
                 )
             )
+        }
+
+        // The phone knows which country it is in; it is told, not obeyed.
+        item {
+            val context = LocalContext.current
+            val whereIAm = remember(context) { DeviceCountry.network(context) }
+            var declined by rememberSaveable(whereIAm) {
+                mutableStateOf(whereIAm == null || TravelSuggestion.declined(context, whereIAm))
+            }
+            if (!declined && whereIAm != null && whereIAm != activeCountryCode) {
+                TravelSuggestionRow(
+                    countryCode = whereIAm,
+                    onShow = {
+                        declined = true
+                        onRadioCountryChange(whereIAm)
+                    },
+                    onDecline = {
+                        declined = true
+                        TravelSuggestion.decline(context, whereIAm)
+                    }
+                )
+            }
         }
 
         item {
@@ -350,6 +374,38 @@ private fun StationRowSkeleton() {
                     .clip(RoundedCornerShape(5.dp))
                     .background(placeholder)
             )
+        }
+    }
+}
+
+/** Shown once per country: a suggestion, never a silent switch. */
+@Composable
+private fun TravelSuggestionRow(
+    countryCode: String,
+    onShow: () -> Unit,
+    onDecline: () -> Unit
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = AaltoSpaceXs)
+    ) {
+        Column(modifier = Modifier.padding(AaltoSpaceM)) {
+            Text(
+                text = stringResource(R.string.travel_hint, countryName(countryCode)),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(AaltoSpaceS)) {
+                TextButton(onClick = onShow) {
+                    Text(stringResource(R.string.travel_hint_show))
+                }
+                TextButton(onClick = onDecline) {
+                    Text(stringResource(R.string.travel_hint_decline))
+                }
+            }
         }
     }
 }

@@ -176,4 +176,10 @@
 
     <!-- Time -->
     <string name="time_separator">:</string>
+    <!-- Language and travel -->
+    <string name="language_title">Language</string>
+    <string name="language_open">Change</string>
+    <string name="travel_hint">You seem to be in %1$s. Show its stations?</string>
+    <string name="travel_hint_show">Show</string>
+    <string name="travel_hint_decline">Not now</string>
 </resources>

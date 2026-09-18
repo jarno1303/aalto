@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The languages Aalto ships. Declaring them gives the user a language picker
+  for this app in the system settings (Android 13+), so no screen of our own
+  is needed before the radio plays.
+-->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="en" />
+    <locale android:name="fi" />
+</locale-config>

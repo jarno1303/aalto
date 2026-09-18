@@ -3,7 +3,6 @@ package fi.aalto.radio.playback
 import android.content.Context
 import fi.aalto.radio.AaltoAppContainer
 import fi.aalto.radio.AaltoDatabase
-import fi.aalto.radio.defaultRadioCountryCode
 import fi.aalto.radio.RadioStation
 import fi.aalto.radio.catalog.CatalogReadResult
 import fi.aalto.radio.catalog.toDomain
@@ -79,7 +78,8 @@ internal class StationLookup(context: Context) {
      * The user's home country (phone region). The car's "Suositut" tab always
      * shows it; a temporary country filter in the phone app does not change it.
      */
-    fun homeCountry(): String = defaultRadioCountryCode()
+    /** The car's Popular tab follows the same country as the phone. */
+    fun homeCountry(): String = fi.aalto.radio.RadioCountryPreference.get(appContext)
 
     suspend fun search(query: String, limit: Int = 40): List<RadioStation> {
         val terms = query.trim().lowercase()

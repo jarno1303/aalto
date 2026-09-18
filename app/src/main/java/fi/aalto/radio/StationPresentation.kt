@@ -305,33 +305,15 @@ internal fun stationMatchesQuery(station: RadioStation, query: String): Boolean 
         .all(searchableText::contains)
 }
 
+/**
+ * "Suomi", "Finland" or "Finnland" — the country's name in the phone's own
+ * language. Used to be a hand-written Finnish table, which left every country
+ * name in Finnish no matter what language the app was in.
+ */
 internal fun countryName(countryCode: String): String {
-    return when (countryCode.uppercase()) {
-        "FI" -> "Suomi"
-        "DE" -> "Saksa"
-        "ES" -> "Espanja"
-        "GB" -> "Iso-Britannia"
-        "SE" -> "Ruotsi"
-        "NO" -> "Norja"
-        "US" -> "Yhdysvallat"
-        "FR" -> "Ranska"
-        "IT" -> "Italia"
-        "NL" -> "Alankomaat"
-        "TR" -> "Turkki"
-        "DK" -> "Tanska"
-        "EE" -> "Viro"
-        "AT" -> "Itävalta"
-        "CH" -> "Sveitsi"
-        "IE" -> "Irlanti"
-        "BE" -> "Belgia"
-        "PL" -> "Puola"
-        "PT" -> "Portugali"
-        "GR" -> "Kreikka"
-        "CA" -> "Kanada"
-        "AU" -> "Australia"
-        "BR" -> "Brasilia"
-        else -> countryCode.uppercase()
-    }
+    val code = countryCode.trim().uppercase()
+    if (!code.matches(Regex("[A-Z]{2}"))) return code
+    return Locale("", code).getDisplayCountry(Locale.getDefault()).ifBlank { code }
 }
 
 /** Countries offered for browsing in the car (Maat tab). */
@@ -381,6 +363,26 @@ internal object HomeHintPreference {
     }
 }
 
+/**
+ * Whether the "you seem to be in X" suggestion has been turned down for that
+ * country. Asked once per country, never again.
+ */
+internal object TravelSuggestion {
+    private const val PREFS = "aalto_catalog"
+    private const val KEY_PREFIX = "travel_declined_"
+
+    fun declined(context: android.content.Context, countryCode: String): Boolean =
+        context.applicationContext.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
+            .getBoolean(KEY_PREFIX + countryCode, false)
+
+    fun decline(context: android.content.Context, countryCode: String) {
+        context.applicationContext.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY_PREFIX + countryCode, true)
+            .apply()
+    }
+}
+
 internal object RadioCountryPreference {
     private const val PREFS = "aalto_catalog"
     private const val KEY = "country"
@@ -389,7 +391,7 @@ internal object RadioCountryPreference {
         context.applicationContext.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
             .getString(KEY, null)
             ?.takeIf { it.matches(Regex("[A-Z]{2}")) }
-            ?: defaultRadioCountryCode()
+            ?: defaultRadioCountryCode(context)
 
     fun set(context: android.content.Context, code: String) {
         context.applicationContext.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
@@ -399,13 +401,12 @@ internal object RadioCountryPreference {
     }
 }
 
-internal fun defaultRadioCountryCode(): String {
-    return Locale.getDefault().country
-        .trim()
-        .uppercase()
-        .takeIf { it.matches(Regex("[A-Z]{2}")) }
-        ?: "FI"
-}
+/**
+ * The country whose stations to suggest when the user has not chosen one:
+ * where the phone actually is, not what language it speaks.
+ */
+internal fun defaultRadioCountryCode(context: android.content.Context): String =
+    DeviceCountry.best(context)
 
 internal fun stationDialTitle(station: RadioStation): String {
     return listOf(

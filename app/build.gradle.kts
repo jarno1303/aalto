@@ -46,9 +46,13 @@ android {
         unitTests {
             isIncludeAndroidResources = true
             // Manual reports that call real services stay out of the offline
-            // suite unless asked for: -Daalto.manual=true
+            // suite unless asked for, either with -Daalto.manual=true or with
+            // the AALTO_MANUAL environment variable (PowerShell mangles -D...).
             all {
-                it.systemProperty("aalto.manual", System.getProperty("aalto.manual") ?: "false")
+                val manual = System.getProperty("aalto.manual")
+                    ?: System.getenv("AALTO_MANUAL")
+                    ?: "false"
+                it.systemProperty("aalto.manual", manual)
                 it.testLogging { showStandardStreams = true }
             }
         }

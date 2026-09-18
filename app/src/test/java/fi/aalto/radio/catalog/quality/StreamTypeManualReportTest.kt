@@ -18,7 +18,10 @@ import org.junit.Test
  *
  * Manual: hits the real Radio Browser API, so it is never part of the offline
  * suite. Run it with
- *   ./gradlew testDebugUnitTest --tests "*StreamTypeManualReportTest*" -Daalto.manual=true
+ *   ./gradlew testDebugUnitTest --tests "*StreamTypeManualReportTest*" "-Daalto.manual=true"
+ *
+ * In PowerShell the -D argument has to be quoted, or AALTO_MANUAL=true can be
+ * set in the environment instead.
  */
 class StreamTypeManualReportTest {
 

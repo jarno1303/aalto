@@ -152,6 +152,16 @@ cd ..\extras\google\auto
 - [ ] Järjestyksen muutos siirtyy molempiin suuntiin.
 - [ ] Radio toimii, vaikka kirjautuisi ulos.
 
+## 7b. Kieli
+
+- [ ] Vaihda puhelimen kieleksi englanti (Asetukset -> Kieli): sovellus on
+      kokonaan englanniksi, ei yhtään suomenkielistä sanaa.
+- [ ] Kellonajat: englanniksi 7:30, suomeksi 7.30. Sama herätyspaneelissa,
+      rullassa, yläpalkissa ja ilmoituksissa.
+- [ ] Herätyksen päivälyhenteet ovat kielen mukaiset (ma/ti vs. Mon/Tue).
+- [ ] Vaihda kieleksi esim. saksa: sovellus on englanniksi, ei suomeksi.
+- [ ] Palauta suomi: kaikki on taas suomeksi eikä mikään ole rikki.
+
 ## 8. Ulkoasu (5 min)
 
 - [ ] Vaalea, tumma ja järjestelmän mukainen tila näyttävät oikeilta.

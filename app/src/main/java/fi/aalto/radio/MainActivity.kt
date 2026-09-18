@@ -19,7 +19,7 @@ import fi.aalto.radio.alarm.rememberNotificationsEnabled
 import fi.aalto.radio.audio.AudioSheet
 import fi.aalto.radio.history.HistorySheet
 import fi.aalto.radio.history.rememberTrackHistory
-import fi.aalto.radio.alarm.finnishDayShort
+import fi.aalto.radio.alarm.dayShort
 import fi.aalto.radio.alarm.formatClock
 import java.time.Instant
 import java.time.LocalDate
@@ -653,6 +653,6 @@ private fun alarmLabel(epochMs: Long): String {
     return when (time.toLocalDate()) {
         today -> clock
         today.plusDays(1) -> clock
-        else -> "${finnishDayShort.getValue(time.dayOfWeek)} $clock"
+        else -> "${dayShort(time.dayOfWeek)} $clock"
     }
 }

@@ -2,6 +2,8 @@ package fi.aalto.radio.alarm
 
 import android.content.Context
 import java.time.DayOfWeek
+import java.time.format.TextStyle
+import java.util.Locale
 import java.time.ZonedDateTime
 
 /**
@@ -115,14 +117,12 @@ internal fun nextAlarmTime(
     return candidate
 }
 
-internal val finnishDayShort = mapOf(
-    DayOfWeek.MONDAY to "ma",
-    DayOfWeek.TUESDAY to "ti",
-    DayOfWeek.WEDNESDAY to "ke",
-    DayOfWeek.THURSDAY to "to",
-    DayOfWeek.FRIDAY to "pe",
-    DayOfWeek.SATURDAY to "la",
-    DayOfWeek.SUNDAY to "su"
-)
+/** "ma" or "Mon", in whatever language the phone is set to. */
+internal fun dayShort(day: DayOfWeek): String =
+    day.getDisplayName(TextStyle.SHORT, Locale.getDefault())
 
-internal fun formatClock(hour: Int, minute: Int): String = "%d.%02d".format(hour, minute)
+/** Finnish writes 7.30, most other languages 7:30. */
+internal fun formatClock(hour: Int, minute: Int): String {
+    val separator = if (Locale.getDefault().language == "fi") "." else ":"
+    return "%d%s%02d".format(hour, separator, minute)
+}

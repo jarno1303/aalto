@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Aalto</string>
+
+    <!-- Navigation -->
+    <string name="tab_radio">Radio</string>
+    <string name="tab_search">Hae</string>
+    <string name="tab_favorites">Suosikit</string>
+
+    <!-- Playback state -->
+    <string name="state_playing">Nyt soi</string>
+    <string name="state_paused">Tauko</string>
+    <string name="state_connecting">Yhdistetään…</string>
+    <string name="state_error">Asemaan ei saatu yhteyttä</string>
+    <string name="action_retry">Yritä uudelleen</string>
+    <string name="action_play">Toista</string>
+    <string name="action_pause">Tauko</string>
+    <string name="action_play_station">Toista %1$s</string>
+    <string name="action_next_station">Seuraava oma asema</string>
+    <string name="action_previous_station">Edellinen oma asema</string>
+    <string name="action_open_now_playing">Avaa toistonäkymä</string>
+    <string name="playback_error_start">Asemaan ei saatu yhteyttä.</string>
+    <string name="playback_error_unavailable">Toisto ei ole käytettävissä.</string>
+
+    <!-- Favorites -->
+    <string name="favorite_add">Lisää suosikkeihin</string>
+    <string name="favorite_remove">Poista suosikeista</string>
+    <string name="favorites_empty">Ei suosikkeja vielä</string>
+    <string name="favorites_empty_hint">Napauta aseman sydäntä, niin se tulee tänne ja etusivun omiin asemiin.</string>
+    <string name="favorites_reorder_hint">Järjestä painamalla pitkään ja vetämällä.</string>
+    <string name="action_find_stations">Etsi asemia</string>
+    <string name="action_edit_own_stations">Muokkaa</string>
+
+    <!-- Home -->
+    <string name="home_mine">Omat asemat</string>
+    <string name="home_popular_hint">Lisää omia asemia napauttamalla sydäntä.</string>
+    <string name="home_popular">Suositut asemat</string>
+    <string name="home_hide_list">Piilota asemalista</string>
+    <string name="home_show_list">Näytä asemalista</string>
+    <string name="home_removed">%1$s poistettu omista asemista</string>
+    <string name="action_undo">Kumoa</string>
+
+    <!-- Search -->
+    <string name="search_placeholder">Asema tai genre</string>
+    <string name="search_stations">Asemat</string>
+    <string name="search_results">Tulokset</string>
+    <string name="search_clear">Tyhjennä haku</string>
+    <string name="search_recent">Viimeksi kuunnellut</string>
+    <string name="search_country">Maa: %1$s</string>
+    <string name="search_no_results">Ei asemia tällä rajauksella</string>
+    <string name="catalog_loading">Ladataan asemia…</string>
+    <string name="catalog_unavailable">Asemaluettelo ei ole nyt saatavilla. Omat asemasi toimivat silti.</string>
+
+    <!-- Night Screen -->
+    <string name="night_screen_open">Pimennä näyttö</string>
+    <string name="night_screen_show_controls">Näytä ohjaimet</string>
+    <string name="night_screen_exit">Palaa normaaliin näkymään</string>
+    <string name="night_state_playing">Toistaa</string>
+    <string name="night_state_error">Toisto keskeytynyt</string>
+    <string name="night_exit_short">Poistu</string>
+    <string name="night_hint_tap">Napauta näyttöä: ohjaimet ja poistuminen</string>
+    <string name="night_hint_exit">Poistu yläkulmasta tai Takaisin-painikkeella</string>
+
+    <!-- Sleep timer -->
+    <string name="sleep_timer">Uniajastin</string>
+    <string name="sleep_timer_off">Pois päältä</string>
+    <string name="sleep_timer_minutes">%1$d min</string>
+    <string name="sleep_timer_remaining">Sammuu %1$d min</string>
+
+    <!-- Wake-up radio -->
+    <string name="alarm_title">Herätys</string>
+    <string name="alarm_settings_title">Herätysradio</string>
+    <string name="alarm_station">Asema</string>
+    <string name="alarm_no_stations">Lisää ensin omia asemia.</string>
+    <string name="alarm_snooze">Torkku</string>
+    <string name="alarm_snooze_minutes">Torkku %1$d min</string>
+    <string name="alarm_dismiss">Lopeta</string>
+    <string name="alarm_continue">Jatka kuuntelua</string>
+    <string name="alarm_continue_short">Jatka</string>
+    <string name="alarm_channel">Herätykset</string>
+    <string name="alarm_fallback_note">Asemaan ei saatu yhteyttä – soitetaan hälytysääni</string>
+    <string name="alarm_open">Herätys</string>
+    <string name="alarm_next">Herätys %1$s</string>
+    <string name="alarm_tap_for_more">Napauta: lisää valintoja</string>
+    <string name="alarm_test_now">Kokeile ääntä</string>
+    <string name="alarm_change_time">Muuta aikaa</string>
+    <string name="alarm_hours">Tunnit</string>
+    <string name="alarm_minutes">Minuutit</string>
+    <string name="alarm_ok">OK</string>
+    <string name="alarm_set">Aseta</string>
+    <string name="alarm_cancel">Peruuta</string>
+    <string name="alarm_done">Valmis</string>
+    <string name="alarm_off">Pois päältä</string>
+    <string name="alarm_days">Päivät</string>
+    <string name="alarm_snooze_length">Torkun pituus</string>
+    <string name="alarm_snooze_off">Ei torkkua</string>
+    <string name="alarm_volume">Äänenvoimakkuus %1$d %%</string>
+    <string name="alarm_volume_hint">Herätys nostaa puhelimen hälytysäänen tälle tasolle ja palauttaa sen jälkeen entiselleen.</string>
+    <string name="alarm_days_hint">Ilman valittuja päiviä herätys soi kerran.</string>
+    <string name="alarm_days_once">Kerran</string>
+    <string name="alarm_days_every">Joka päivä</string>
+    <string name="alarm_days_weekdays">Arkisin</string>
+    <string name="alarm_days_weekend">Viikonloppuisin</string>
+    <string name="alarm_rings_in_hours">Herätys soi %1$d t %2$d min kuluttua</string>
+    <string name="alarm_rings_in_minutes">Herätys soi %1$d min kuluttua</string>
+    <string name="alarm_rings_at">Herätys soi %1$s</string>
+    <string name="alarm_upcoming_channel">Tulevat herätykset</string>
+    <string name="alarm_upcoming_title">Tuleva herätys</string>
+    <string name="alarm_skip_once">Ohita tämä kerta</string>
+    <string name="alarm_switch_off">Kytke pois</string>
+    <string name="alarm_notifications_off">Ilmoitukset ovat pois päältä. Herätyksen voi silloin pysäyttää vain avaamalla Aallon.</string>
+    <string name="alarm_allow_notifications">Salli ilmoitukset</string>
+    <string name="alarm_log_title">Viimeisimmät tapahtumat</string>
+    <string name="alarm_exact_permission">Salli tarkat hälytykset, jotta herätys soi ajallaan.</string>
+
+    <!-- Android Auto -->
+    <string name="auto_popular">Suositut</string>
+    <string name="auto_recent">Viimeisimmät</string>
+    <string name="auto_added_favorite">Lisätty omiin asemiin</string>
+    <string name="auto_removed_favorite">Poistettu omista asemista</string>
+    <string name="auto_countries">Maat</string>
+
+    <!-- Widget -->
+    <string name="widget_description">Soiva asema, toisto ja seuraava oma asema</string>
+    <string name="widget_empty">Aalto</string>
+    <string name="widget_tap_to_play">Toista napauttamalla</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Asetukset</string>
+    <string name="theme_title">Ulkoasu</string>
+    <string name="theme_system">Järjestelmä</string>
+    <string name="theme_light">Vaalea</string>
+    <string name="theme_dark">Tumma</string>
+
+    <!-- Sync -->
+    <string name="sync_title">Aalto Sync</string>
+    <string name="sync_body">Omat asemasi kaikilla laitteillasi.</string>
+    <string name="sync_sign_in">Kirjaudu Googlella</string>
+    <string name="sync_sign_out">Kirjaudu ulos</string>
+    <string name="sync_close">Sulje</string>
+    <string name="sync_status_signed_out">Ei kirjautunut</string>
+    <string name="sync_status_connected">Synkronoitu</string>
+    <string name="sync_status_pending">Synkronointi odottaa</string>
+    <string name="sync_status_problem">Synkronointi ei onnistunut. Yritetään myöhemmin uudelleen.</string>
+    <string name="sync_status_account_mismatch">Tämän laitteen asemat on liitetty toiseen Aalto-tiliin.</string>
+    <!-- UI hints -->
+    <string name="alarm_advanced">Lisäasetukset</string>
+    <string name="home_hint_long_press">Vinkki: poista asema listalta pitkällä painalluksella.</string>
+    <string name="home_hint_dismiss">Selvä</string>
+    <!-- Played songs -->
+    <string name="history_title">Soitetut kappaleet</string>
+    <string name="history_clear">Tyhjennä</string>
+    <string name="history_empty">Ei vielä kappaleita. Kun asema kertoo mitä soi, se tallentuu tänne.</string>
+    <string name="history_search_spotify">Etsi Spotifysta</string>
+    <string name="history_search_youtube">Etsi YouTubesta</string>
+    <string name="history_open">Soitetut kappaleet</string>
+    <!-- Sound -->
+    <string name="audio_title">Ääni</string>
+    <string name="audio_settings_row">Taajuuskorjain ja asemakohtainen äänenvoimakkuus</string>
+    <string name="audio_open">Avaa</string>
+    <string name="audio_equalizer">Taajuuskorjain</string>
+    <string name="audio_preset">Esiasetus</string>
+    <string name="audio_preset_custom">Oma</string>
+    <string name="audio_unavailable">Tämä laite ei tarjoa taajuuskorjainta. Asemakohtainen äänenvoimakkuus toimii silti.</string>
+    <string name="audio_station_gain">Aseman äänenvoimakkuus</string>
+    <string name="audio_station_gain_hint">Säätö koskee vain tätä asemaa ja muistetaan. Käytä sitä, jos asema soi selvästi muita hiljempaa tai kovempaa.</string>
+    <string name="audio_no_station">Valitse ensin asema.</string>
+    <string name="audio_reset">Nollaa</string>
+    <!-- Time -->
+    <string name="time_separator">.</string>
+</resources>

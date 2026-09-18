@@ -150,7 +150,7 @@ internal object AlarmScheduler {
         }
         val time = Instant.ofEpochMilli(next).atZone(ZoneId.systemDefault())
         val text = listOfNotNull(
-            "${finnishDayShort.getValue(time.dayOfWeek)} ${formatClock(time.hour, time.minute)}",
+            "${dayShort(time.dayOfWeek)} ${formatClock(time.hour, time.minute)}",
             settings.stationName
         ).joinToString(" · ")
         val open = PendingIntent.getActivity(

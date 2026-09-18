@@ -50,7 +50,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fi.aalto.radio.alarm.AlarmSettings
-import fi.aalto.radio.alarm.finnishDayShort
+import fi.aalto.radio.alarm.dayShort
 import fi.aalto.radio.alarm.formatClock
 import fi.aalto.radio.alarm.snoozeChoicesMinutes
 import java.time.DayOfWeek
@@ -207,7 +207,7 @@ internal fun AlarmSheet(
                         },
                         label = {
                             Text(
-                                text = finnishDayShort.getValue(day),
+                                text = dayShort(day),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -405,7 +405,7 @@ internal fun daysSummary(context: Context, days: Set<DayOfWeek>): String {
         days.size == 7 -> context.getString(R.string.alarm_days_every)
         days == weekdays -> context.getString(R.string.alarm_days_weekdays)
         days == weekend -> context.getString(R.string.alarm_days_weekend)
-        else -> days.sorted().joinToString(", ") { finnishDayShort.getValue(it) }
+        else -> days.sorted().joinToString(", ") { dayShort(it) }
     }
 }
 
@@ -419,7 +419,7 @@ internal fun alarmCountdownText(context: Context, epochMs: Long): String {
             val time: ZonedDateTime = Instant.ofEpochMilli(epochMs).atZone(ZoneId.systemDefault())
             context.getString(
                 R.string.alarm_rings_at,
-                "${finnishDayShort.getValue(time.dayOfWeek)} ${formatClock(time.hour, time.minute)}"
+                "${dayShort(time.dayOfWeek)} ${formatClock(time.hour, time.minute)}"
             )
         }
         hours > 0 -> context.getString(R.string.alarm_rings_in_hours, hours.toInt(), minutes.toInt())

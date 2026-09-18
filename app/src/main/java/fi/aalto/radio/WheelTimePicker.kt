@@ -304,7 +304,7 @@ internal fun WheelTimePicker(
                 label = stringResource(R.string.alarm_hours)
             ) { "%02d".format(it) }
             Text(
-                text = ".",
+                text = stringResource(R.string.time_separator),
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.width(16.dp),

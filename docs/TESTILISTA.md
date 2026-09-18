@@ -60,7 +60,11 @@ Jos 1 tai 2 epäonnistuu, älä jatka: korjaa ensin.
 - [ ] Aseta herätys 3 min päähän, lukitse puhelin: lukitusnäytölle aukeaa herätysnäkymä.
 - [ ] Lentokonetilassa herätys soittaa puhelimen hälytysäänen.
 - [ ] Torkku: herätys soi uudelleen valitun ajan päästä.
-- [ ] Jatka kuuntelua: Aalto aukeaa ja soittaa herätyksen kanavaa.
+- [ ] Jatka kuuntelua (lukitusnäyttö): radio jää soimaan normaalina toistona,
+      puhelinta ei tarvitse avata, ja medianäppäimet ohjaavat sitä.
+- [ ] Jatka kuuntelua toimii myös ilmoituksen "Jatka"-napista, kun puhelin on käytössä.
+- [ ] Jatka kuuntelua toimii myös silloin kun Aalto on auki (herätysdialogi).
+- [ ] Jos median äänenvoimakkuus on nollassa, jatkaminen nostaa sen kuuluvaksi.
 - [ ] Tunti ennen herätystä tulee ilmoitus, jossa toimivat "Ohita tämä kerta" ja "Kytke pois".
 - [ ] Käynnistä puhelin uudelleen herätys päällä: herätys soi silti.
 - [ ] **Yön yli:** aseta oikea herätys ja nuku. Soiko se ajallaan?

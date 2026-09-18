@@ -11,7 +11,6 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
-import fi.aalto.radio.alarm.AlarmHandoff
 import fi.aalto.radio.alarm.AlarmLog
 import fi.aalto.radio.alarm.AlarmScheduler
 import fi.aalto.radio.alarm.AlarmService
@@ -64,7 +63,6 @@ class MainActivity : ComponentActivity() {
         AaltoPerf.markAppStart()
         super.onCreate(savedInstanceState)
         AaltoThemePreferences.load(this)
-        AlarmHandoff.consume(this, intent)
         enableEdgeToEdge()
         setContent {
             val darkTheme = AaltoThemePreferences.mode.isDark()
@@ -84,12 +82,6 @@ class MainActivity : ComponentActivity() {
                 AaltoApp()
             }
         }
-    }
-
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        setIntent(intent)
-        AlarmHandoff.consume(this, intent)
     }
 
     override fun onStart() {
@@ -502,56 +494,16 @@ private fun AaltoApp() {
         if (repository.stationById(id) != null) selectedStationId = id
     }
 
-    // "Jatka kuuntelua" from the alarm: play the alarm station through the normal path.
-    val alarmHandoff = AlarmHandoff.pending
-    LaunchedEffect(alarmHandoff) {
-        val request = alarmHandoff ?: return@LaunchedEffect
-        AlarmHandoff.pending = null
-        val url = request.streamUrl ?: return@LaunchedEffect
-        val station = request.stationId?.let { repository.stationById(it) } ?: RadioStation(
-            id = request.stationId ?: url,
-            name = request.stationName ?: "Aalto Radio",
-            description = "",
-            initials = (request.stationName ?: "A").take(3).uppercase(),
-            logoColorArgb = 0xFF1769FF,
-            streamUrl = url,
-            countryCode = "FI",
-            tags = emptyList(),
-            category = ""
-        )
-        playStation(station, openNowPlaying = true)
-    }
-
-    // Safety net: whenever an alarm rings while the app is open, it can be
-    // stopped here too, even if the system did not show the alarm view.
+    // Safety net: whenever an alarm rings while the app is open, all three
+    // choices are here too, even if the system did not show the alarm view.
     if (fi.aalto.radio.alarm.AlarmRuntime.ringing) {
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = {},
-            properties = androidx.compose.ui.window.DialogProperties(
-                dismissOnBackPress = false,
-                dismissOnClickOutside = false
-            ),
-            title = { androidx.compose.material3.Text(androidx.compose.ui.res.stringResource(R.string.alarm_title)) },
-            text = { androidx.compose.material3.Text(fi.aalto.radio.alarm.AlarmRuntime.stationName) },
-            confirmButton = {
-                androidx.compose.material3.Button(onClick = {
-                    AlarmService.send(context, AlarmService.ACTION_SNOOZE)
-                }) {
-                    androidx.compose.material3.Text(
-                        androidx.compose.ui.res.stringResource(
-                            R.string.alarm_snooze_minutes,
-                            fi.aalto.radio.alarm.AlarmRuntime.snoozeMinutes
-                        )
-                    )
-                }
-            },
-            dismissButton = {
-                androidx.compose.material3.TextButton(onClick = {
-                    AlarmService.send(context, AlarmService.ACTION_DISMISS)
-                }) {
-                    androidx.compose.material3.Text(androidx.compose.ui.res.stringResource(R.string.alarm_dismiss))
-                }
-            }
+        fi.aalto.radio.alarm.AlarmRingingDialog(
+            stationName = fi.aalto.radio.alarm.AlarmRuntime.stationName,
+            snoozeMinutes = fi.aalto.radio.alarm.AlarmRuntime.snoozeMinutes,
+            usingFallback = fi.aalto.radio.alarm.AlarmRuntime.usingFallback,
+            onSnooze = { AlarmService.send(context, AlarmService.ACTION_SNOOZE) },
+            onContinue = { AlarmService.send(context, AlarmService.ACTION_CONTINUE) },
+            onDismiss = { AlarmService.send(context, AlarmService.ACTION_DISMISS) }
         )
     }
 

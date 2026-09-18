@@ -56,34 +56,6 @@ internal object AlarmLog {
             .getString(KEY, "").orEmpty().lines().filter { it.isNotBlank() }
 }
 
-/**
- * "Jatka kuuntelua": the alarm stops and the normal app opens and plays the
- * alarm station through its usual path, so the app shows the right station.
- */
-internal object AlarmHandoff {
-    private const val ACTION_CONTINUE_IN_APP = "fi.aalto.radio.alarm.CONTINUE_IN_APP"
-
-    var pending by mutableStateOf<AlarmSettings?>(null)
-
-    fun continueIntent(context: Context): Intent =
-        Intent(context, fi.aalto.radio.MainActivity::class.java)
-            .setAction(ACTION_CONTINUE_IN_APP)
-            .addFlags(
-                Intent.FLAG_ACTIVITY_NEW_TASK or
-                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                    Intent.FLAG_ACTIVITY_SINGLE_TOP
-            )
-
-    /** Called by MainActivity for every incoming intent. */
-    fun consume(context: Context, intent: Intent?) {
-        if (intent?.action != ACTION_CONTINUE_IN_APP) return
-        intent.action = null
-        if (AlarmRuntime.ringing) AlarmService.send(context, AlarmService.ACTION_DISMISS)
-        pending = AlarmStore.load(context)
-        AlarmLog.add(context, "jatka kuuntelua sovelluksessa")
-    }
-}
-
 /** Ringing state shared with the lock-screen AlarmActivity (same process). */
 internal object AlarmRuntime {
     var ringing by mutableStateOf(false)
@@ -127,8 +99,11 @@ class AlarmService : Service() {
             }
             ACTION_CONTINUE -> {
                 AlarmLog.add(this, "jatka kuuntelua")
-                val station = settings
+                // The service can have been recreated since the alarm started,
+                // in which case its own copy of the settings is empty.
+                val station = settings.takeIf { it.streamUrl != null } ?: AlarmStore.load(this)
                 stopPlayers()
+                ensureAudibleMusicVolume()
                 continueInRadio(station)
                 stopAlarm()
             }
@@ -334,6 +309,24 @@ class AlarmService : Service() {
         }
     }
 
+    /**
+     * The alarm plays on the alarm stream, the radio on the media stream. If
+     * the media volume happens to be near zero, continuing would be silent, so
+     * it is nudged up to a level that can be heard. Never lowered.
+     */
+    private fun ensureAudibleMusicVolume() {
+        val audio = getSystemService(android.media.AudioManager::class.java) ?: return
+        runCatching {
+            val max = audio.getStreamMaxVolume(android.media.AudioManager.STREAM_MUSIC)
+            val current = audio.getStreamVolume(android.media.AudioManager.STREAM_MUSIC)
+            val target = ((max * MIN_CONTINUE_VOLUME_PERCENT) / 100).coerceIn(1, max)
+            if (current < target) {
+                audio.setStreamVolume(android.media.AudioManager.STREAM_MUSIC, target, 0)
+                AlarmLog.add(this, "median äänenvoimakkuus $current -> $target")
+            }
+        }
+    }
+
     private fun restoreAlarmVolume() {
         val previous = previousAlarmVolume ?: return
         previousAlarmVolume = null
@@ -431,13 +424,14 @@ class AlarmService : Service() {
             .setContentIntent(fullScreen)
             .setFullScreenIntent(fullScreen, true)
             // When the phone is in use Android shows a small heads-up instead of
-            // the full-screen view. Two short actions fit there; "Jatka kuuntelua"
-            // is in the full view that opens when the notification is tapped.
+            // the full-screen view. Three short actions fit there, so all three
+            // ways out of an alarm are reachable without opening anything.
             .apply {
                 if (settings.snoozeMinutes > 0) {
                     addAction(0, getString(R.string.alarm_snooze), serviceIntent(this@AlarmService, ACTION_SNOOZE, 1))
                 }
             }
+            .addAction(0, getString(R.string.alarm_continue_short), serviceIntent(this, ACTION_CONTINUE, 3))
             .addAction(0, getString(R.string.alarm_dismiss), serviceIntent(this, ACTION_DISMISS, 2))
             .build()
     }
@@ -447,6 +441,7 @@ class AlarmService : Service() {
         const val ACTION_SNOOZE = "fi.aalto.radio.alarm.SNOOZE"
         const val ACTION_DISMISS = "fi.aalto.radio.alarm.DISMISS"
         const val ACTION_CONTINUE = "fi.aalto.radio.alarm.CONTINUE"
+        private const val MIN_CONTINUE_VOLUME_PERCENT = 30
 
         /** Rings right away with the saved settings (test button in the dialog). */
         internal fun ringNow(context: Context) {

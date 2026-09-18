@@ -4,7 +4,7 @@ import fi.aalto.radio.catalog.CatalogResult
 import fi.aalto.radio.catalog.CatalogStation
 import fi.aalto.radio.catalog.radiobrowser.RadioBrowserCatalogSource
 import kotlinx.coroutines.runBlocking
-import org.junit.Ignore
+import org.junit.Assume
 import org.junit.Test
 
 /**
@@ -18,13 +18,14 @@ import org.junit.Test
  *
  * Manual: hits the real Radio Browser API, so it is never part of the offline
  * suite. Run it with
- *   ./gradlew testDebugUnitTest --tests "*StreamTypeManualReportTest*" -i
+ *   ./gradlew testDebugUnitTest --tests "*StreamTypeManualReportTest*" -Daalto.manual=true
  */
-@Ignore("Manual real Radio Browser report; never part of the offline unit suite")
 class StreamTypeManualReportTest {
 
     @Test
     fun reportsHlsShareOfPopularStations() = runBlocking {
+        // Skipped in the normal suite; asked for with -Daalto.manual=true.
+        Assume.assumeTrue(System.getProperty("aalto.manual") == "true")
         listOf("FI", "SE", "DE").forEach { countryCode ->
             when (val result = source.stationsByCountry(countryCode, LIMIT)) {
                 is CatalogResult.Success -> report(countryCode, result.value)

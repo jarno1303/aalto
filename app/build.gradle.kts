@@ -45,6 +45,12 @@ android {
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
+            // Manual reports that call real services stay out of the offline
+            // suite unless asked for: -Daalto.manual=true
+            all {
+                it.systemProperty("aalto.manual", System.getProperty("aalto.manual") ?: "false")
+                it.testLogging { showStandardStreams = true }
+            }
         }
     }
 

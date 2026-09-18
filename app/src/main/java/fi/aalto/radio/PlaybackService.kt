@@ -24,6 +24,8 @@ import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
+import fi.aalto.radio.history.TrackHistory
+import fi.aalto.radio.history.TrackTitle
 import fi.aalto.radio.playback.AaltoSessionPlayer
 import fi.aalto.radio.playback.BrowseActions
 import fi.aalto.radio.playback.LastStationStore
@@ -142,7 +144,10 @@ class PlaybackService : MediaLibraryService() {
             if (isPlaying) recordRecent()
         }
 
-        override fun onMediaMetadataChanged(mediaMetadata: androidx.media3.common.MediaMetadata) = refreshWidget()
+        override fun onMediaMetadataChanged(mediaMetadata: androidx.media3.common.MediaMetadata) {
+            refreshWidget()
+            recordTrack(mediaMetadata)
+        }
     }
 
     private fun favoriteButton(isFavorite: Boolean): CommandButton =
@@ -204,6 +209,26 @@ class PlaybackService : MediaLibraryService() {
                 }
                 repository.recordRecentlyPlayed(id)
             }.onFailure { Log.w(TAG, "recent not recorded for $id", it) }
+        }
+    }
+
+    /**
+     * Stores what the station says is playing. Done here rather than in the UI
+     * so it keeps working while the app is in the background, which is where
+     * radio is listened to most of the time.
+     */
+    private fun recordTrack(metadata: androidx.media3.common.MediaMetadata) {
+        val item = sessionPlayer?.currentMediaItem ?: return
+        val stationId = item.mediaId.takeIf { it.isNotBlank() } ?: return
+        val stationName = item.mediaMetadata.title?.toString()
+        val line = TrackTitle.format(
+            title = metadata.title?.toString(),
+            artist = metadata.artist?.toString(),
+            stationTitle = stationName,
+            stationDetails = item.mediaMetadata.artist?.toString()
+        ) ?: return
+        scope.launch {
+            runCatching { TrackHistory.record(this@PlaybackService, stationId, stationName, line) }
         }
     }
 

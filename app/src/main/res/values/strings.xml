@@ -147,4 +147,11 @@
     <string name="alarm_advanced">Lisäasetukset</string>
     <string name="home_hint_long_press">Vinkki: poista asema listalta pitkällä painalluksella.</string>
     <string name="home_hint_dismiss">Selvä</string>
+    <!-- Played songs -->
+    <string name="history_title">Soitetut kappaleet</string>
+    <string name="history_clear">Tyhjennä</string>
+    <string name="history_empty">Ei vielä kappaleita. Kun asema kertoo mitä soi, se tallentuu tänne.</string>
+    <string name="history_search_spotify">Etsi Spotifysta</string>
+    <string name="history_search_youtube">Etsi YouTubesta</string>
+    <string name="history_open">Soitetut kappaleet</string>
 </resources>

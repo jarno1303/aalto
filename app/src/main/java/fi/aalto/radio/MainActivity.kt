@@ -16,6 +16,8 @@ import fi.aalto.radio.alarm.AlarmScheduler
 import fi.aalto.radio.alarm.AlarmService
 import fi.aalto.radio.alarm.AlarmStore
 import fi.aalto.radio.alarm.rememberNotificationsEnabled
+import fi.aalto.radio.history.HistorySheet
+import fi.aalto.radio.history.rememberTrackHistory
 import fi.aalto.radio.alarm.finnishDayShort
 import fi.aalto.radio.alarm.formatClock
 import java.time.Instant
@@ -111,6 +113,8 @@ private fun AaltoApp() {
     val syncState by syncCoordinator.state.collectAsState()
     var showSettings by rememberSaveable { mutableStateOf(false) }
     var showAlarm by rememberSaveable { mutableStateOf(false) }
+    var showHistory by rememberSaveable { mutableStateOf(false) }
+    val trackHistory = rememberTrackHistory()
     val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
     var alarmSettings by remember { mutableStateOf(AlarmStore.load(context)) }
     var nextAlarmMillis by remember { mutableStateOf(AlarmScheduler.nextRingMillis(context)) }
@@ -403,6 +407,7 @@ private fun AaltoApp() {
                     onOpenAlarm = { showAlarm = true },
                     onRemoveOwnStation = { station -> removeOwnStation(station) },
                     alarmLabel = nextAlarmMillis?.let(::alarmLabel),
+                    onOpenHistory = { showHistory = true },
                     onStationClick = { station ->
                         playStation(station, openNowPlaying = false)
                     },
@@ -508,6 +513,14 @@ private fun AaltoApp() {
             onSnooze = { AlarmService.send(context, AlarmService.ACTION_SNOOZE) },
             onContinue = { AlarmService.send(context, AlarmService.ACTION_CONTINUE) },
             onDismiss = { AlarmService.send(context, AlarmService.ACTION_DISMISS) }
+        )
+    }
+
+    if (showHistory) {
+        HistorySheet(
+            tracks = trackHistory.items,
+            onClear = trackHistory::clear,
+            onDismiss = { showHistory = false }
         )
     }
 

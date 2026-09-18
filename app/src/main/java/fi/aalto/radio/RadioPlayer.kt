@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import fi.aalto.radio.history.TrackTitle
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
@@ -289,21 +290,15 @@ class RadioPlayer(context: Context) : Player.Listener {
         currentStationId = mediaItem?.mediaId
     }
 
+    // The same rules the history uses, so what is shown and what is stored agree.
     private fun trackText(metadata: MediaMetadata): String? {
         val staticMetadata = controller?.currentMediaItem?.mediaMetadata
-        val stationTitle = staticMetadata?.title?.toString()?.trim()
-        val stationDetails = staticMetadata?.artist?.toString()?.trim()
-        val title = metadata.title?.toString()?.trim()
-            ?.takeIf { it.length >= 2 && !it.equals(stationTitle, ignoreCase = true) }
-            ?.takeUnless { it.startsWith("http", ignoreCase = true) }
-            ?: return null
-        val artist = metadata.artist?.toString()?.trim()
-            ?.takeIf {
-                it.isNotEmpty() && it != "Aalto" &&
-                    !it.equals(stationTitle, ignoreCase = true) &&
-                    !it.equals(stationDetails, ignoreCase = true)
-            }
-        return if (artist != null && !title.contains(artist, ignoreCase = true)) "$artist – $title" else title
+        return TrackTitle.format(
+            title = metadata.title?.toString(),
+            artist = metadata.artist?.toString(),
+            stationTitle = staticMetadata?.title?.toString()?.trim(),
+            stationDetails = staticMetadata?.artist?.toString()?.trim()
+        )
     }
 
     override fun onPlayerError(error: PlaybackException) {

@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -463,7 +464,8 @@ internal fun NowPlayingCard(
     onPrevious: (() -> Unit)? = null,
     onNext: (() -> Unit)? = null,
     trackTitle: String? = null,
-    expanded: Boolean = false
+    expanded: Boolean = false,
+    onOpenHistory: (() -> Unit)? = null
 ) {
     stationTrace("ui_current_state", station)
     val canSkip = onPrevious != null && onNext != null
@@ -531,7 +533,22 @@ internal fun NowPlayingCard(
                         overflow = TextOverflow.Ellipsis
                     )
                     Spacer(modifier = Modifier.height(2.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Tapping what is playing opens the songs that have played:
+                    // the question "what was that?" is asked right here.
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = if (onOpenHistory == null) {
+                            Modifier
+                        } else {
+                            Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable(
+                                    onClickLabel = stringResource(R.string.history_open),
+                                    role = Role.Button,
+                                    onClick = onOpenHistory
+                                )
+                        }
+                    ) {
                         if (isPlaying && playbackError == null) {
                             NowPlayingIndicator(size = 16.dp)
                             Spacer(modifier = Modifier.width(AaltoSpaceXs))
@@ -554,8 +571,19 @@ internal fun NowPlayingCard(
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = if (showTrack) FontWeight.Medium else FontWeight.Normal,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
                         )
+                        if (onOpenHistory != null) {
+                            Icon(
+                                imageVector = Icons.Outlined.History,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier
+                                    .padding(start = AaltoSpaceXs)
+                                    .size(16.dp)
+                            )
+                        }
                     }
                     val details = when {
                         sleepMinutes != null -> stringResource(R.string.sleep_timer_remaining, sleepMinutes)

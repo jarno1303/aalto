@@ -75,7 +75,8 @@ internal fun RadioScreen(
     onEditOwnStations: (() -> Unit)? = null,
     onOpenAlarm: (() -> Unit)? = null,
     alarmLabel: String? = null,
-    onRemoveOwnStation: ((RadioStation) -> Unit)? = null
+    onRemoveOwnStation: ((RadioStation) -> Unit)? = null,
+    onOpenHistory: (() -> Unit)? = null
 ) {
     val showOwnStations = favoriteStations.isNotEmpty()
     val shelfStations = (if (showOwnStations) favoriteStations else popularStations)
@@ -197,7 +198,8 @@ internal fun RadioScreen(
                     onPrevious = onPrevious,
                     onNext = onNext,
                     trackTitle = trackTitle,
-                    expanded = !listVisible
+                    expanded = !listVisible,
+                    onOpenHistory = onOpenHistory
                 )
 
                 // The list can be folded away for a calm screen; the choice is remembered.

@@ -53,6 +53,18 @@ Jos 1 tai 2 epäonnistuu, älä jatka: korjaa ensin.
       joka katkeaa usealle riville tai kolmeksi kirjaimeksi (asetukset, herätys,
       alapalkki, otsikkorivit).
 
+## 4b. Soitetut kappaleet
+
+- [ ] Soita asema, joka lähettää kappaletiedot (esim. Radio Nova, SuomiPop).
+      Kun kappale vaihtuu, napauta soittonäkymässä sitä riviä, jolla kappale lukee.
+- [ ] Lista näyttää kuunnellut kappaleet uusin ensin, aika ja asema alla.
+- [ ] Sama kappale ei toistu listalla, vaikka asema lähettää tiedot uudelleen.
+- [ ] Mainoskatkot, aseman nimi ja osoitteet eivät päädy listalle.
+- [ ] Kappaleen napautus tarjoaa haun Spotifysta ja YouTubesta, ja linkki avautuu.
+- [ ] Tyhjennä-painike tyhjentää listan.
+- [ ] Kuuntele hetki sovellus taustalla: kappaleet tallentuvat silti.
+- [ ] Päivitys vanhan version päälle: suosikit ja asetukset säilyvät (Room 5 -> 6).
+
 ## 5. Herätys (tärkeä, osa yön yli)
 
 - [ ] Herätyspaneeli aukeaa yläpalkin kellosta.

@@ -25,7 +25,7 @@ class RadioBrowserManualSmokeTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val databaseName = "aalto_catalog_smoke_${UUID.randomUUID()}"
         val database = Room.databaseBuilder(context, AaltoDatabase::class.java, databaseName)
-            .addMigrations(AaltoDatabase.MIGRATION_1_2, AaltoDatabase.MIGRATION_2_3, AaltoDatabase.MIGRATION_3_4, AaltoDatabase.MIGRATION_4_5)
+            .addMigrations(AaltoDatabase.MIGRATION_1_2, AaltoDatabase.MIGRATION_2_3, AaltoDatabase.MIGRATION_3_4, AaltoDatabase.MIGRATION_4_5, AaltoDatabase.MIGRATION_5_6)
             .allowMainThreadQueries()
             .build()
         try {

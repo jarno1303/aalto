@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import fi.aalto.radio.history.PlayedTrackDao
+import fi.aalto.radio.history.PlayedTrackEntity
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import fi.aalto.radio.catalog.CatalogCountryCacheMetadataEntity
@@ -20,14 +22,16 @@ import fi.aalto.radio.catalog.CatalogStationEntity
         AppliedSyncMutationEntity::class,
         SyncMetadataEntity::class,
         CatalogStationEntity::class,
-        CatalogCountryCacheMetadataEntity::class
+        CatalogCountryCacheMetadataEntity::class,
+        PlayedTrackEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class AaltoDatabase : RoomDatabase() {
     abstract fun localRadioDao(): LocalRadioDao
     abstract fun catalogStationDao(): CatalogStationDao
+    abstract fun playedTrackDao(): PlayedTrackDao
 
     companion object {
         private const val DATABASE_NAME = "aalto_local.db"
@@ -163,6 +167,23 @@ abstract class AaltoDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS played_tracks (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        stationId TEXT NOT NULL,
+                        stationName TEXT NOT NULL,
+                        title TEXT NOT NULL,
+                        playedAt INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_played_tracks_playedAt ON played_tracks (playedAt)")
+            }
+        }
+
         @Volatile
         private var instance: AaltoDatabase? = null
 
@@ -173,7 +194,7 @@ abstract class AaltoDatabase : RoomDatabase() {
                     AaltoDatabase::class.java,
                     DATABASE_NAME
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .build()
                     .also { instance = it }
             }

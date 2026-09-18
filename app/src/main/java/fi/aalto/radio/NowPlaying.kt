@@ -10,7 +10,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -57,7 +56,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -72,164 +70,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
-/**
- * Now Playing hero: logo, name, state and the main play/pause control.
- *
- * Previous/next move through the user's own stations (preset mental model,
- * AGENTS.md §13). They are hidden when there are fewer than two presets.
- * A horizontal swipe on the logo does the same.
- */
-@Composable
-internal fun NowPlaying(
-    station: RadioStation,
-    isPlaying: Boolean,
-    isFavorite: Boolean,
-    isConnecting: Boolean,
-    playbackError: String?,
-    onPlayPause: () -> Unit,
-    onRetry: () -> Unit,
-    onFavorite: () -> Unit,
-    onNightScreen: () -> Unit,
-    modifier: Modifier = Modifier,
-    onPrevious: (() -> Unit)? = null,
-    onNext: (() -> Unit)? = null,
-    trackTitle: String? = null
-) {
-    stationTrace("ui_current_state", station)
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.End
-        ) {
-            IconButton(
-                onClick = onFavorite,
-                modifier = Modifier.size(48.dp)
-            ) {
-                Icon(
-                    imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                    contentDescription = stringResource(
-                        if (isFavorite) R.string.favorite_remove else R.string.favorite_add
-                    ),
-                    tint = if (isFavorite) AaltoBlue else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-            NightScreenTrigger(onNightScreen = onNightScreen)
-        }
-
-        BoxWithConstraints(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            contentAlignment = Alignment.Center
-        ) {
-            val logoSize = minOf(148.dp, maxWidth * 0.44f, maxHeight * 0.40f).coerceAtLeast(96.dp)
-            val playSize = if (maxHeight < 300.dp) 72.dp else 84.dp
-            val compact = maxHeight < 300.dp
-
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                if (onPrevious != null && onNext != null) {
-                    SwipeableStation(
-                        onPrevious = onPrevious,
-                        onNext = onNext
-                    ) {
-                        NowPlayingLogo(
-                            station = station,
-                            isPlaying = isPlaying,
-                            logoSize = logoSize
-                        )
-                    }
-                } else {
-                    NowPlayingLogo(
-                        station = station,
-                        isPlaying = isPlaying,
-                        logoSize = logoSize
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(if (compact) AaltoSpaceL else AaltoSpaceXl))
-
-                Text(
-                    text = station.name,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.headlineSmall,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(horizontal = AaltoSpaceL)
-                )
-
-                Spacer(modifier = Modifier.height(AaltoSpaceS))
-
-                Text(
-                    text = trackTitle?.takeIf { isPlaying && playbackError == null }
-                        ?: playbackStateText(
-                            isPlaying = isPlaying,
-                            isConnecting = isConnecting,
-                            hasError = playbackError != null
-                        ),
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    color = if (playbackError != null) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = if (playbackError != null) FontWeight.Medium else FontWeight.Normal
-                )
-
-                if (playbackError != null) {
-                    TextButton(
-                        onClick = onRetry,
-                        modifier = Modifier.heightIn(min = 48.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Refresh,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(AaltoSpaceS))
-                        Text(stringResource(R.string.action_retry))
-                    }
-                    Spacer(modifier = Modifier.height(AaltoSpaceM))
-                } else {
-                    Spacer(modifier = Modifier.height(if (compact) AaltoSpaceXl else AaltoSpaceXxl))
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(AaltoSpaceXl)
-                ) {
-                    SkipButton(
-                        visible = onPrevious != null && onNext != null,
-                        isNext = false,
-                        onClick = { onPrevious?.invoke() }
-                    )
-                    NowPlayingPlayPauseButton(
-                        isPlaying = isPlaying,
-                        isConnecting = isConnecting,
-                        playSize = playSize,
-                        onClick = onPlayPause
-                    )
-                    SkipButton(
-                        visible = onPrevious != null && onNext != null,
-                        isNext = true,
-                        onClick = { onNext?.invoke() }
-                    )
-                }
-            }
-        }
-    }
-}
 
 @Composable
 private fun SkipButton(

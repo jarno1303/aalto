@@ -53,6 +53,18 @@ Jos 1 tai 2 epäonnistuu, älä jatka: korjaa ensin.
       joka katkeaa usealle riville tai kolmeksi kirjaimeksi (asetukset, herätys,
       alapalkki, otsikkorivit).
 
+## 4a. Vaaka-asento
+
+- [ ] Käännä puhelin vaaka-asentoon etusivulla: vasemmalla soittonäkymä,
+      oikealla asemalista, ei tyhjää tilaa eikä leikkautuvia elementtejä.
+- [ ] Soittonäkymässä toimivat vaakatasossa samat asiat kuin pystyssä:
+      sydän, uniajastin, yönäyttö, edellinen/seuraava ja kappalerivin
+      napautus (soitetut kappaleet).
+- [ ] Aseman poisto pitkällä painalluksella toimii myös vaakatasossa.
+- [ ] Soiva asema on korostettu ja näkyvissä listassa myös käännön jälkeen.
+- [ ] Käännä edestakaisin soiton aikana: ääni ei katkea.
+- [ ] Haku- ja Omat asemat -välilehdet ovat käytettäviä vaakatasossa.
+
 ## 4b. Soitetut kappaleet
 
 - [ ] Soita asema, joka lähettää kappaletiedot (esim. Radio Nova, SuomiPop).

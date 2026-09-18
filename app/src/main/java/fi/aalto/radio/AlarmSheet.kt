@@ -19,7 +19,6 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -363,40 +362,22 @@ internal fun AlarmSheet(
     }
 
     if (editingTime) {
-        // Scroll wheels: no typing needed.
-        var pickedHour by remember { mutableStateOf(settings.hour) }
-        var pickedMinute by remember { mutableStateOf(settings.minute) }
-        AlertDialog(
-            onDismissRequest = { editingTime = false },
-            title = { Text(stringResource(R.string.alarm_change_time)) },
-            text = {
-                WheelTimePicker(
-                    hour = pickedHour,
-                    minute = pickedMinute,
-                    onTimeChange = { newHour, newMinute ->
-                        pickedHour = newHour
-                        pickedMinute = newMinute
-                    }
+        // Scroll wheels: no typing needed. Confirming also turns the alarm on,
+        // because choosing a time is how someone says they want to be woken.
+        WheelTimeDialog(
+            initialHour = settings.hour,
+            initialMinute = settings.minute,
+            onConfirm = { pickedHour, pickedMinute ->
+                editingTime = false
+                onChange(
+                    withStation(settings, selectedStation).copy(
+                        hour = pickedHour,
+                        minute = pickedMinute,
+                        enabled = selectedStation != null
+                    )
                 )
             },
-            confirmButton = {
-                TextButton(onClick = {
-                    editingTime = false
-                    // Choosing a time means the user wants the alarm on.
-                    onChange(
-                        withStation(settings, selectedStation).copy(
-                            hour = pickedHour,
-                            minute = pickedMinute,
-                            enabled = selectedStation != null
-                        )
-                    )
-                }) { Text(stringResource(R.string.alarm_ok)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { editingTime = false }) {
-                    Text(stringResource(R.string.alarm_cancel))
-                }
-            }
+            onDismiss = { editingTime = false }
         )
     }
 }

@@ -86,6 +86,7 @@
     <string name="alarm_hours">Tunnit</string>
     <string name="alarm_minutes">Minuutit</string>
     <string name="alarm_ok">OK</string>
+    <string name="alarm_set">Aseta</string>
     <string name="alarm_cancel">Peruuta</string>
     <string name="alarm_done">Valmis</string>
     <string name="alarm_off">Pois päältä</string>

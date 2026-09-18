@@ -1,12 +1,6 @@
 package fi.aalto.radio
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -186,29 +180,14 @@ internal fun NowPlayingLogo(
                 .clip(haloShape)
                 .background(AaltoBlue)
         )
-        // The station changes with a short settle, the same idea as the small
-        // player's crossfade but sized for the big logo: the new logo arrives
-        // instead of replacing the old one between two frames.
-        AnimatedContent(
-            targetState = station,
-            transitionSpec = {
-                (
-                    fadeIn(animationSpec = tween(durationMillis = 220)) +
-                        scaleIn(initialScale = 0.90f, animationSpec = tween(durationMillis = 260))
-                    ).togetherWith(
-                    fadeOut(animationSpec = tween(durationMillis = 160)) +
-                        scaleOut(targetScale = 1.06f, animationSpec = tween(durationMillis = 220))
-                )
-            },
-            label = "nowPlayingStation"
-        ) { current ->
-            StationLogo(
-                station = current,
-                size = logoSize,
-                cornerRadius = cornerRadius,
-                circular = circular
-            )
-        }
+        // The change itself lives in StationLogo, so every logo in the app —
+        // small player, big card, tiles — changes the same way.
+        StationLogo(
+            station = station,
+            size = logoSize,
+            cornerRadius = cornerRadius,
+            circular = circular
+        )
     }
 }
 

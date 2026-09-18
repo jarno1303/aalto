@@ -498,12 +498,15 @@ internal fun StationLogo(
             ),
         contentAlignment = Alignment.Center
     ) {
-        // Short crossfade so the initials placeholder does not pop into the logo.
+        // One crossfade for every logo in the app: the initials placeholder does
+        // not pop into the logo, and switching station changes the tile the
+        // same way whether it is 44 dp in the small player or 112 dp in the
+        // card. Keyed by station as well, so a change is always seen.
         Crossfade(
-            targetState = logo,
+            targetState = station.stableId to logo,
             animationSpec = tween(durationMillis = 180),
             label = "stationLogo"
-        ) { bitmap ->
+        ) { (_, bitmap) ->
             Box(
                 modifier = Modifier
                     .fillMaxSize()

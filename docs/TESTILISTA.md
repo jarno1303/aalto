@@ -65,6 +65,18 @@ Jos 1 tai 2 epäonnistuu, älä jatka: korjaa ensin.
 - [ ] Kuuntele hetki sovellus taustalla: kappaleet tallentuvat silti.
 - [ ] Päivitys vanhan version päälle: suosikit ja asetukset säilyvät (Room 5 -> 6).
 
+## 4c. Ääni
+
+- [ ] Asetukset -> Ääni avaa paneelin.
+- [ ] Aseman äänenvoimakkuuden liuku kuuluu heti soiton aikana.
+- [ ] Vaihda toiseen asemaan ja takaisin: säätö muistetaan asemakohtaisesti.
+- [ ] Nollaa palauttaa aseman alkuperäiselle tasolle.
+- [ ] Taajuuskorjain päälle: esiasetuksen vaihto kuuluu, kaistojen liu'ut kuuluvat.
+- [ ] Taajuuskorjain pois: ääni palaa ennalleen.
+- [ ] Asetukset säilyvät sovelluksen uudelleenkäynnistyksen yli.
+- [ ] Jos laite ei tarjoa taajuuskorjainta, paneeli kertoo sen eikä kaadu.
+- [ ] Soitto ei katkea missään yllä olevassa kohdassa.
+
 ## 5. Herätys (tärkeä, osa yön yli)
 
 - [ ] Herätyspaneeli aukeaa yläpalkin kellosta.

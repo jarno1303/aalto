@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
@@ -16,7 +18,9 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -33,6 +37,7 @@ internal fun SettingsDialog(
     syncState: SyncUiState,
     onSignIn: () -> Unit,
     onSignOut: () -> Unit,
+    onOpenAudio: () -> Unit,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
@@ -51,6 +56,32 @@ internal fun SettingsDialog(
                     ThemeChoice(AaltoThemeMode.SYSTEM, R.string.theme_system, themeMode, onThemeModeChange)
                     ThemeChoice(AaltoThemeMode.LIGHT, R.string.theme_light, themeMode, onThemeModeChange)
                     ThemeChoice(AaltoThemeMode.DARK, R.string.theme_dark, themeMode, onThemeModeChange)
+                }
+
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.padding(vertical = AaltoSpaceXs)
+                )
+
+                SettingsSectionTitle(stringResource(R.string.audio_title))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp)
+                        .clickable(role = Role.Button, onClick = onOpenAudio),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.audio_settings_row),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        text = stringResource(R.string.audio_open),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = AaltoBlue,
+                        maxLines = 1
+                    )
                 }
 
                 HorizontalDivider(

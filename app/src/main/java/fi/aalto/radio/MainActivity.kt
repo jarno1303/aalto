@@ -16,6 +16,7 @@ import fi.aalto.radio.alarm.AlarmScheduler
 import fi.aalto.radio.alarm.AlarmService
 import fi.aalto.radio.alarm.AlarmStore
 import fi.aalto.radio.alarm.rememberNotificationsEnabled
+import fi.aalto.radio.audio.AudioSheet
 import fi.aalto.radio.history.HistorySheet
 import fi.aalto.radio.history.rememberTrackHistory
 import fi.aalto.radio.alarm.finnishDayShort
@@ -114,6 +115,7 @@ private fun AaltoApp() {
     var showSettings by rememberSaveable { mutableStateOf(false) }
     var showAlarm by rememberSaveable { mutableStateOf(false) }
     var showHistory by rememberSaveable { mutableStateOf(false) }
+    var showAudio by rememberSaveable { mutableStateOf(false) }
     val trackHistory = rememberTrackHistory()
     val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
     var alarmSettings by remember { mutableStateOf(AlarmStore.load(context)) }
@@ -516,6 +518,14 @@ private fun AaltoApp() {
         )
     }
 
+    if (showAudio) {
+        AudioSheet(
+            stationId = selectedStation.id,
+            stationName = selectedStation.name,
+            onDismiss = { showAudio = false }
+        )
+    }
+
     if (showHistory) {
         HistorySheet(
             tracks = trackHistory.items,
@@ -626,6 +636,10 @@ private fun AaltoApp() {
                 }
             },
             onSignOut = syncCoordinator::signOut,
+            onOpenAudio = {
+                showSettings = false
+                showAudio = true
+            },
             onDismiss = { showSettings = false }
         )
     }

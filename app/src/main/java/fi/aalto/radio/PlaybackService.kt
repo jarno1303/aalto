@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
+import fi.aalto.radio.audio.AudioEffects
 import fi.aalto.radio.history.StreamTrack
 import fi.aalto.radio.history.TrackHistory
 import fi.aalto.radio.history.TrackTitle
@@ -72,6 +73,9 @@ class PlaybackService : MediaLibraryService() {
     @Volatile
     private var currentTrack: String? = null
 
+    /** The raw player, for the equalizer and the per-station gain. */
+    private var exoPlayer: ExoPlayer? = null
+
     override fun onCreate() {
         super.onCreate()
         lookup = StationLookup(this)
@@ -91,7 +95,10 @@ class PlaybackService : MediaLibraryService() {
 
         val player = AaltoSessionPlayer(this, exo, scope) { presets }
         sessionPlayer = player
+        exoPlayer = exo
         exo.addListener(widgetAndResumeListener)
+        // Sound shaping sits beside the player, never in its path.
+        AudioEffects.attach(this, exo, exo.audioSessionId)
 
         val openApp = PendingIntent.getActivity(
             this,
@@ -124,6 +131,8 @@ class PlaybackService : MediaLibraryService() {
     }
 
     override fun onDestroy() {
+        AudioEffects.release()
+        exoPlayer = null
         mediaSession?.let { session ->
             sessionPlayer?.detach()
             session.player.release()
@@ -138,8 +147,16 @@ class PlaybackService : MediaLibraryService() {
     // ---- Widget + "resume last station" ------------------------------------
 
     private val widgetAndResumeListener = object : Player.Listener {
+        /** The session id appears once audio starts, and can change later. */
+        override fun onAudioSessionIdChanged(audioSessionId: Int) {
+            val exo = exoPlayer ?: return
+            AudioEffects.attach(this@PlaybackService, exo, audioSessionId)
+        }
+
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             mediaItem?.let { LastStationStore.save(this@PlaybackService, it) }
+            // Each station keeps its own level.
+            AudioEffects.applyStationGain(this@PlaybackService, mediaItem?.mediaId)
             // A new station has not announced anything yet.
             currentTrack = null
             publishTrack(null)

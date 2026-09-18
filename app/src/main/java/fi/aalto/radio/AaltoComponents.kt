@@ -494,7 +494,7 @@ internal fun StationLogo(
         if (shownStation == station.stableId) return@LaunchedEffect
         shownStation = station.stableId
         turn.snapTo(-90f)
-        turn.animateTo(0f, animationSpec = tween(durationMillis = 300))
+        turn.animateTo(0f, animationSpec = tween(durationMillis = 420))
     }
 
     Box(

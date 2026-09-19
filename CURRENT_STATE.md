@@ -155,8 +155,8 @@ What stations actually deliver (measured 2026-09-18, logcat tag `AALTO_TRACK`):
 
 ## Station gain in Aalto Sync (branch `sync-station-gain`, 2026-09-19)
 
-State: CODE WRITTEN. NOT YET BUILT, UNIT-TESTED OR PHYSICALLY VERIFIED
-(the session had no Android SDK or Gradle network access).
+State: CODE PASS (app:testDebugUnitTest and app:assembleDebug green on 2026-09-19).
+Firestore rules deployed 2026-09-19. PENDING PHYSICAL ACCEPTANCE.
 
 Per-station gain (the -8..+8 dB slider) now travels between the user's devices. Free, as
 docs/AALTO_PLUS.md says: no entitlement check anywhere. The equalizer stays per device.
@@ -164,7 +164,7 @@ docs/AALTO_PLUS.md says: no entitlement check anywhere. The equalizer stays per 
 - New sync entity `station_gain` / operation `SET_STATION_GAIN`, payload = dB as text.
 - Room schema 7: table `station_gains` (MIGRATION_6_7). Rows are kept at 0 dB after a reset.
 - Firestore: `users/{uid}/station_gains/{stationId}`, same stale/rebase protection as favorites.
-  **firestore.rules has a new block that must be deployed**, otherwise gain writes are rejected.
+  firestore.rules has a `station_gains` block (deployed to aaltodev 2026-09-19).
 - Playback still reads the gain from SharedPreferences `aalto_audio` (playback path unchanged).
   `audio/StationGainSync` keeps SharedPreferences and Room in step; the slider hands its value
   to Sync on release (`onValueChangeFinished`), and a remote value for the playing station is

@@ -27,9 +27,48 @@ fun interface RadioBrowserBaseUrlProvider {
     suspend fun baseUrls(): List<String>
 }
 
-class DefaultRadioBrowserBaseUrlProvider : RadioBrowserBaseUrlProvider {
+/**
+ * Radio Browser is a handful of volunteer servers behind one DNS name. Asking
+ * only "all.api…" meant one address: when that server was down or slow, the
+ * whole catalog failed and only the built-in stations were left. Radio
+ * Browser's own advice is to look the servers up and try them in turn; the
+ * known names are the fallback when DNS lookup itself fails.
+ */
+class DefaultRadioBrowserBaseUrlProvider(
+    private val lookup: suspend () -> List<String> = ::lookUpServerNames
+) : RadioBrowserBaseUrlProvider {
+    @Volatile
+    private var cached: List<String>? = null
+
     override suspend fun baseUrls(): List<String> {
-        return listOf("https://all.api.radio-browser.info")
+        cached?.let { return it }
+        val found = runCatching { lookup() }.getOrDefault(emptyList())
+        return serverOrder(found).also { if (found.isNotEmpty()) cached = it }
+    }
+
+    companion object {
+        val KNOWN_SERVERS = listOf(
+            "fi1.api.radio-browser.info",
+            "de1.api.radio-browser.info",
+            "de2.api.radio-browser.info",
+            "nl1.api.radio-browser.info",
+            "at1.api.radio-browser.info"
+        )
+
+        /** Looked-up servers in random order, then the known ones not already listed. */
+        fun serverOrder(lookedUp: List<String>): List<String> {
+            val names = (lookedUp.shuffled() + KNOWN_SERVERS.shuffled())
+                .map { it.trim().trimEnd('.').lowercase() }
+                .filter { it.endsWith(".api.radio-browser.info") && it != "all.api.radio-browser.info" }
+                .distinct()
+            return names.map { "https://$it" }
+        }
+
+        private suspend fun lookUpServerNames(): List<String> = withContext(Dispatchers.IO) {
+            java.net.InetAddress.getAllByName("all.api.radio-browser.info")
+                .mapNotNull { address -> runCatching { address.canonicalHostName }.getOrNull() }
+                .filter { name -> name.any { it.isLetter() } }
+        }
     }
 }
 

@@ -173,7 +173,8 @@ private fun AaltoApp() {
     // One country (the default), or every followed country at once.
     val browseCountries = if (allOwnCountries && ownCountries.size > 1) ownCountries else listOf(radioCountryCode)
 
-    LaunchedEffect(catalogRepository, browseCountries) {
+    var catalogRetry by remember { mutableStateOf(0) }
+    LaunchedEffect(catalogRepository, browseCountries, catalogRetry) {
         catalogLoading = true
         catalogError = null
         catalogStations = emptyList()
@@ -479,6 +480,7 @@ private fun AaltoApp() {
                     catalogStations = catalogStations,
                     catalogLoading = catalogLoading,
                     catalogError = catalogError,
+                    onRetryCatalog = { catalogRetry += 1 },
                     onStationClick = { station ->
                         stationTrace(
                             stage = "search_lookup",

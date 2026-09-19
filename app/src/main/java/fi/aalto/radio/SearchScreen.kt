@@ -81,6 +81,7 @@ internal fun SearchScreen(
     catalogStations: List<CatalogStation>,
     catalogLoading: Boolean,
     catalogError: String?,
+    onRetryCatalog: () -> Unit = {},
     onStationClick: (RadioStation) -> Unit,
     onStationFavoriteClick: (RadioStation) -> Unit
 ) {
@@ -339,6 +340,29 @@ internal fun SearchScreen(
 
         if (showSkeleton) {
             items(SKELETON_ROWS) { StationRowSkeleton() }
+        }
+
+        // The catalog did not load: say so, instead of a short list that looks
+        // as if most stations had vanished.
+        if (catalogError != null && !catalogLoading) {
+            item(key = "catalog-error") {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = AaltoSpaceXs),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.catalog_unavailable),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(onClick = onRetryCatalog) {
+                        Text(stringResource(R.string.action_retry))
+                    }
+                }
+            }
         }
 
         items(

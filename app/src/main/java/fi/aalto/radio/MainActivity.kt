@@ -302,37 +302,13 @@ private fun AaltoApp() {
     val onPrevious: (() -> Unit)? = if (canStepPresets) ({ stepPreset(-1) }) else null
     val onNext: (() -> Unit)? = if (canStepPresets) ({ stepPreset(1) }) else null
 
-    fun toggleFavorite(station: RadioStation) {
-        val previousFavoriteIds = favoriteIds
-        val updatedFavoriteIds = FavoriteIds.toggle(favoriteIds, station.id)
-        favoriteIds = updatedFavoriteIds
-
-        coroutineScope.launch {
-            val result = runCatching {
-                if (station.id in previousFavoriteIds) {
-                    repository.removeFavorite(station.id)
-                } else {
-                    repository.addFavorite(station.id)
-                }
-            }
-
-            result.onSuccess { committed ->
-                if (committed) {
-                    syncCoordinator.requestSync()
-                } else {
-                    favoriteIds = previousFavoriteIds
-                }
-            }.onFailure {
-                favoriteIds = previousFavoriteIds
-            }
-        }
-    }
-
     /**
-     * Long press on the home screen removes an own station. Destructive, so
-     * it is undoable instead of asking for confirmation first.
+     * Removing a station is destructive, so every route to it is undoable
+     * instead of asking for confirmation first: the long press on the home
+     * screen, the heart in the favorites list and the heart in Now Playing
+     * all land here and all offer the same undo.
      */
-    fun removeOwnStation(station: RadioStation) {
+    fun removeFavoriteWithUndo(station: RadioStation) {
         val previousOrder = favoriteOrder
         val previousIds = favoriteIds
         favoriteIds = favoriteIds - station.id
@@ -359,9 +335,52 @@ private fun AaltoApp() {
         }
     }
 
+    fun commitFavoriteOrder(orderedIds: List<String>) {
+        coroutineScope.launch {
+            val committed = runCatching { repository.reorderFavorites(orderedIds) }.getOrDefault(false)
+            if (committed) syncCoordinator.requestSync()
+        }
+    }
+
+    /** "Move to top" from a station's menu: the one thing most reordering is. */
+    fun moveFavoriteFirst(station: RadioStation) {
+        val ordered = listOf(station.id) + favoriteStations.map { it.id }.filter { it != station.id }
+        commitFavoriteOrder(ordered)
+    }
+
+    fun toggleFavorite(station: RadioStation) {
+        if (station.id in favoriteIds) {
+            removeFavoriteWithUndo(station)
+            return
+        }
+
+        val previousFavoriteIds = favoriteIds
+        favoriteIds = FavoriteIds.toggle(favoriteIds, station.id)
+
+        coroutineScope.launch {
+            runCatching { repository.addFavorite(station.id) }
+                .onSuccess { committed ->
+                    if (committed) {
+                        syncCoordinator.requestSync()
+                    } else {
+                        favoriteIds = previousFavoriteIds
+                    }
+                }
+                .onFailure {
+                    favoriteIds = previousFavoriteIds
+                }
+        }
+    }
+
     NightScreenSystemBars(active = nightScreenActive)
     BackHandler(enabled = nightScreenActive) {
         nightScreenActive = false
+    }
+
+    // Back on another tab returns to the radio instead of leaving the app,
+    // the way Android expects a bottom bar to behave.
+    BackHandler(enabled = !nightScreenActive && selectedTab != TAB_RADIO) {
+        selectedTab = TAB_RADIO
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -407,9 +426,9 @@ private fun AaltoApp() {
                     onRetry = { playStation(selectedStation, openNowPlaying = false) },
                     onFavorite = { toggleFavorite(selectedStation) },
                     onFind = { selectedTab = TAB_SEARCH },
-                    onEditOwnStations = { selectedTab = TAB_FAVORITES },
                     onOpenAlarm = { showAlarm = true },
-                    onRemoveOwnStation = { station -> removeOwnStation(station) },
+                    onRemoveOwnStation = { station -> removeFavoriteWithUndo(station) },
+                    onMoveOwnStationFirst = { station -> moveFavoriteFirst(station) },
                     alarmLabel = nextAlarmMillis?.let(::alarmLabel),
                     onOpenHistory = { showHistory = true },
                     onStationClick = { station ->
@@ -463,12 +482,7 @@ private fun AaltoApp() {
                         playStation(station, openNowPlaying = false)
                     },
                     onStationFavoriteClick = ::toggleFavorite,
-                    onReorder = { orderedIds ->
-                        coroutineScope.launch {
-                            val committed = runCatching { repository.reorderFavorites(orderedIds) }.getOrDefault(false)
-                            if (committed) syncCoordinator.requestSync()
-                        }
-                    },
+                    onReorder = { orderedIds -> commitFavoriteOrder(orderedIds) },
                     onFind = { selectedTab = TAB_SEARCH }
                 )
             }

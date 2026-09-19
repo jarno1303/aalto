@@ -29,7 +29,6 @@
     <string name="favorites_empty_hint">Napauta aseman sydäntä, niin se tulee tänne ja etusivun omiin asemiin.</string>
     <string name="favorites_reorder_hint">Järjestä painamalla pitkään ja vetämällä.</string>
     <string name="action_find_stations">Etsi asemia</string>
-    <string name="action_edit_own_stations">Muokkaa</string>
 
     <!-- Home -->
     <string name="home_mine">Omat asemat</string>
@@ -145,7 +144,7 @@
     <string name="sync_status_account_mismatch">Tämän laitteen asemat on liitetty toiseen Aalto-tiliin.</string>
     <!-- UI hints -->
     <string name="alarm_advanced">Lisäasetukset</string>
-    <string name="home_hint_long_press">Vinkki: poista asema listalta pitkällä painalluksella.</string>
+    <string name="home_hint_long_press">Vinkki: pidä asemaa pohjassa, niin saat lisää vaihtoehtoja.</string>
     <string name="home_hint_dismiss">Selvä</string>
     <!-- Played songs -->
     <string name="history_title">Soitetut kappaleet</string>
@@ -176,4 +175,8 @@
     <string name="travel_hint_decline">Ei nyt</string>
     <string name="countries_title">Maat</string>
     <string name="countries_edit">Muokkaa maita…</string>
+    <string name="menu_play">Soita</string>
+    <string name="menu_move_first">Siirrä ensimmäiseksi</string>
+    <string name="menu_remove">Poista omista asemista</string>
+    <string name="action_more_options">Lisää vaihtoehtoja</string>
 </resources>

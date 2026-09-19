@@ -319,8 +319,8 @@ internal fun NowPlayingCard(
     val tight = configuration.screenWidthDp < 360 || configuration.fontScale > 1.3f
     val sidePadding = if (tight) AaltoSpaceM else AaltoSpaceL
     val logoSize = when {
-        expanded && tight -> 88.dp
-        expanded -> 112.dp
+        expanded && tight -> 104.dp
+        expanded -> 144.dp
         tight -> 56.dp
         else -> 64.dp
     }

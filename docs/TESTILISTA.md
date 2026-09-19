@@ -114,6 +114,26 @@ Jos 1 tai 2 epäonnistuu, älä jatka: korjaa ensin.
 - [ ] Jos laite ei tarjoa taajuuskorjainta, paneeli kertoo sen eikä kaadu.
 - [ ] Soitto ei katkea missään yllä olevassa kohdassa.
 
+## 4d. Aseman valikko ja poiston kumous
+
+- [ ] Kotinaytolla pitka painallus asemaan avaa valikon (Soita, Siirra
+      ensimmaiseksi, Poista omista asemista) - mitaan ei poistu itse
+      painalluksesta.
+- [ ] "Siirra ensimmaiseksi" nostaa aseman listan karkeen, ja jarjestys
+      sailyy sovelluksen uudelleenkaynnistyksen yli.
+- [ ] Valikossa ei ole "Siirra ensimmaiseksi" jos asema on jo ensimmaisena.
+- [ ] "Poista omista asemista" poistaa aseman ja tarjoaa "Kumoa"; kumous
+      palauttaa aseman samalle paikalle.
+- [ ] Sama kumous nakyy myos haussa ja soittonaytossa sydanta painettaessa,
+      ja Suosikit-valilehdella.
+- [ ] Valikko toimii samoin vaaka-asennossa.
+- [ ] Otsikkorivilla ei ole enaa "Muokkaa"-nappia; taittonuoli toimii.
+- [ ] Takaisin-painike Suosikeissa ja Haussa palaa Radio-valilehdelle, ei
+      sulje sovellusta. Radio-valilehdella takaisin sulkee sovelluksen.
+- [ ] Taitettu lista: soittokortti on keskella tyhjaa tilaa, ei ylhaalla.
+- [ ] Kertavinkki kertoo pitkasta painalluksesta, ja "Selva" piilottaa sen
+      pysyvasti.
+
 ## 5. Herätys (tärkeä, osa yön yli)
 
 - [ ] Herätyspaneeli aukeaa yläpalkin kellosta.

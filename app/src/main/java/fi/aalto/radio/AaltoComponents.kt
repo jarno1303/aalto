@@ -618,7 +618,7 @@ internal fun StationCard(
             .clip(RoundedCornerShape(AaltoSurfaceRadius))
             .combinedClickable(
                 onClickLabel = stringResource(R.string.action_play_station, station.name),
-                onLongClickLabel = stringResource(R.string.favorite_remove),
+                onLongClickLabel = stringResource(R.string.action_more_options),
                 onLongClick = onLongClick?.let {
                     {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)

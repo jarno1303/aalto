@@ -15,10 +15,13 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -74,10 +77,10 @@ internal fun RadioScreen(
     onPrevious: (() -> Unit)?,
     onNext: (() -> Unit)?,
     trackTitle: String? = null,
-    onEditOwnStations: (() -> Unit)? = null,
     onOpenAlarm: (() -> Unit)? = null,
     alarmLabel: String? = null,
     onRemoveOwnStation: ((RadioStation) -> Unit)? = null,
+    onMoveOwnStationFirst: ((RadioStation) -> Unit)? = null,
     onOpenHistory: (() -> Unit)? = null
 ) {
     val showOwnStations = favoriteStations.isNotEmpty()
@@ -106,13 +109,16 @@ internal fun RadioScreen(
         var hintSeen by rememberSaveable { mutableStateOf(HomeHintPreference.seen(context)) }
         val canRemoveOwn = showOwnStations && onRemoveOwnStation != null
 
-        val removeStation: ((RadioStation) -> Unit)? = if (canRemoveOwn) {
+        // Long press opens the tile's menu, the way a phone home screen does.
+        // Nothing destructive happens on the press itself.
+        var menuStationId by remember { mutableStateOf<String?>(null) }
+        val openMenu: ((RadioStation) -> Unit)? = if (canRemoveOwn) {
             { station ->
                 if (!hintSeen) {
                     hintSeen = true
                     HomeHintPreference.markSeen(context)
                 }
-                onRemoveOwnStation?.invoke(station)
+                menuStationId = station.stableId
             }
         } else {
             null
@@ -175,16 +181,8 @@ internal fun RadioScreen(
                 ) {
                     SectionHeader(
                         title = shelfTitle,
-                        action = if (showOwnStations && onEditOwnStations != null) {
-                            stringResource(R.string.action_edit_own_stations)
-                        } else {
-                            stringResource(R.string.tab_search)
-                        },
-                        onAction = if (showOwnStations && onEditOwnStations != null) {
-                            onEditOwnStations
-                        } else {
-                            onFind
-                        }
+                        action = if (showOwnStations) null else stringResource(R.string.tab_search),
+                        onAction = if (showOwnStations) null else onFind
                     )
                     if (!showOwnStations) {
                         OwnStationsHint()
@@ -201,7 +199,12 @@ internal fun RadioScreen(
                         state = gridState,
                         onStationClick = onStationClick,
                         onStationFavoriteClick = onStationFavoriteClick,
-                        onLongClick = removeStation,
+                        onLongClick = openMenu,
+                        menuStationId = menuStationId,
+                        onMenuDismiss = { menuStationId = null },
+                        firstStationId = shelfStations.firstOrNull()?.stableId,
+                        onMoveFirst = onMoveOwnStationFirst,
+                        onRemove = onRemoveOwnStation,
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f)
@@ -222,6 +225,12 @@ internal fun RadioScreen(
             ) {
                 TopBar(onOpenSettings, onOpenAlarm, alarmLabel)
 
+                // Folded away: centre the card in the height that is left
+                // instead of leaving a hole under it.
+                if (!listVisible) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+
                 nowPlayingCard(Modifier.fillMaxWidth(), !listVisible)
 
                 // The list can be folded away for a calm screen; the choice is remembered.
@@ -232,12 +241,8 @@ internal fun RadioScreen(
                         listVisible = !listVisible
                         StationListPreference.set(context, listVisible)
                     },
-                    action = if (showOwnStations && onEditOwnStations != null) {
-                        stringResource(R.string.action_edit_own_stations)
-                    } else {
-                        null
-                    },
-                    onAction = if (showOwnStations) onEditOwnStations else null
+                    action = null,
+                    onAction = null
                 )
 
                 if (!listVisible) {
@@ -269,7 +274,12 @@ internal fun RadioScreen(
                         state = gridState,
                         onStationClick = onStationClick,
                         onStationFavoriteClick = onStationFavoriteClick,
-                        onLongClick = removeStation,
+                        onLongClick = openMenu,
+                        menuStationId = menuStationId,
+                        onMenuDismiss = { menuStationId = null },
+                        firstStationId = shelfStations.firstOrNull()?.stableId,
+                        onMoveFirst = onMoveOwnStationFirst,
+                        onRemove = onRemoveOwnStation,
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f)
@@ -298,6 +308,11 @@ private fun OwnStationsGrid(
     onStationClick: (RadioStation) -> Unit,
     onStationFavoriteClick: (RadioStation) -> Unit,
     onLongClick: ((RadioStation) -> Unit)?,
+    menuStationId: String? = null,
+    onMenuDismiss: () -> Unit = {},
+    firstStationId: String? = null,
+    onMoveFirst: ((RadioStation) -> Unit)? = null,
+    onRemove: ((RadioStation) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     // Keep the playing station in view.
@@ -319,18 +334,52 @@ private fun OwnStationsGrid(
             key = { it.stableId },
             contentType = { "station-card" }
         ) { station ->
-            StationCard(
-                station = station,
-                isSelected = station.stableId == selectedStation.stableId,
-                isPlaying = isPlaying,
-                isFavorite = station.stableId in favoriteIds,
-                onClick = { onStationClick(station) },
-                onFavoriteClick = { onStationFavoriteClick(station) },
-                width = cellWidth,
-                showFavoriteButton = showFavoriteButton,
-                // Long press removes an own station (with undo).
-                onLongClick = onLongClick?.let { remove -> { remove(station) } }
-            )
+            Box {
+                StationCard(
+                    station = station,
+                    isSelected = station.stableId == selectedStation.stableId,
+                    isPlaying = isPlaying,
+                    isFavorite = station.stableId in favoriteIds,
+                    onClick = { onStationClick(station) },
+                    onFavoriteClick = { onStationFavoriteClick(station) },
+                    width = cellWidth,
+                    showFavoriteButton = showFavoriteButton,
+                    // Long press opens the menu below; it removes nothing by itself.
+                    onLongClick = onLongClick?.let { open -> { open(station) } }
+                )
+
+                DropdownMenu(
+                    expanded = menuStationId == station.stableId,
+                    onDismissRequest = onMenuDismiss
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.menu_play)) },
+                        onClick = {
+                            onMenuDismiss()
+                            onStationClick(station)
+                        }
+                    )
+                    // Moving the one that is already on top would do nothing.
+                    if (onMoveFirst != null && firstStationId != station.stableId) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.menu_move_first)) },
+                            onClick = {
+                                onMenuDismiss()
+                                onMoveFirst(station)
+                            }
+                        )
+                    }
+                    if (onRemove != null) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.menu_remove)) },
+                            onClick = {
+                                onMenuDismiss()
+                                onRemove(station)
+                            }
+                        )
+                    }
+                }
+            }
         }
     }
 }

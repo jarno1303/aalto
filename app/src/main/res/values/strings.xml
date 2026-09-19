@@ -33,7 +33,6 @@
     <string name="favorites_empty_hint">Tap a station\'s heart and it lands here and on the home screen.</string>
     <string name="favorites_reorder_hint">Press and hold, then drag to reorder.</string>
     <string name="action_find_stations">Find stations</string>
-    <string name="action_edit_own_stations">Edit</string>
 
     <!-- Home -->
     <string name="home_mine">My stations</string>
@@ -150,7 +149,7 @@
 
     <!-- UI hints -->
     <string name="alarm_advanced">More settings</string>
-    <string name="home_hint_long_press">Tip: press and hold a station to remove it from the list.</string>
+    <string name="home_hint_long_press">Tip: press and hold a station for more options.</string>
     <string name="home_hint_dismiss">Got it</string>
 
     <!-- Played songs -->
@@ -184,4 +183,8 @@
     <string name="travel_hint_decline">Not now</string>
     <string name="countries_title">Countries</string>
     <string name="countries_edit">Edit countries…</string>
+    <string name="menu_play">Play</string>
+    <string name="menu_move_first">Move to top</string>
+    <string name="menu_remove">Remove from my stations</string>
+    <string name="action_more_options">More options</string>
 </resources>

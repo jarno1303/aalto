@@ -91,7 +91,7 @@ internal fun SearchScreen(
         stationsForRadioList(
             stations = stations + catalogStations.mapNotNull { it.toPlayableRadioStationOrNull() },
             selectedStation = selectedStation
-        ).distinctBy { it.stableId }
+        ).distinctByListing()
     }
     val countryCodes = (listOf("FI", "DE", "SE", "NO", "GB", "US") +
         searchableStations.map { it.countryCode.uppercase() })

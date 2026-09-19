@@ -227,3 +227,19 @@ Tests: `newDeviceCatchesUpOnLongHistoryInOneSync`, `caughtUpDeviceMakesOnlyOnePu
 Still open (before public release): the ledger (`sync_mutations` in Firestore, local
 `sync_mutations` / `sync_applied_mutations`) is never pruned. Plan: new device bootstraps from the
 state documents, then TTL on the ledger. Architectural, to be designed separately.
+
+## Visual pass (branch `ui-visual-pass`, 2026-09-19)
+
+State: CODE WRITTEN. NOT YET BUILT OR PHYSICALLY VERIFIED. No playback, Sync or alarm logic touched.
+From a screenshot review against the Calm pillar:
+- AaltoTheme: every Material 3 colour role defined (secondary/tertiary, surfaceContainer*,
+  surfaceTint...). Sheets, dialogs, chips and switches no longer show Material's lavender default.
+- Truncation: history title (two weighted children split the row), station tile names (one line
+  when a word does not fit, instead of "SuomiR / ap"), mini player song (no soft wrap, ellipsis),
+  history icon removed from the Now Playing song line (the line itself opens history).
+- Station subtitle: one genre in Aalto's words (discovery category labels) instead of raw tags.
+- Catalog duplicates of built-in stations dropped by name + country (`distinctByListing`).
+- Favourites list: hearts grey instead of a column of blue. Sleep timer icon as quiet as the moon.
+- Night Screen: station logo (dimmed) instead of initials, no "Toistaa", hint only while controls hidden.
+- Settings: body text not grey, theme as radio rows, scrollable. Alarm: days as one row of seven,
+  notification warning neutral. Audio: no tick dots on the gain slider, shorter hint.

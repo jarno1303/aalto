@@ -461,16 +461,36 @@ internal fun stationDialTitle(station: RadioStation): String {
     ).filter { it.isNotBlank() }.joinToString(" - ")
 }
 
+/**
+ * One genre, in the app's own words: "Pop", not "hits, local, pop".
+ *
+ * A curated category ("Klassinen & Kulttuuri") is used as it is. Catalog
+ * stations only have raw Radio Browser tags, mixed languages and lower case,
+ * so they get the matching discovery category instead, the same labels the
+ * search chips use. Nothing matched: the first tag, capitalised.
+ */
 internal fun stationGenreAndTags(station: RadioStation): String {
-    return buildList {
-        station.category.trim().takeIf { it.isNotBlank() }?.let(::add)
-        station.tags.map { it.trim() }
-            .filter { it.isNotBlank() }
-            .forEach { tag ->
-                if (none { it.equals(tag, ignoreCase = true) }) add(tag)
-            }
-    }.take(3).joinToString(", ")
+    val category = station.category.trim()
+    if (category.isNotBlank() && category.first().isUpperCase()) return category
+    DiscoveryCategories.dropLast(1)
+        .firstOrNull { it.matches(station) }
+        ?.let { return it.label }
+    val tag = (listOf(category) + station.tags).map { it.trim() }.firstOrNull { it.isNotBlank() }
+        ?: return ""
+    return tag.replaceFirstChar { it.titlecase(Locale.getDefault()) }
 }
+
+/**
+ * One entry per station as the user sees it. The catalog can list a station
+ * Aalto already ships (Radio Suomipop twice, two hearts, two tiles). Same name
+ * in the same country is the same station for the user; the first one wins,
+ * so callers put built-in stations first.
+ */
+internal fun List<RadioStation>.distinctByListing(): List<RadioStation> =
+    distinctBy { it.stableId }
+        .distinctBy { station ->
+            station.name.trim().lowercase(Locale.ROOT) + "|" + station.countryCode.uppercase(Locale.ROOT)
+        }
 
 internal fun stationMetadataLine(station: RadioStation): String {
     return listOf(stationGenreAndTags(station), stationLocation(station))

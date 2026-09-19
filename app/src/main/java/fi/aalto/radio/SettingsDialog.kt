@@ -4,18 +4,22 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.material3.Switch
@@ -53,7 +57,11 @@ internal fun SettingsDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.settings_title)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(AaltoSpaceM)) {
+            // Scrolls when it does not fit (large text, Sync signed in).
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(AaltoSpaceM)
+            ) {
                 // What someone looks for first when the app is in a language
                 // they cannot read: put it at the top, not in the middle.
                 if (onOpenLanguage != null) {
@@ -75,13 +83,9 @@ internal fun SettingsDialog(
                 )
 
                 SettingsSectionTitle(stringResource(R.string.theme_title))
-                // A flow row, not a plain row: in a plain row the long first
-                // label eats the width and "Tumma" wraps onto three lines.
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(AaltoSpaceS),
-                    verticalArrangement = Arrangement.spacedBy(AaltoSpaceXs)
-                ) {
+                // One choice per line: chips wrapped 2 + 1 with large text,
+                // and radio rows read the same way as the alarm's station list.
+                Column(modifier = Modifier.fillMaxWidth()) {
                     ThemeChoice(AaltoThemeMode.SYSTEM, R.string.theme_system, themeMode, onThemeModeChange)
                     ThemeChoice(AaltoThemeMode.LIGHT, R.string.theme_light, themeMode, onThemeModeChange)
                     ThemeChoice(AaltoThemeMode.DARK, R.string.theme_dark, themeMode, onThemeModeChange)
@@ -158,17 +162,27 @@ private fun ThemeChoice(
     selectedMode: AaltoThemeMode,
     onSelect: (AaltoThemeMode) -> Unit
 ) {
-    FilterChip(
-        selected = mode == selectedMode,
-        onClick = { onSelect(mode) },
-        label = {
-            Text(
-                text = stringResource(labelRes),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .selectable(
+                selected = mode == selectedMode,
+                role = Role.RadioButton,
+                onClick = { onSelect(mode) }
+            ),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(selected = mode == selectedMode, onClick = null)
+        Spacer(modifier = Modifier.width(AaltoSpaceM))
+        Text(
+            text = stringResource(labelRes),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
 }
 
 /** Maps the coordinator's internal (English) status values to user-facing Finnish text. */
@@ -195,6 +209,8 @@ private fun SettingsRow(title: String, action: String, onClick: () -> Unit) {
         Text(
             text = title,
             style = MaterialTheme.typography.bodyMedium,
+            // The dialog tints body text grey, which made rows look disabled.
+            color = MaterialTheme.colorScheme.onSurface,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
@@ -221,6 +237,7 @@ private fun DebugPlusRow() {
         Text(
             text = "Aalto Plus (debug)",
             style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f)
         )
         Switch(

@@ -162,14 +162,14 @@
 
     <!-- Sound -->
     <string name="audio_title">Sound</string>
-    <string name="audio_settings_row">Equaliser and per-station volume</string>
+    <string name="audio_settings_row">Station volume and equaliser</string>
     <string name="audio_open">Open</string>
     <string name="audio_equalizer">Equaliser</string>
     <string name="audio_preset">Preset</string>
     <string name="audio_preset_custom">Custom</string>
     <string name="audio_unavailable">This device has no equaliser. Per-station volume still works.</string>
     <string name="audio_station_gain">Station volume</string>
-    <string name="audio_station_gain_hint">This applies to this station only and is remembered. Use it when a station is clearly quieter or louder than the others.</string>
+    <string name="audio_station_gain_hint">Evens out a station that is quieter or louder than the others. Remembered on all your devices.</string>
     <string name="audio_no_station">Choose a station first.</string>
     <string name="audio_reset">Reset</string>
 

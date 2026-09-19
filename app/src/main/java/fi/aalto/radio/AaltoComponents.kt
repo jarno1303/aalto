@@ -73,6 +73,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -411,7 +413,11 @@ internal fun MiniPlayer(
                             MaterialTheme.colorScheme.onSurfaceVariant
                         },
                         style = MaterialTheme.typography.bodySmall,
-                        maxLines = 1
+                        // No soft wrap: with it the line broke after "Title -"
+                        // and the artist vanished without an ellipsis.
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
                 Box(
@@ -708,19 +714,48 @@ internal fun StationCard(
 
             Spacer(modifier = Modifier.height(AaltoSpaceXs))
 
-            Text(
-                text = station.name,
-                style = MaterialTheme.typography.labelMedium,
-                color = if (isSelected) AaltoBlue else MaterialTheme.colorScheme.onSurface,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                minLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.fillMaxWidth()
+            StationTileLabel(
+                name = station.name,
+                isSelected = isSelected,
+                availableWidth = width - AaltoSpaceXs * 2
             )
         }
     }
+}
+
+/**
+ * The name under a station tile. Two lines when every word fits on a line of
+ * its own; otherwise one line with an ellipsis, because a word that does not
+ * fit is broken mid-word ("SuomiR / ap"), which reads as a bug.
+ */
+@Composable
+private fun StationTileLabel(
+    name: String,
+    isSelected: Boolean,
+    availableWidth: Dp
+) {
+    val style = MaterialTheme.typography.labelMedium.copy(
+        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+    )
+    val measurer = rememberTextMeasurer()
+    val maxPx = with(LocalDensity.current) { availableWidth.roundToPx() }
+    val everyWordFits = remember(name, style, maxPx) {
+        name.split(' ').filter { it.isNotBlank() }.all { word ->
+            measurer.measure(word, style, maxLines = 1, softWrap = false).size.width <= maxPx
+        }
+    }
+    val lines = if (everyWordFits) 2 else 1
+    Text(
+        text = name,
+        style = style,
+        color = if (isSelected) AaltoBlue else MaterialTheme.colorScheme.onSurface,
+        textAlign = TextAlign.Center,
+        maxLines = lines,
+        minLines = lines,
+        softWrap = everyWordFits,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.fillMaxWidth()
+    )
 }
 
 // =============================================================
@@ -736,7 +771,9 @@ internal fun StationRow(
     onFavoriteClick: () -> Unit,
     modifier: Modifier = Modifier,
     isPlaying: Boolean = false,
-    isDragging: Boolean = false
+    isDragging: Boolean = false,
+    /** In the favourites list every heart is full: grey, not a column of blue. */
+    quietFavorite: Boolean = false
 ) {
     val scale by animateFloatAsState(
         targetValue = if (isDragging) 1.02f else 1f,
@@ -839,7 +876,11 @@ internal fun StationRow(
                     contentDescription = stringResource(
                         if (isFavorite) R.string.favorite_remove else R.string.favorite_add
                     ),
-                    tint = if (isFavorite) AaltoBlue else MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = when {
+                        isFavorite && quietFavorite -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
+                        isFavorite -> AaltoBlue
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    },
                     modifier = Modifier.size(22.dp)
                 )
             }

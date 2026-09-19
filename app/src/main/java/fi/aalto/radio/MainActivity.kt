@@ -215,7 +215,8 @@ private fun AaltoApp() {
         repository.registerCatalogStations(catalogRadioStations)
     }
     val stations = remember(repository.stations, catalogRadioStations) {
-        (repository.stations + catalogRadioStations).distinctBy { it.stableId }
+        // Built-in stations first, so a catalog duplicate of one is dropped.
+        (repository.stations + catalogRadioStations).distinctByListing()
     }
 
     val selectedStation = repository.stationById(selectedStationId) ?: run {

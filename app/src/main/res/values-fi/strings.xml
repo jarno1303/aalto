@@ -155,14 +155,14 @@
     <string name="history_open">Soitetut kappaleet</string>
     <!-- Sound -->
     <string name="audio_title">Ääni</string>
-    <string name="audio_settings_row">Taajuuskorjain ja asemakohtainen äänenvoimakkuus</string>
+    <string name="audio_settings_row">Äänenvoimakkuus ja taajuuskorjain</string>
     <string name="audio_open">Avaa</string>
     <string name="audio_equalizer">Taajuuskorjain</string>
     <string name="audio_preset">Esiasetus</string>
     <string name="audio_preset_custom">Oma</string>
     <string name="audio_unavailable">Tämä laite ei tarjoa taajuuskorjainta. Asemakohtainen äänenvoimakkuus toimii silti.</string>
     <string name="audio_station_gain">Aseman äänenvoimakkuus</string>
-    <string name="audio_station_gain_hint">Säätö koskee vain tätä asemaa ja muistetaan. Käytä sitä, jos asema soi selvästi muita hiljempaa tai kovempaa.</string>
+    <string name="audio_station_gain_hint">Tasaa asema, joka soi muita hiljempaa tai kovempaa. Muistetaan kaikilla laitteillasi.</string>
     <string name="audio_no_station">Valitse ensin asema.</string>
     <string name="audio_reset">Nollaa</string>
     <!-- Time -->

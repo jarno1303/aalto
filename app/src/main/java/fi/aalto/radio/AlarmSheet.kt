@@ -5,7 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,7 +22,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -32,6 +30,13 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -160,8 +165,10 @@ internal fun AlarmSheet(
 
             if (!notificationsEnabled) {
                 // Without notifications the alarm can only be stopped from the app.
+                // Calm but unmissable: a neutral box with the warning colour
+                // only on its first line, not a whole pink panel.
                 Surface(
-                    color = MaterialTheme.colorScheme.errorContainer,
+                    color = MaterialTheme.colorScheme.surfaceVariant,
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -171,7 +178,7 @@ internal fun AlarmSheet(
                         Text(
                             text = stringResource(R.string.alarm_notifications_off),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onErrorContainer
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         TextButton(onClick = onEnableNotifications) {
                             Text(stringResource(R.string.alarm_allow_notifications))
@@ -191,28 +198,43 @@ internal fun AlarmSheet(
                 style = MaterialTheme.typography.titleMedium
             )
             Spacer(modifier = Modifier.height(AaltoSpaceXs))
-            // A flow row wraps by itself, so the chips stay readable at any
-            // screen width and system font size.
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(AaltoSpaceS),
-                verticalArrangement = Arrangement.spacedBy(AaltoSpaceXs)
+            // The week as one row of seven, like a clock app: chips wrapped 4 + 3.
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = AaltoSpaceXs),
+                horizontalArrangement = Arrangement.spacedBy(AaltoSpaceXs)
             ) {
                 DayOfWeek.values().forEach { day ->
-                    FilterChip(
-                        selected = day in settings.days,
-                        onClick = {
-                            val days = if (day in settings.days) settings.days - day else settings.days + day
-                            onChange(withStation(settings, selectedStation).copy(days = days))
-                        },
-                        label = {
-                            Text(
-                                text = dayShort(day),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                    val selected = day in settings.days
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .aspectRatio(1f)
+                            .clip(CircleShape)
+                            .background(if (selected) AaltoBlue else Color.Transparent)
+                            .border(
+                                width = 1.dp,
+                                color = if (selected) AaltoBlue else MaterialTheme.colorScheme.outline,
+                                shape = CircleShape
                             )
-                        }
-                    )
+                            .selectable(
+                                selected = selected,
+                                role = Role.Checkbox,
+                                onClick = {
+                                    val days = if (selected) settings.days - day else settings.days + day
+                                    onChange(withStation(settings, selectedStation).copy(days = days))
+                                }
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = dayShort(day),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = if (selected) Color.White else MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1
+                        )
+                    }
                 }
             }
             Text(

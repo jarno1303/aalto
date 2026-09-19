@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -169,19 +170,10 @@ internal fun NightScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .size(88.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(Color(station.logoColorArgb).copy(alpha = 0.28f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = station.initials,
-                    color = Color.White.copy(alpha = 0.70f),
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.ExtraBold
-                )
+            // The station's own logo, dimmed for the dark: the same picture as
+            // everywhere else, not initials the user has never seen.
+            Box(modifier = Modifier.graphicsLayer { alpha = 0.55f }) {
+                StationLogo(station = station, size = 88.dp, cornerRadius = 24.dp)
             }
 
             Spacer(modifier = Modifier.height(22.dp))
@@ -210,12 +202,17 @@ internal fun NightScreen(
                 Spacer(modifier = Modifier.height(6.dp))
             }
 
+            // "Toistaa" says nothing the pause button does not; the line is for
+            // when something differs: paused, connecting, an error, a sleep timer.
+            val statusLine = when {
+                sleepMinutes != null && isPlaying && playbackError == null ->
+                    stringResource(R.string.sleep_timer_remaining, sleepMinutes)
+                sleepMinutes != null -> playbackText + " · " + stringResource(R.string.sleep_timer_remaining, sleepMinutes)
+                isPlaying && playbackError == null -> ""
+                else -> playbackText
+            }
             Text(
-                text = if (sleepMinutes != null) {
-                    playbackText + " · " + stringResource(R.string.sleep_timer_remaining, sleepMinutes)
-                } else {
-                    playbackText
-                },
+                text = statusLine,
                 color = if (playbackError == null) {
                     Color.White.copy(alpha = 0.36f)
                 } else {
@@ -282,11 +279,10 @@ internal fun NightScreen(
             }
         }
 
-        // Always-visible, very dim hint so the user knows how to get controls and out.
-        Text(
-            text = stringResource(
-                if (controlsVisible) R.string.night_hint_exit else R.string.night_hint_tap
-            ),
+        // Very dim hint while the controls are hidden, so the user knows how to
+        // get them back. With the controls up, the Poistu button says it already.
+        if (!controlsVisible) Text(
+            text = stringResource(R.string.night_hint_tap),
             color = Color.White.copy(alpha = 0.30f),
             fontSize = 12.sp,
             textAlign = TextAlign.Center,

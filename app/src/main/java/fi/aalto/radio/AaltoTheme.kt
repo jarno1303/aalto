@@ -168,7 +168,30 @@ internal fun AaltoTheme(
                 primaryContainer = AaltoDarkSelectedSurface,
                 onPrimaryContainer = AaltoDarkText,
                 error = AaltoDarkError,
-                onError = AaltoDarkBackground
+                onError = AaltoDarkBackground,
+                // Every role Material would otherwise fill with its own
+                // lavender default: sheets, dialogs, chips, switches.
+                secondary = AaltoBlue,
+                onSecondary = Color.White,
+                secondaryContainer = AaltoDarkSelectedSurface,
+                onSecondaryContainer = AaltoDarkText,
+                tertiary = AaltoBlue,
+                onTertiary = Color.White,
+                tertiaryContainer = AaltoDarkSelectedSurface,
+                onTertiaryContainer = AaltoDarkText,
+                outlineVariant = AaltoDarkLine,
+                surfaceTint = Color.Transparent,
+                surfaceBright = AaltoDarkSurface,
+                surfaceDim = AaltoDarkBackground,
+                surfaceContainerLowest = AaltoDarkBackground,
+                surfaceContainerLow = AaltoDarkSurface,
+                surfaceContainer = AaltoDarkSurface,
+                surfaceContainerHigh = AaltoDarkSurface,
+                surfaceContainerHighest = AaltoDarkLogoSurface,
+                inverseSurface = AaltoDarkText,
+                inverseOnSurface = AaltoDarkBackground,
+                inversePrimary = AaltoBlue,
+                scrim = Color.Black
             )
         } else {
             lightColorScheme(
@@ -184,7 +207,30 @@ internal fun AaltoTheme(
                 primaryContainer = AaltoLightSelectedSurface,
                 onPrimaryContainer = AaltoLightText,
                 error = AaltoLightError,
-                onError = Color.White
+                onError = Color.White,
+                // Every role Material would otherwise fill with its own
+                // lavender default: sheets, dialogs, chips, switches.
+                secondary = AaltoBlue,
+                onSecondary = Color.White,
+                secondaryContainer = AaltoLightSelectedSurface,
+                onSecondaryContainer = AaltoLightText,
+                tertiary = AaltoBlue,
+                onTertiary = Color.White,
+                tertiaryContainer = AaltoLightSelectedSurface,
+                onTertiaryContainer = AaltoLightText,
+                outlineVariant = AaltoLightLine,
+                surfaceTint = Color.Transparent,
+                surfaceBright = AaltoLightSurface,
+                surfaceDim = AaltoLightBackground,
+                surfaceContainerLowest = AaltoLightSurface,
+                surfaceContainerLow = AaltoLightSurface,
+                surfaceContainer = AaltoLightSurface,
+                surfaceContainerHigh = AaltoLightSurface,
+                surfaceContainerHighest = AaltoLightLogoSurface,
+                inverseSurface = AaltoLightText,
+                inverseOnSurface = AaltoLightSurface,
+                inversePrimary = AaltoBlue,
+                scrim = Color.Black
             )
         },
         typography = AaltoTypography,

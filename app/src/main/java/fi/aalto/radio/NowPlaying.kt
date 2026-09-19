@@ -30,7 +30,6 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.History
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -416,16 +415,8 @@ internal fun NowPlayingCard(
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f, fill = false)
                         )
-                        if (onOpenHistory != null) {
-                            Icon(
-                                imageVector = Icons.Outlined.History,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier
-                                    .padding(start = AaltoSpaceXs)
-                                    .size(16.dp)
-                            )
-                        }
+                        // No history icon here: the song line itself opens the
+                        // history, and the icon only took room from the title.
                     }
                     val details = when {
                         sleepMinutes != null -> stringResource(R.string.sleep_timer_remaining, sleepMinutes)
@@ -531,8 +522,10 @@ internal fun SleepTimerButton(
         Icon(
             imageVector = Icons.Outlined.Timer,
             contentDescription = stringResource(R.string.sleep_timer),
-            tint = if (active) AaltoBlue else tint,
-            modifier = Modifier.size(24.dp)
+            // Secondary to previous / play / next: same size and weight as the
+            // Night Screen moon on the other side, quieter than the playback controls.
+            tint = if (active) AaltoBlue else tint.copy(alpha = 0.82f),
+            modifier = Modifier.size(22.dp)
         )
     }
 

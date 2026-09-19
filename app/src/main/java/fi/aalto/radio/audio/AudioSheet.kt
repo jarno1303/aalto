@@ -18,6 +18,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -127,6 +129,11 @@ internal fun AudioSheet(
                     },
                     valueRange = AudioSettings.MIN_GAIN_DB.toFloat()..AudioSettings.MAX_GAIN_DB.toFloat(),
                     steps = AudioSettings.MAX_GAIN_DB - AudioSettings.MIN_GAIN_DB - 1,
+                    // Still snaps to whole decibels, without sixteen dots on the track.
+                    colors = SliderDefaults.colors(
+                        activeTickColor = Color.Transparent,
+                        inactiveTickColor = Color.Transparent
+                    ),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Text(

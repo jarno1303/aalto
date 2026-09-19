@@ -81,9 +81,10 @@ internal fun HistorySheet(
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
+                    // One weight only: two weighted children split the row in half
+                    // and cut the title ("Soitetut …") though there was room.
+                    modifier = Modifier.weight(1f)
                 )
-                Spacer(modifier = Modifier.weight(1f))
                 if (tracks.isNotEmpty()) {
                     TextButton(onClick = onClear) {
                         Text(text = stringResource(R.string.history_clear), maxLines = 1)

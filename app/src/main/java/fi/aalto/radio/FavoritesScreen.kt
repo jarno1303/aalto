@@ -423,7 +423,8 @@ internal fun FavoritesScreen(
                         }
                     },
                     modifier = rowModifier,
-                    isDragging = isDragging
+                    isDragging = isDragging,
+                    quietFavorite = true
                 )
             }
         }

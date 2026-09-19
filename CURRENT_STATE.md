@@ -263,3 +263,22 @@ receiver skips a favourite upsert/delete whose station it cannot know ("missing_
 of throwing; bootstrap re-sends once any favourite whose upserts never carried station data.
 Tests: catalogFavoriteReachesOtherDeviceWithItsStation, favoriteWithoutStationDataDoesNotStopSync,
 catalogFavoriteSentWithoutStationIsSentAgainOnceWithIt.
+
+## Own stations / custom stream URL (branch `custom-stream-url`, 2026-09-19)
+
+State: PHYSICAL PASS (owner, 2026-09-19): add, edit, invalid address rejected. Aalto Plus feature (docs/AALTO_PLUS.md); no playback or Sync
+engine change.
+- Favourites end with "Lisää oma asema" (`CustomStationUi.kt`). The single Plus check is on that
+  row; without Plus a short explanation. Added stations always keep playing and syncing.
+- Before saving, `StreamProbe` reads headers and a few bytes: audio/HLS/pls/m3u or Icecast
+  headers pass; the stream's icy-name is the default name. Ids start with `custom-`.
+- Stored as a station row + favourite; the favourite carries the station, so other devices get it.
+- `StationRepository.observeFavoriteIds` now loads favourites known only from the database into
+  memory before emitting, so synced catalog and own stations show on the phone UI too (the car
+  already found them through StationLookup).
+Tests: CustomStationsTest, SyncEngineTest.customStationAppearsOnOtherDevice.
+Editing: long press an own station on the home grid -> "Muokkaa asemaa" (never behind Plus).
+Same id and place; the new address is probed, StreamMemory is cleared for the station, and an
+UPSERT_FAVORITE carries the new station to other devices (`updateFavoriteStationAndEnqueueMutation`).
+Own stations are re-read from the database on every favourites emission. Another device may still
+try its remembered old address first; stream fallback then moves to the new one.

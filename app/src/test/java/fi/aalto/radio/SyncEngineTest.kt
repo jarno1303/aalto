@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import java.util.UUID
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -1097,6 +1098,45 @@ class SyncEngineTest {
             "only once",
             app.dao.enqueueBootstrapFavorite(CATALOG_ID, "{}", "device-a", "bootstrap-2", now++)
         )
+    }
+
+    @Test
+    fun customStationAppearsOnOtherDevice() = runTest {
+        val remote = InMemoryRemoteSyncState()
+        val deviceA = testApp("device-a", remote)
+        val deviceB = testApp("device-b", remote)
+
+        val station = deviceA.repository.addCustomStation("Oma Radio", "https://stream.example.fi/oma.mp3")
+        deviceA.engine.syncOnce()
+        deviceB.engine.syncOnce()
+
+        val favorites = deviceB.repository.observeFavoriteIds().first()
+        assertTrue(station.id in favorites)
+        val onB = requireNotNull(deviceB.repository.stationById(station.id))
+        assertEquals("Oma Radio", onB.name)
+        assertEquals("https://stream.example.fi/oma.mp3", onB.streamUrl)
+    }
+
+    @Test
+    fun editedCustomStationUpdatesOtherDeviceInPlace() = runTest {
+        val remote = InMemoryRemoteSyncState()
+        val deviceA = testApp("device-a", remote)
+        val deviceB = testApp("device-b", remote)
+        val station = deviceA.repository.addCustomStation("Oma Radio", "https://old.example.fi/oma.mp3")
+        deviceA.repository.addFavorite("radio-rock")
+        deviceA.engine.syncOnce()
+        deviceB.engine.syncOnce()
+        val orderBefore = deviceB.dao.favoriteIds()
+
+        deviceA.repository.updateCustomStation(station.id, "Oma Radio 2", "https://new.example.fi/oma.mp3")
+        deviceA.engine.syncOnce()
+        deviceB.engine.syncOnce()
+
+        deviceB.repository.observeFavoriteIds().first()
+        val onB = requireNotNull(deviceB.repository.stationById(station.id))
+        assertEquals("Oma Radio 2", onB.name)
+        assertEquals("https://new.example.fi/oma.mp3", onB.preferredStreamUrl)
+        assertEquals("same place in the list", orderBefore, deviceB.dao.favoriteIds())
     }
 
     private fun catalogStation() = RadioStation(

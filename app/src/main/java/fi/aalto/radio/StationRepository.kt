@@ -63,6 +63,7 @@ class StationRepository(
 
     fun observeFavoriteIds(): Flow<Set<String>> {
         return dao.observeFavoriteIds()
+            .onEach { ids -> registerStoredStations(ids) }
             .map { it.toSet() }
             .catch { error ->
                 Log.w(TAG, "Favorite observation failed", error)
@@ -79,6 +80,51 @@ class StationRepository(
                 Log.w(TAG, "Favorite ordering observation failed", error)
                 emit(emptyList())
             }
+    }
+
+    /**
+     * Favourites whose station is known only from the local database (a
+     * catalog station synced from another device, the user's own stations)
+     * are put in memory before the ids are emitted, so the screen can show them.
+     */
+    private suspend fun registerStoredStations(ids: List<String>) {
+        // Own stations are always read again: another device may have changed
+        // their address, and the copy in memory would keep the old one.
+        val missing = ids.filter { stationById(it) == null || CustomStations.isCustom(it) }
+        if (missing.isEmpty()) return
+        runCatching { withContext(ioDispatcher) { dao.stationsByIds(missing) } }
+            .onSuccess { rows -> registerCatalogStations(rows.map { it.toDomain() }) }
+            .onFailure { error -> Log.w(TAG, "Stored favourite stations not loaded", error) }
+    }
+
+    /**
+     * Saves the user's own stream as a station and makes it a favourite, which
+     * also sends it to their other devices. Returns the new station.
+     */
+    suspend fun addCustomStation(name: String, url: String): RadioStation {
+        val station = CustomStations.station(CustomStations.newId(), name, url)
+        withContext(ioDispatcher) {
+            dao.upsertStation(station.toEntity(updatedAt = clock()))
+        }
+        registerCatalogStations(listOf(station))
+        addFavorite(station.id)
+        return station
+    }
+
+    /** New address or name for one of the user's own stations; same id, same place. */
+    suspend fun updateCustomStation(stationId: String, name: String, url: String): RadioStation {
+        val station = CustomStations.station(stationId, name, url)
+        registerCatalogStations(listOf(station))
+        withContext(ioDispatcher) {
+            dao.updateFavoriteStationAndEnqueueMutation(
+                station = station.toEntity(updatedAt = clock()),
+                deviceId = deviceIdProvider(),
+                mutationId = mutationIdFactory(),
+                now = clock(),
+                payload = StationSnapshotPayload.encode(station)
+            )
+        }
+        return station
     }
 
     suspend fun favoriteIdsSnapshot(): Set<String> {

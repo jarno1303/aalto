@@ -52,6 +52,12 @@ internal object StreamMemory {
         context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .getString(stationId, null)
 
+    /** Forget it, e.g. after the user gave the station a new address. */
+    fun clear(context: Context, stationId: String) {
+        context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit().remove(stationId).apply()
+    }
+
     fun put(context: Context, stationId: String, url: String) {
         val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         if (prefs.getString(stationId, null) != url) {

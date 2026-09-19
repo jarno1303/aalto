@@ -189,4 +189,17 @@
     <string name="action_more_options">More options</string>
     <string name="history_plus_earlier">Earlier days are kept. They show with Aalto Plus.</string>
     <string name="audio_equalizer_plus">Equaliser presets and bands come with Aalto Plus.</string>
+    <string name="custom_add">Add own station</string>
+    <string name="custom_add_confirm">Add</string>
+    <string name="custom_url">Stream address</string>
+    <string name="custom_name">Name (optional)</string>
+    <string name="custom_hint">Aalto checks the address before saving it.</string>
+    <string name="custom_checking">Checking the address…</string>
+    <string name="custom_error_invalid">That is not a web address.</string>
+    <string name="custom_error_not_radio">No radio stream found at that address.</string>
+    <string name="custom_error_unreachable">The address did not answer. Check it and your connection.</string>
+    <string name="custom_plus_title">Own stations are part of Aalto Plus</string>
+    <string name="custom_plus_body">With Aalto Plus you can add any stream address as a station. It plays in the car and syncs to your devices like the others.</string>
+    <string name="custom_edit">Edit station</string>
+    <string name="custom_save">Save</string>
 </resources>

@@ -428,8 +428,16 @@ internal fun FavoritesScreen(
                 )
             }
         }
+
+        // An Int key (saveable, and not a String: drag-and-drop treats String
+        // keys as station ids).
+        item(key = ADD_CUSTOM_STATION_KEY, contentType = "add-custom") {
+            AddCustomStationRow()
+        }
     }
 }
+
+private const val ADD_CUSTOM_STATION_KEY = Int.MIN_VALUE
 
 internal fun favoriteItemInfo(
     listState: LazyListState,

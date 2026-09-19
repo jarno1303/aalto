@@ -71,7 +71,7 @@ Taulukko on suunnitelma. Koodissa on tänään:
 | Ominaisuus | Tila |
 |---|---|
 | Asemalistat | yksi lista, useita ei ole |
-| Oma URL | ei toteutettu |
+| Oma URL | toteutettu (Suosikit → "Lisää oma asema"), Plussan takana. Betassa ei näy testaajille, koska maksua ei vielä ole; debug-kytkimellä testattavissa |
 | Soitetut kappaleet | 300 viimeisintä tallessa; ilman Plussaa näkyy kuluva päivä, Plussalla kaikki. Haku Spotifysta/YouTubesta. Historian haku ja vienti puuttuvat |
 | Kelaus | ei toteutettu |
 | Taajuuskorjain | toteutettu, Plussan takana |

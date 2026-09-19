@@ -181,4 +181,17 @@
     <string name="action_more_options">Lisää vaihtoehtoja</string>
     <string name="history_plus_earlier">Aiemmat päivät ovat tallessa. Ne näkyvät Aalto Plussassa.</string>
     <string name="audio_equalizer_plus">Taajuuskorjaimen esiasetukset ja kaistat kuuluvat Aalto Plussaan.</string>
+    <string name="custom_add">Lisää oma asema</string>
+    <string name="custom_add_confirm">Lisää</string>
+    <string name="custom_url">Striimin osoite</string>
+    <string name="custom_name">Nimi (valinnainen)</string>
+    <string name="custom_hint">Aalto kokeilee osoitteen ennen tallennusta.</string>
+    <string name="custom_checking">Kokeillaan osoitetta…</string>
+    <string name="custom_error_invalid">Tämä ei ole verkko-osoite.</string>
+    <string name="custom_error_not_radio">Osoitteesta ei löytynyt radiota.</string>
+    <string name="custom_error_unreachable">Osoite ei vastannut. Tarkista osoite ja verkkoyhteys.</string>
+    <string name="custom_plus_title">Omat asemat kuuluvat Aalto Plussaan</string>
+    <string name="custom_plus_body">Aalto Plussalla voit lisätä minkä tahansa striimin osoitteen asemaksi. Se soi autossa ja synkronoituu laitteillesi kuten muutkin.</string>
+    <string name="custom_edit">Muokkaa asemaa</string>
+    <string name="custom_save">Tallenna</string>
 </resources>

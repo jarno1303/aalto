@@ -349,6 +349,53 @@ abstract class LocalRadioDao {
         acknowledgedState: String
     ): Int
 
+    /**
+     * The user changed a station of their own (new address or name). The
+     * favourite itself stays where it is; a new upsert carries the new station
+     * to the other devices through the ordinary favourite path.
+     */
+    @Transaction
+    open suspend fun updateFavoriteStationAndEnqueueMutation(
+        station: StationEntity,
+        deviceId: String,
+        mutationId: String,
+        now: Long,
+        payload: String
+    ): Boolean {
+        upsertStation(station)
+        val existing = favoriteById(station.id)
+        if (existing == null || existing.isDeleted) return false
+
+        val logicalVersion = nextLogicalVersion()
+        val baseServerRevision = metadataLongValue(SyncMetadataEntity.LAST_APPLIED_SERVER_REVISION) ?: 0L
+        upsertFavorite(
+            existing.copy(
+                updatedAt = now,
+                logicalVersion = logicalVersion,
+                modifiedByDeviceId = deviceId
+            )
+        )
+        insertSyncMutation(
+            SyncMutationEntity(
+                mutationId = mutationId,
+                entityType = SyncEntityType.FAVORITE.value,
+                entityId = station.id,
+                operation = SyncOperation.UPSERT_FAVORITE.value,
+                payload = payload,
+                deviceId = deviceId,
+                logicalVersion = logicalVersion,
+                baseServerRevision = baseServerRevision,
+                createdAt = now,
+                updatedAt = now,
+                attemptCount = 0,
+                nextAttemptAt = null,
+                state = SyncMutationState.PENDING.value,
+                lastError = null
+            )
+        )
+        return true
+    }
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract suspend fun upsertRecentStation(recentStation: RecentStationEntity)
 

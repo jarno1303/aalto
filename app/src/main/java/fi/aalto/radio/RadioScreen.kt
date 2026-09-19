@@ -315,6 +315,11 @@ private fun OwnStationsGrid(
     onRemove: ((RadioStation) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    var editingStation by remember { mutableStateOf<RadioStation?>(null) }
+    editingStation?.let { station ->
+        CustomStationEditor(existing = station, onDismiss = { editingStation = null })
+    }
+
     // Keep the playing station in view.
     LaunchedEffect(selectedStation.stableId, stations.size) {
         val index = stations.indexOfFirst { it.stableId == selectedStation.stableId }
@@ -366,6 +371,16 @@ private fun OwnStationsGrid(
                             onClick = {
                                 onMenuDismiss()
                                 onMoveFirst(station)
+                            }
+                        )
+                    }
+                    // Own stations can be corrected when their address moves.
+                    if (CustomStations.isCustom(station.id)) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.custom_edit)) },
+                            onClick = {
+                                onMenuDismiss()
+                                editingStation = station
                             }
                         )
                     }

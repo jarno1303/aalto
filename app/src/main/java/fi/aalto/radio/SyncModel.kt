@@ -6,13 +6,15 @@ import kotlin.math.min
 
 enum class SyncEntityType(val value: String) {
     FAVORITE("favorite"),
-    FAVORITE_ORDER("favorite_order")
+    FAVORITE_ORDER("favorite_order"),
+    STATION_GAIN("station_gain")
 }
 
 enum class SyncOperation(val value: String) {
     UPSERT_FAVORITE("UPSERT_FAVORITE"),
     DELETE_FAVORITE("DELETE_FAVORITE"),
-    REORDER_FAVORITES("REORDER_FAVORITES")
+    REORDER_FAVORITES("REORDER_FAVORITES"),
+    SET_STATION_GAIN("SET_STATION_GAIN")
 }
 
 enum class SyncMutationState(val value: String) {
@@ -137,6 +139,18 @@ object FavoriteOrderPayload {
     }
 }
 
+/** A station's gain travels as its decibel value, e.g. "-4". */
+object StationGainPayload {
+    const val MIN_GAIN_DB = -8
+    const val MAX_GAIN_DB = 8
+
+    fun encode(gainDb: Int): String = clamp(gainDb).toString()
+
+    fun decode(payload: String?): Int? = payload?.trim()?.toIntOrNull()?.let(::clamp)
+
+    fun clamp(gainDb: Int): Int = gainDb.coerceIn(MIN_GAIN_DB, MAX_GAIN_DB)
+}
+
 object SyncConflictPolicy {
     fun favoriteMutationWins(
         incoming: SyncMutationEntity,
@@ -153,6 +167,21 @@ object SyncConflictPolicy {
         val incomingDeletes = incoming.operation == SyncOperation.DELETE_FAVORITE.value
         if (incomingDeletes != current.isDeleted) {
             return incomingDeletes
+        }
+
+        return incoming.deviceId > current.modifiedByDeviceId
+    }
+
+    fun stationGainMutationWins(
+        incoming: SyncMutationEntity,
+        current: StationGainEntity?
+    ): Boolean {
+        if (current == null) {
+            return true
+        }
+
+        if (incoming.logicalVersion != current.logicalVersion) {
+            return incoming.logicalVersion > current.logicalVersion
         }
 
         return incoming.deviceId > current.modifiedByDeviceId

@@ -2,6 +2,7 @@ package fi.aalto.radio
 
 import android.content.Context
 import com.google.firebase.firestore.FirebaseFirestore
+import fi.aalto.radio.audio.StationGainSync
 import fi.aalto.radio.catalog.RoomStationCatalogCache
 import fi.aalto.radio.catalog.StationCatalogRepository
 import fi.aalto.radio.catalog.radiobrowser.RadioBrowserCatalogSource
@@ -44,7 +45,7 @@ object AaltoAppContainer {
                     firestore = FirebaseFirestore.getInstance()
                 ).also { syncCoordinator = it }
             }
-        }
+        }.also { StationGainSync.start(context) }
     }
 
     fun stationCatalogRepository(context: Context): StationCatalogRepository {

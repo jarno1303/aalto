@@ -111,6 +111,16 @@ internal object AudioEffects {
         }.onFailure { Log.w(TAG, "loudness not applied", it) }
     }
 
+    /**
+     * Re-applies the gain if [stationId] is the station playing right now,
+     * e.g. after Sync brought a new value from another device. Main thread.
+     */
+    fun refreshStationGain(context: Context, stationId: String) {
+        if (currentStationId() == stationId) {
+            applyStationGain(context, stationId)
+        }
+    }
+
     private fun currentStationId(): String? =
         runCatching { player?.currentMediaItem?.mediaId }.getOrNull()
 

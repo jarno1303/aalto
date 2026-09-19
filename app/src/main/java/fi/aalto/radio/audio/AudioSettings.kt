@@ -70,6 +70,18 @@ internal object AudioSettings {
         editor.apply()
     }
 
+    /** Every station the user has made louder or quieter, by station id. */
+    fun stationGains(context: Context): Map<String, Int> {
+        return prefs(context).all
+            .filterKeys { it.startsWith(KEY_GAIN_PREFIX) }
+            .mapNotNull { (key, value) ->
+                val stationId = key.removePrefix(KEY_GAIN_PREFIX)
+                val gainDb = (value as? Int)?.coerceIn(MIN_GAIN_DB, MAX_GAIN_DB)
+                if (stationId.isBlank() || gainDb == null || gainDb == 0) null else stationId to gainDb
+            }
+            .toMap()
+    }
+
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 }

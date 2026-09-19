@@ -88,6 +88,23 @@ data class FavoriteOrderStateEntity(
     }
 }
 
+/**
+ * How loud one station should be compared to the others, as Sync sees it.
+ *
+ * No foreign key to `stations`: the adjustment belongs to the station id and
+ * must survive even when that station is not in the local station table
+ * (a catalog station on the other device, for example). A reset keeps the row
+ * with 0 dB so its logical version still orders later changes.
+ */
+@Entity(tableName = "station_gains")
+data class StationGainEntity(
+    @PrimaryKey val stationId: String,
+    val gainDb: Int,
+    val logicalVersion: Long,
+    val modifiedByDeviceId: String,
+    val updatedAt: Long
+)
+
 @Entity(
     tableName = "sync_mutations",
     indices = [

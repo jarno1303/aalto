@@ -23,9 +23,10 @@ import fi.aalto.radio.catalog.CatalogStationEntity
         SyncMetadataEntity::class,
         CatalogStationEntity::class,
         CatalogCountryCacheMetadataEntity::class,
-        PlayedTrackEntity::class
+        PlayedTrackEntity::class,
+        StationGainEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 abstract class AaltoDatabase : RoomDatabase() {
@@ -184,6 +185,23 @@ abstract class AaltoDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS station_gains (
+                        stationId TEXT NOT NULL,
+                        gainDb INTEGER NOT NULL,
+                        logicalVersion INTEGER NOT NULL,
+                        modifiedByDeviceId TEXT NOT NULL,
+                        updatedAt INTEGER NOT NULL,
+                        PRIMARY KEY(stationId)
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
         @Volatile
         private var instance: AaltoDatabase? = null
 
@@ -194,7 +212,7 @@ abstract class AaltoDatabase : RoomDatabase() {
                     AaltoDatabase::class.java,
                     DATABASE_NAME
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                     .build()
                     .also { instance = it }
             }

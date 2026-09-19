@@ -862,6 +862,127 @@ class SyncEngineTest {
         )
     }
 
+    @Test
+    fun stationGainChangeCreatesOneOutboxMutation() = runTest {
+        val app = testApp("device-a")
+
+        assertTrue(app.repository.setStationGain("radio-rock", -4))
+
+        val mutation = app.dao.allSyncMutations().single()
+        assertEquals(SyncEntityType.STATION_GAIN.value, mutation.entityType)
+        assertEquals(SyncOperation.SET_STATION_GAIN.value, mutation.operation)
+        assertEquals("radio-rock", mutation.entityId)
+        assertEquals("-4", mutation.payload)
+        assertEquals(-4, requireNotNull(app.dao.stationGain("radio-rock")).gainDb)
+    }
+
+    @Test
+    fun unchangedOrNeverAdjustedStationGainCreatesNoMutation() = runTest {
+        val app = testApp("device-a")
+
+        assertFalse(app.repository.setStationGain("radio-rock", 0))
+        app.repository.setStationGain("ylex", 3)
+        assertFalse(app.repository.setStationGain("ylex", 3))
+
+        assertEquals(1, app.dao.allSyncMutations().size)
+    }
+
+    @Test
+    fun stationGainIsClampedToSliderRange() = runTest {
+        val app = testApp("device-a")
+
+        app.repository.setStationGain("radio-rock", 40)
+
+        assertEquals(8, requireNotNull(app.dao.stationGain("radio-rock")).gainDb)
+        assertEquals("8", app.dao.allSyncMutations().single().payload)
+    }
+
+    @Test
+    fun onlyLatestUnsentStationGainIsSent() = runTest {
+        val app = testApp("device-a")
+
+        app.repository.setStationGain("radio-rock", -2)
+        app.repository.setStationGain("radio-rock", -5)
+        app.repository.setStationGain("ylex", 2)
+        app.engine.syncOnce()
+
+        assertEquals(mapOf("radio-rock" to -5, "ylex" to 2), app.transport.remoteStationGains())
+        assertEquals(2, app.transport.appliedRemoteMutationIds().size)
+    }
+
+    @Test
+    fun stationGainSetOnOneDeviceAppearsOnTheOther() = runTest {
+        val remote = InMemoryRemoteSyncState()
+        val deviceA = testApp("device-a", remote)
+        val deviceB = testApp("device-b", remote)
+
+        deviceA.repository.setStationGain("radio-rock", -4)
+        deviceA.repository.setStationGain("yle-radio-1", 6)
+        deviceA.engine.syncOnce()
+        deviceB.engine.syncOnce()
+
+        assertEquals(-4, requireNotNull(deviceB.dao.stationGain("radio-rock")).gainDb)
+        assertEquals(6, requireNotNull(deviceB.dao.stationGain("yle-radio-1")).gainDb)
+        assertEquals("device-a", requireNotNull(deviceB.dao.stationGain("radio-rock")).modifiedByDeviceId)
+        assertTrue(
+            "applying a remote gain must not echo back",
+            deviceB.dao.allSyncMutations().isEmpty()
+        )
+    }
+
+    @Test
+    fun stationGainResetOnOneDeviceResetsTheOther() = runTest {
+        val remote = InMemoryRemoteSyncState()
+        val deviceA = testApp("device-a", remote)
+        val deviceB = testApp("device-b", remote)
+        deviceA.repository.setStationGain("radio-rock", -4)
+        deviceA.engine.syncOnce()
+        deviceB.engine.syncOnce()
+
+        deviceB.repository.setStationGain("radio-rock", 0)
+        deviceB.engine.syncOnce()
+        deviceA.engine.syncOnce()
+
+        assertEquals(0, requireNotNull(deviceA.dao.stationGain("radio-rock")).gainDb)
+        assertEquals(mapOf("radio-rock" to 0), remote.stationGains())
+    }
+
+    @Test
+    fun staleStationGainFromOtherDeviceConvergesToNewerValue() = runTest {
+        val remote = InMemoryRemoteSyncState()
+        val deviceA = testApp("device-a", remote)
+        val deviceB = testApp("device-b", remote)
+
+        deviceB.repository.setStationGain("radio-rock", -2)
+        deviceB.engine.syncOnce()
+        // Device A has not heard of B's value and changes the same station.
+        deviceA.repository.setStationGain("radio-rock", 5)
+        deviceA.engine.syncOnce()
+        deviceB.engine.syncOnce()
+
+        val onA = requireNotNull(deviceA.dao.stationGain("radio-rock")).gainDb
+        val onB = requireNotNull(deviceB.dao.stationGain("radio-rock")).gainDb
+        val onServer = requireNotNull(remote.stationGains()["radio-rock"])
+        assertEquals(onServer, onA)
+        assertEquals(onServer, onB)
+    }
+
+    @Test
+    fun stationGainSyncLeavesFavoritesUntouched() = runTest {
+        val remote = InMemoryRemoteSyncState()
+        val deviceA = testApp("device-a", remote)
+        val deviceB = testApp("device-b", remote)
+        seedThreeFavorites(deviceA, deviceB)
+        val orderBefore = deviceB.dao.favoriteIds()
+
+        deviceA.repository.setStationGain("radio-rock", 3)
+        deviceA.engine.syncOnce()
+        deviceB.engine.syncOnce()
+
+        assertEquals(orderBefore, deviceB.dao.favoriteIds())
+        assertEquals(3, requireNotNull(deviceB.dao.stationGain("radio-rock")).gainDb)
+    }
+
     private suspend fun seedThreeFavorites(deviceA: TestApp, deviceB: TestApp) {
         deviceA.repository.addFavorite("radio-rock")
         deviceA.repository.addFavorite("ylex")

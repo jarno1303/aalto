@@ -131,6 +131,34 @@ class StationRepository(
         }
     }
 
+    /**
+     * Records how loud a station should be so Sync can carry it to the user's
+     * other devices. The sound itself has already changed by the time this
+     * runs: playback reads the value from [fi.aalto.radio.audio.AudioSettings].
+     */
+    suspend fun setStationGain(stationId: String, gainDb: Int): Boolean {
+        return withContext(ioDispatcher) {
+            dao.setStationGainAndEnqueueMutation(
+                stationId = stationId,
+                gainDb = gainDb,
+                deviceId = deviceIdProvider(),
+                mutationId = mutationIdFactory(),
+                now = clock()
+            )
+        }
+    }
+
+    suspend fun stationGains(): List<StationGainEntity> {
+        return withContext(ioDispatcher) { dao.allStationGains() }
+    }
+
+    fun observeStationGains(): Flow<List<StationGainEntity>> {
+        return dao.observeStationGains()
+            .catch { error ->
+                Log.w(TAG, "Station gain observation failed", error)
+            }
+    }
+
     suspend fun recordRecentlyPlayed(stationId: String) {
         withContext(ioDispatcher) {
             ensureStationPersisted(stationId)

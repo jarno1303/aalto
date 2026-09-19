@@ -152,3 +152,29 @@ What stations actually deliver (measured 2026-09-18, logcat tag `AALTO_TRACK`):
   `PesReader: Unexpected start code prefix` every six seconds, i.e. an
   unreadable stream where the timed metadata would be. No player can show the
   song for it. Do not re-investigate.
+
+## Station gain in Aalto Sync (branch `sync-station-gain`, 2026-09-19)
+
+State: CODE WRITTEN. NOT YET BUILT, UNIT-TESTED OR PHYSICALLY VERIFIED
+(the session had no Android SDK or Gradle network access).
+
+Per-station gain (the -8..+8 dB slider) now travels between the user's devices. Free, as
+docs/AALTO_PLUS.md says: no entitlement check anywhere. The equalizer stays per device.
+
+- New sync entity `station_gain` / operation `SET_STATION_GAIN`, payload = dB as text.
+- Room schema 7: table `station_gains` (MIGRATION_6_7). Rows are kept at 0 dB after a reset.
+- Firestore: `users/{uid}/station_gains/{stationId}`, same stale/rebase protection as favorites.
+  **firestore.rules has a new block that must be deployed**, otherwise gain writes are rejected.
+- Playback still reads the gain from SharedPreferences `aalto_audio` (playback path unchanged).
+  `audio/StationGainSync` keeps SharedPreferences and Room in step; the slider hands its value
+  to Sync on release (`onValueChangeFinished`), and a remote value for the playing station is
+  applied immediately. Gains set before this version are queued once at startup.
+- Protected Sync files were touched deliberately for this task: SyncModel (new enum values,
+  payload, conflict policy), FirestoreRemoteSyncTransport (per-entity ref generalised to
+  favorites + station gains), LocalRadioDao (new queries, one `when` branch). SyncEngine and
+  AaltoSyncCoordinator unchanged.
+
+Physical checks: both devices on the new APK and same account; set gain on A, hear it change on B
+while the station plays; reset on B -> A back to 0; offline change then reconnect; existing
+gains from before the update appear on the other device.
+Known: a device still on an older APK skips gain mutations and will not backfill them later.

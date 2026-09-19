@@ -27,6 +27,16 @@ service cloud.firestore {
         && request.resource.data.orderedStationIds.size() <= 500;
     }
 
+    match /users/{userId}/station_gains/{stationId} {
+      allow read: if owner(userId);
+      allow write: if owner(userId)
+        && boundedString(stationId, 200)
+        && request.resource.data.stationId == stationId
+        && request.resource.data.gainDb is int
+        && request.resource.data.gainDb >= -8
+        && request.resource.data.gainDb <= 8;
+    }
+
     match /users/{userId}/sync_mutations/{mutationId} {
       allow read: if owner(userId);
       allow write: if owner(userId)

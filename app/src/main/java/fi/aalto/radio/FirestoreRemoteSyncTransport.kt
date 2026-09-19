@@ -29,17 +29,23 @@ class FirestoreRemoteSyncTransport(
                 val metaRef = root.collection("sync_meta").document("state")
                 val favoriteRef = root.collection("favorites").document(mutation.entityId)
                 val orderRef = root.collection("favorite_order").document("state")
+                val stationGainRef = root.collection("station_gains").document(mutation.entityId)
+                // Favorites and station gains are both one document per station, with the
+                // same stale protection; the order is a single document of its own.
+                val entityRef = when (mutation.entityType) {
+                    SyncEntityType.FAVORITE.value -> favoriteRef
+                    SyncEntityType.STATION_GAIN.value -> stationGainRef
+                    else -> null
+                }
                 val meta = transaction.get(metaRef)
                 val currentRevision = meta.getLong("currentRevision") ?: 0L
-                val currentEntity = if (mutation.entityType == SyncEntityType.FAVORITE.value) {
-                    transaction.get(favoriteRef)
-                } else null
+                val currentEntity = entityRef?.let { transaction.get(it) }
                 val currentOrder = if (mutation.entityType == SyncEntityType.FAVORITE_ORDER.value) {
                     transaction.get(orderRef)
                 } else null
                 val currentEntityRevision = currentEntity?.getLong("serverRevision") ?: 0L
                 val currentOrderRevision = currentOrder?.getLong("serverRevision") ?: 0L
-                val rebaseRevision = if (mutation.entityType == SyncEntityType.FAVORITE.value) {
+                val rebaseRevision = if (entityRef != null) {
                     currentEntity?.sameDeviceRebaseRevision(
                         mutation = mutation,
                         currentRevision = currentEntityRevision
@@ -50,7 +56,7 @@ class FirestoreRemoteSyncTransport(
                         currentRevision = currentOrderRevision
                     )
                 }
-                val stale = if (mutation.entityType == SyncEntityType.FAVORITE.value) {
+                val stale = if (entityRef != null) {
                     currentEntity?.exists() == true &&
                         currentEntityRevision > mutation.baseServerRevision &&
                         rebaseRevision == null
@@ -83,6 +89,16 @@ class FirestoreRemoteSyncTransport(
                             val order = FavoriteOrderPayload.decode(mutation.payload)
                             transaction.set(orderRef, hashMapOf<String, Any?>(
                                 "orderedStationIds" to order,
+                                "serverRevision" to committedRevision,
+                                "modifiedByDeviceId" to mutation.deviceId,
+                                "clientLogicalVersion" to mutation.logicalVersion
+                            ))
+                        }
+                        SyncOperation.SET_STATION_GAIN.value -> {
+                            val gainDb = StationGainPayload.decode(mutation.payload) ?: 0
+                            transaction.set(stationGainRef, hashMapOf<String, Any?>(
+                                "stationId" to mutation.entityId,
+                                "gainDb" to gainDb,
                                 "serverRevision" to committedRevision,
                                 "modifiedByDeviceId" to mutation.deviceId,
                                 "clientLogicalVersion" to mutation.logicalVersion

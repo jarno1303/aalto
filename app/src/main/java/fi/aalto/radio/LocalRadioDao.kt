@@ -241,6 +241,114 @@ abstract class LocalRadioDao {
         return true
     }
 
+    @Query("SELECT * FROM station_gains WHERE stationId = :stationId LIMIT 1")
+    abstract suspend fun stationGain(stationId: String): StationGainEntity?
+
+    @Query("SELECT * FROM station_gains ORDER BY stationId ASC")
+    abstract suspend fun allStationGains(): List<StationGainEntity>
+
+    @Query("SELECT * FROM station_gains ORDER BY stationId ASC")
+    abstract fun observeStationGains(): Flow<List<StationGainEntity>>
+
+    @Upsert
+    abstract suspend fun upsertStationGain(stationGain: StationGainEntity)
+
+    /**
+     * Saves how loud a station should be and queues it for Sync in the same
+     * transaction. Returns false when nothing changed, so a reset of a station
+     * that was never adjusted does not create Sync traffic.
+     */
+    @Transaction
+    open suspend fun setStationGainAndEnqueueMutation(
+        stationId: String,
+        gainDb: Int,
+        deviceId: String,
+        mutationId: String,
+        now: Long
+    ): Boolean {
+        val clamped = StationGainPayload.clamp(gainDb)
+        val existing = stationGain(stationId)
+        if (existing == null && clamped == 0) {
+            return false
+        }
+        if (existing?.gainDb == clamped) {
+            return false
+        }
+
+        val logicalVersion = nextLogicalVersion()
+        val baseServerRevision = metadataLongValue(SyncMetadataEntity.LAST_APPLIED_SERVER_REVISION) ?: 0L
+        upsertStationGain(
+            StationGainEntity(
+                stationId = stationId,
+                gainDb = clamped,
+                logicalVersion = logicalVersion,
+                modifiedByDeviceId = deviceId,
+                updatedAt = now
+            )
+        )
+        insertSyncMutation(
+            SyncMutationEntity(
+                mutationId = mutationId,
+                entityType = SyncEntityType.STATION_GAIN.value,
+                entityId = stationId,
+                operation = SyncOperation.SET_STATION_GAIN.value,
+                payload = StationGainPayload.encode(clamped),
+                deviceId = deviceId,
+                logicalVersion = logicalVersion,
+                baseServerRevision = baseServerRevision,
+                createdAt = now,
+                updatedAt = now,
+                attemptCount = 0,
+                nextAttemptAt = null,
+                state = SyncMutationState.PENDING.value,
+                lastError = null
+            )
+        )
+        coalescePendingStationGainMutationsForDevice(
+            stationId = stationId,
+            deviceId = deviceId,
+            now = now,
+            states = COALESCIBLE_REORDER_STATES,
+            acknowledgedState = SyncMutationState.ACKNOWLEDGED.value
+        )
+        return true
+    }
+
+    /**
+     * Only the latest unsent value of a station matters: older ones from this
+     * device are retired, the same way pending reorders are.
+     */
+    @Query(
+        """
+        UPDATE sync_mutations
+        SET state = :acknowledgedState,
+            updatedAt = :now,
+            nextAttemptAt = NULL,
+            lastError = NULL
+        WHERE entityType = 'station_gain'
+            AND entityId = :stationId
+            AND operation = 'SET_STATION_GAIN'
+            AND deviceId = :deviceId
+            AND state IN (:states)
+            AND logicalVersion < (
+                SELECT MAX(logicalVersion)
+                FROM sync_mutations
+                WHERE entityType = 'station_gain'
+                    AND entityId = :stationId
+                    AND operation = 'SET_STATION_GAIN'
+                    AND deviceId = :deviceId
+                    AND state IN (:states)
+            )
+        """
+    )
+    abstract suspend fun coalescePendingStationGainMutationsForDevice(
+        stationId: String,
+        deviceId: String,
+        now: Long,
+        states: List<String>,
+        acknowledgedState: String
+    ): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract suspend fun upsertRecentStation(recentStation: RecentStationEntity)
 
@@ -640,6 +748,7 @@ abstract class LocalRadioDao {
             SyncOperation.UPSERT_FAVORITE.value -> applyRemoteFavoriteUpsert(mutation, now, authoritativeOtherDeviceRemote)
             SyncOperation.DELETE_FAVORITE.value -> applyRemoteFavoriteDelete(mutation, now, authoritativeOtherDeviceRemote)
             SyncOperation.REORDER_FAVORITES.value -> applyRemoteFavoriteReorder(mutation, now, authoritativeOtherDeviceRemote)
+            SyncOperation.SET_STATION_GAIN.value -> applyRemoteStationGain(mutation, now, authoritativeOtherDeviceRemote)
             else -> mutation.remoteApplyEvent(applied = false, reason = "unknown_operation")
         }
 
@@ -734,6 +843,33 @@ abstract class LocalRadioDao {
         return mutation.remoteApplyEvent(
             applied = orderedActiveIds != activeIds,
             reason = if (orderedActiveIds != activeIds) "applied" else "no_visible_change"
+        )
+    }
+
+    private suspend fun applyRemoteStationGain(
+        mutation: SyncMutationEntity,
+        now: Long,
+        authoritativeRemote: Boolean
+    ): RemoteApplyEvent {
+        val gainDb = StationGainPayload.decode(mutation.payload)
+            ?: return mutation.remoteApplyEvent(applied = false, reason = "invalid_payload")
+        val current = stationGain(mutation.entityId)
+        if (!authoritativeRemote && !SyncConflictPolicy.stationGainMutationWins(mutation, current)) {
+            return mutation.remoteApplyEvent(applied = false, reason = "conflict_lost")
+        }
+
+        upsertStationGain(
+            StationGainEntity(
+                stationId = mutation.entityId,
+                gainDb = gainDb,
+                logicalVersion = mutation.logicalVersion,
+                modifiedByDeviceId = mutation.deviceId,
+                updatedAt = now
+            )
+        )
+        return mutation.remoteApplyEvent(
+            applied = current?.gainDb != gainDb,
+            reason = if (current?.gainDb != gainDb) "applied" else "no_visible_change"
         )
     }
 

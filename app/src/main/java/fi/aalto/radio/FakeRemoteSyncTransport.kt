@@ -7,6 +7,7 @@ class InMemoryRemoteSyncState {
     private val mutationLog = mutableListOf<RemoteLedgerEntry>()
     private val favorites = mutableMapOf<String, RemoteFavoriteState>()
     private var favoriteOrderState: RemoteFavoriteOrderState? = null
+    private val stationGains = mutableMapOf<String, RemoteStationGainState>()
     private var currentRevision = 0L
 
     @Synchronized
@@ -27,6 +28,7 @@ class InMemoryRemoteSyncState {
                 SyncOperation.UPSERT_FAVORITE.value -> applyFavoriteUpsert(committed)
                 SyncOperation.DELETE_FAVORITE.value -> applyFavoriteDelete(committed)
                 SyncOperation.REORDER_FAVORITES.value -> applyFavoriteReorder(committed)
+                SyncOperation.SET_STATION_GAIN.value -> applyStationGain(committed)
             }
         }
 
@@ -111,6 +113,20 @@ class InMemoryRemoteSyncState {
         return processedMutationIds[mutationId]?.result
     }
 
+    @Synchronized
+    fun stationGains(): Map<String, Int> {
+        return stationGains.mapValues { it.value.gainDb }
+    }
+
+    private fun applyStationGain(mutation: SyncMutation) {
+        stationGains[mutation.entityId] = RemoteStationGainState(
+            gainDb = StationGainPayload.decode(mutation.payload) ?: 0,
+            logicalVersion = mutation.logicalVersion,
+            modifiedByDeviceId = mutation.deviceId,
+            serverRevision = mutation.serverRevision
+        )
+    }
+
     private fun applyFavoriteUpsert(mutation: SyncMutation) {
         favorites[mutation.entityId] = RemoteFavoriteState(
             stationId = mutation.entityId,
@@ -150,6 +166,10 @@ class InMemoryRemoteSyncState {
                 val current = favoriteOrderState
                 current != null && current.serverRevision > mutation.baseServerRevision
             }
+            SyncEntityType.STATION_GAIN.value -> {
+                val current = stationGains[mutation.entityId]
+                current != null && current.serverRevision > mutation.baseServerRevision
+            }
             else -> false
         }
     }
@@ -158,6 +178,7 @@ class InMemoryRemoteSyncState {
         val current: RemoteEntityState? = when (mutation.entityType) {
             SyncEntityType.FAVORITE.value -> favorites[mutation.entityId]
             SyncEntityType.FAVORITE_ORDER.value -> favoriteOrderState
+            SyncEntityType.STATION_GAIN.value -> stationGains[mutation.entityId]
             else -> null
         }
         return if (
@@ -213,6 +234,13 @@ class InMemoryRemoteSyncState {
         override val serverRevision: Long
     ) : RemoteEntityState
 
+    private data class RemoteStationGainState(
+        val gainDb: Int,
+        override val logicalVersion: Long,
+        override val modifiedByDeviceId: String,
+        override val serverRevision: Long
+    ) : RemoteEntityState
+
     companion object {
         const val RESULT_APPLIED = "APPLIED"
         const val RESULT_REJECTED_STALE = "REJECTED_STALE"
@@ -263,6 +291,10 @@ class FakeRemoteSyncTransport(
         repeat(count) {
             queuedIncoming += mutation
         }
+    }
+
+    fun remoteStationGains(): Map<String, Int> {
+        return state.stationGains()
     }
 
     fun activeRemoteFavoriteIds(): List<String> {

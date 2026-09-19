@@ -119,6 +119,10 @@ internal fun AudioSheet(
                         AudioSettings.saveStationGainDb(context, stationId, gainDb)
                         AudioEffects.applyStationGain(context, stationId)
                     },
+                    // Sync gets the value the user settled on, not every step on the way.
+                    onValueChangeFinished = {
+                        StationGainSync.onUserChanged(context, stationId, gainDb)
+                    },
                     valueRange = AudioSettings.MIN_GAIN_DB.toFloat()..AudioSettings.MAX_GAIN_DB.toFloat(),
                     steps = AudioSettings.MAX_GAIN_DB - AudioSettings.MIN_GAIN_DB - 1,
                     modifier = Modifier.fillMaxWidth()
@@ -212,6 +216,7 @@ internal fun AudioSheet(
                         gainDb = 0
                         AudioSettings.saveStationGainDb(context, stationId, 0)
                         AudioEffects.applyStationGain(context, stationId)
+                        StationGainSync.onUserChanged(context, stationId, 0)
                     }) {
                         Text(stringResource(R.string.audio_reset))
                     }

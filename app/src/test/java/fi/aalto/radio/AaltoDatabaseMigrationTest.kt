@@ -143,7 +143,7 @@ class AaltoDatabaseMigrationTest {
 
     private fun openPhase3Database(databaseName: String): AaltoDatabase {
         return Room.databaseBuilder(context, AaltoDatabase::class.java, databaseName)
-            .addMigrations(AaltoDatabase.MIGRATION_1_2, AaltoDatabase.MIGRATION_2_3, AaltoDatabase.MIGRATION_3_4, AaltoDatabase.MIGRATION_4_5, AaltoDatabase.MIGRATION_5_6)
+            .addMigrations(AaltoDatabase.MIGRATION_1_2, AaltoDatabase.MIGRATION_2_3, AaltoDatabase.MIGRATION_3_4, AaltoDatabase.MIGRATION_4_5, AaltoDatabase.MIGRATION_5_6, AaltoDatabase.MIGRATION_6_7)
             .allowMainThreadQueries()
             .build()
     }

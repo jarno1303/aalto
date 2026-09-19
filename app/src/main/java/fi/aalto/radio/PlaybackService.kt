@@ -206,7 +206,8 @@ class PlaybackService : MediaLibraryService() {
                 stationDetails = item.mediaMetadata.artist?.toString()
             )
             Log.d(TRACK_TAG, "station=$stationName announced=$announcement line=$line")
-            if (line == currentTrack) return
+            if (line == currentTrack && stationId == trackStationId) return
+            trackStationId = stationId
             currentTrack = line
             publishTrack(line)
             refreshWidget()
@@ -286,6 +287,8 @@ class PlaybackService : MediaLibraryService() {
      * metadata without taking the station name's place there.
      */
     private fun publishTrack(line: String?) {
+        // The same song for displays outside the app (car, Bluetooth, media card).
+        sessionPlayer?.setAnnouncedTrack(trackStationId, line)
         val session = mediaSession ?: return
         runCatching {
             session.setSessionExtras(

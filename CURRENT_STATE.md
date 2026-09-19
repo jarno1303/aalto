@@ -291,3 +291,14 @@ State: PHYSICAL PASS (owner, 2026-09-19). UI and catalog loading only.
 - Search country menu: "Kaikki omat maat" (when more than one country is followed) loads and shows
   every followed country; default stays one country (the home country), `RadioCountryPreference.allOwn`.
 - Genre chips toggle; several at once match any of them; "Kaikki" clears.
+
+## Song on car / Bluetooth / media card (branch `now-playing-metadata`, 2026-09-19)
+
+State: PHYSICAL PASS (media card, owner 2026-09-19). Touches AaltoSessionPlayer and PlaybackService (protected),
+metadata only; no change to how a stream starts or plays.
+Defect: the song travelled only in session extras (read by Aalto's own UI); a Bluetooth car,
+Android Auto and the system media card read title/artist, which always held station name and genre.
+Fix: `AaltoSessionPlayer.getMediaMetadata()` returns title = song, artist = station while a song
+for the current station is known; `setAnnouncedTrack` notifies the session's listeners.
+Physical checks: Bluetooth-only car display, Android Auto (DHU), system media card; station change
+shows the new station name, not the previous song.

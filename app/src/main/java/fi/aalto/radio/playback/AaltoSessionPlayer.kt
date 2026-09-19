@@ -117,11 +117,59 @@ internal class AaltoSessionPlayer(
     // ---- Listener filtering: hide errors while recovering -----------------
 
     override fun addListener(listener: Player.Listener) {
-        super.addListener(FilteringListener(listener))
+        val wrapped = FilteringListener(listener)
+        sessionListeners += wrapped
+        super.addListener(wrapped)
     }
 
     override fun removeListener(listener: Player.Listener) {
-        super.removeListener(FilteringListener(listener))
+        val wrapped = FilteringListener(listener)
+        sessionListeners -= wrapped
+        super.removeListener(wrapped)
+    }
+
+    // ---- Song in the shared metadata: car, Bluetooth, system media card -----
+
+    private val sessionListeners = linkedSetOf<Player.Listener>()
+    private var announcedTrack: String? = null
+    private var announcedStationId: String? = null
+
+    /**
+     * The song the station announced, or null. Everything outside the app
+     * (a Bluetooth car display, Android Auto, the system media card) reads
+     * only title and artist, so while a song is known it becomes the title and
+     * the station moves to the artist line. Nothing about playback changes.
+     */
+    fun setAnnouncedTrack(stationId: String?, track: String?) {
+        if (announcedStationId == stationId && announcedTrack == track) return
+        announcedStationId = stationId
+        announcedTrack = track
+        val metadata = mediaMetadata
+        val events = Player.Events(
+            androidx.media3.common.FlagSet.Builder().add(Player.EVENT_MEDIA_METADATA_CHANGED).build()
+        )
+        sessionListeners.toList().forEach { listener ->
+            runCatching {
+                listener.onMediaMetadataChanged(metadata)
+                listener.onEvents(this, events)
+            }
+        }
+    }
+
+    override fun getMediaMetadata(): androidx.media3.common.MediaMetadata {
+        val base = super.getMediaMetadata()
+        val track = announcedTrack
+        val item = exo.currentMediaItem
+        // Only for the station it was announced on: a station change must not
+        // show the previous station's song even for a moment.
+        if (track.isNullOrBlank() || item?.mediaId != announcedStationId) return base
+        val stationName = item?.mediaMetadata?.title ?: base.title
+        return base.buildUpon()
+            .setTitle(track)
+            .setDisplayTitle(track)
+            .setArtist(stationName)
+            .setSubtitle(stationName)
+            .build()
     }
 
     override fun getPlayerError(): PlaybackException? =

@@ -248,8 +248,17 @@ class InMemoryRemoteSyncState {
 }
 
 class FakeRemoteSyncTransport(
-    private val state: InMemoryRemoteSyncState = InMemoryRemoteSyncState()
+    private val state: InMemoryRemoteSyncState = InMemoryRemoteSyncState(),
+    /**
+     * When set, [receive] behaves like Firestore: only changes after the
+     * device's cursor, oldest first, at most this many at a time.
+     */
+    private val pageSize: Int? = null,
+    private val cursor: suspend () -> Long = { 0L }
 ) : RemoteSyncTransport {
+    var receiveCalls: Int = 0
+        private set
+
     private val queuedSendResults = ArrayDeque<SyncTransportSendResult>()
     private val queuedIncoming = mutableListOf<SyncMutation>()
 
@@ -274,10 +283,21 @@ class FakeRemoteSyncTransport(
             error("transport unavailable")
         }
 
-        val incoming = state.mutations() + queuedIncoming
+        receiveCalls += 1
+        val all = state.mutations()
+        val page = if (pageSize == null) {
+            all
+        } else {
+            val after = cursor()
+            all.filter { it.serverRevision > after }.sortedBy { it.serverRevision }.take(pageSize)
+        }
+        val incoming = page + queuedIncoming
         queuedIncoming.clear()
         return incoming
     }
+
+    override fun hasMoreAfter(receivedCount: Int): Boolean =
+        pageSize != null && receivedCount >= pageSize
 
     fun enqueueSendResult(result: SyncTransportSendResult) {
         queuedSendResults.add(result)

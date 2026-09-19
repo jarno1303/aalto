@@ -133,46 +133,56 @@ class SyncEngine(
                 }
             }
 
-            val pullCursor = dao.metadataLongValue(SyncMetadataEntity.LAST_APPLIED_SERVER_REVISION) ?: 0L
-            debugLog("pull_from_revision revision=$pullCursor")
-            val incoming = runCatching {
-                transport.receive(deviceId)
-            }.getOrElse { error ->
-                Log.w(TAG, "Remote receive failed", error)
-                emptyList()
-            }
-            debugLog("pull_count count=${incoming.size}")
-            incoming.forEach { mutation ->
-                debugLog(
-                    "incoming_received id=${mutation.mutationId.abbreviated()} " +
-                        "operation=${mutation.operation} " +
-                        "serverRevision=${mutation.serverRevision} " +
-                        "device=${mutation.deviceId.abbreviated()}"
-                )
-            }
-
-            val remoteApplyResult = dao.applyRemoteMutationsAndAdvanceCursor(
-                mutations = incoming.map { it.toEntity() },
-                now = clock(),
-                localDeviceId = deviceId
-            )
-            remoteApplyResult.events.forEach { event ->
-                if (event.applied) {
+            // Pull page by page until caught up, so a new device gets the
+            // whole history in one sync instead of one page per app start.
+            var appliedIncoming = 0
+            var pages = 0
+            do {
+                val pullCursor = dao.metadataLongValue(SyncMetadataEntity.LAST_APPLIED_SERVER_REVISION) ?: 0L
+                debugLog("pull_from_revision revision=$pullCursor")
+                val incoming = runCatching {
+                    transport.receive(deviceId)
+                }.getOrElse { error ->
+                    Log.w(TAG, "Remote receive failed", error)
+                    emptyList()
+                }
+                debugLog("pull_count count=${incoming.size}")
+                incoming.forEach { mutation ->
                     debugLog(
-                        "incoming_applied id=${event.mutationId.abbreviated()} " +
-                            "operation=${event.operation} " +
-                            "serverRevision=${event.serverRevision}"
-                    )
-                } else {
-                    debugLog(
-                        "incoming_skipped id=${event.mutationId.abbreviated()} " +
-                            "operation=${event.operation} " +
-                            "serverRevision=${event.serverRevision} " +
-                            "reason=${event.reason}"
+                        "incoming_received id=${mutation.mutationId.abbreviated()} " +
+                            "operation=${mutation.operation} " +
+                            "serverRevision=${mutation.serverRevision} " +
+                            "device=${mutation.deviceId.abbreviated()}"
                     )
                 }
-            }
-            val appliedIncoming = remoteApplyResult.appliedCount
+
+                val remoteApplyResult = dao.applyRemoteMutationsAndAdvanceCursor(
+                    mutations = incoming.map { it.toEntity() },
+                    now = clock(),
+                    localDeviceId = deviceId
+                )
+                remoteApplyResult.events.forEach { event ->
+                    if (event.applied) {
+                        debugLog(
+                            "incoming_applied id=${event.mutationId.abbreviated()} " +
+                                "operation=${event.operation} " +
+                                "serverRevision=${event.serverRevision}"
+                        )
+                    } else {
+                        debugLog(
+                            "incoming_skipped id=${event.mutationId.abbreviated()} " +
+                                "operation=${event.operation} " +
+                                "serverRevision=${event.serverRevision} " +
+                                "reason=${event.reason}"
+                        )
+                    }
+                }
+                appliedIncoming += remoteApplyResult.appliedCount
+                pages += 1
+                val cursorAdvanced =
+                    (dao.metadataLongValue(SyncMetadataEntity.LAST_APPLIED_SERVER_REVISION) ?: 0L) > pullCursor
+            } while (cursorAdvanced && transport.hasMoreAfter(incoming.size) && pages < MAX_PULL_PAGES)
+            if (pages > 1) debugLog("pull_pages pages=$pages")
 
             SyncOnceResult(
                 sent = sent,
@@ -216,6 +226,8 @@ class SyncEngine(
         private const val TAG = "AaltoSync"
         private const val RESULT_REJECTED_STALE = "REJECTED_STALE"
         private const val DEFAULT_BATCH_SIZE = 50
+        /** 20 pages of 75 = 1 500 changes per sync; the next sync continues. */
+        internal const val MAX_PULL_PAGES = 20
         private const val DEFAULT_IN_FLIGHT_STALE_AFTER_MS = 30_000L
     }
 

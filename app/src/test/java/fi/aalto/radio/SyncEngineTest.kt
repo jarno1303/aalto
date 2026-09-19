@@ -983,6 +983,70 @@ class SyncEngineTest {
         assertEquals(3, requireNotNull(deviceB.dao.stationGain("radio-rock")).gainDb)
     }
 
+    @Test
+    fun newDeviceCatchesUpOnLongHistoryInOneSync() = runTest {
+        val remote = InMemoryRemoteSyncState()
+        val deviceA = testApp("device-a", remote)
+        // 30 station gains, each changed 10 times: 300 changes, four full pages.
+        repeat(10) { round ->
+            repeat(30) { station ->
+                deviceA.repository.setStationGain("station-$station", (round % 8) + 1)
+            }
+            deviceA.engine.syncOnce()
+        }
+        assertTrue(remote.currentServerRevision() > 3 * PAGE_SIZE)
+
+        val deviceB = testApp("device-b", remote)
+        val pagedTransport = FakeRemoteSyncTransport(
+            state = remote,
+            pageSize = PAGE_SIZE,
+            cursor = {
+                deviceB.dao.metadataLongValue(SyncMetadataEntity.LAST_APPLIED_SERVER_REVISION) ?: 0L
+            }
+        )
+        val engineB = SyncEngine(
+            dao = deviceB.dao,
+            deviceId = "device-b",
+            transport = pagedTransport,
+            ioDispatcher = UnconfinedTestDispatcher(),
+            clock = { now++ }
+        )
+
+        engineB.syncOnce()
+
+        assertEquals(remote.currentServerRevision(), deviceB.dao.metadataLongValue(SyncMetadataEntity.LAST_APPLIED_SERVER_REVISION))
+        assertEquals(remote.stationGains(), deviceB.dao.allStationGains().associate { it.stationId to it.gainDb })
+        assertTrue("pulled more than one page", pagedTransport.receiveCalls > 1)
+    }
+
+    @Test
+    fun caughtUpDeviceMakesOnlyOnePullPerSync() = runTest {
+        val remote = InMemoryRemoteSyncState()
+        val deviceA = testApp("device-a", remote)
+        deviceA.repository.setStationGain("radio-rock", 2)
+        deviceA.engine.syncOnce()
+        val deviceB = testApp("device-b", remote)
+        val pagedTransport = FakeRemoteSyncTransport(
+            state = remote,
+            pageSize = PAGE_SIZE,
+            cursor = {
+                deviceB.dao.metadataLongValue(SyncMetadataEntity.LAST_APPLIED_SERVER_REVISION) ?: 0L
+            }
+        )
+        val engineB = SyncEngine(
+            dao = deviceB.dao,
+            deviceId = "device-b",
+            transport = pagedTransport,
+            ioDispatcher = UnconfinedTestDispatcher(),
+            clock = { now++ }
+        )
+
+        engineB.syncOnce()
+
+        assertEquals(1, pagedTransport.receiveCalls)
+        assertEquals(2, requireNotNull(deviceB.dao.stationGain("radio-rock")).gainDb)
+    }
+
     private suspend fun seedThreeFavorites(deviceA: TestApp, deviceB: TestApp) {
         deviceA.repository.addFavorite("radio-rock")
         deviceA.repository.addFavorite("ylex")
@@ -1292,5 +1356,6 @@ class SyncEngineTest {
         private const val B = "ylex"
         private const val C = "yle-radio-suomi"
         private const val D = "yle-radio-1"
+        private const val PAGE_SIZE = 75
     }
 }

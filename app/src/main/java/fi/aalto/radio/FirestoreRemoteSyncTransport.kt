@@ -155,6 +155,8 @@ class FirestoreRemoteSyncTransport(
         return snapshot.documents.mapNotNull(::mutationFromDocument)
     }
 
+    override fun hasMoreAfter(receivedCount: Int): Boolean = receivedCount >= pageSize
+
     private fun userRoot(uid: String) = firestore.collection("users").document(uid)
 
     companion object {

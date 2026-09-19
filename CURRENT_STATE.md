@@ -212,3 +212,18 @@ Open: phone keeps playing (from the speaker, after a delay) when the car disconn
 sending AUDIO_BECOMING_NOISY. Needs logcat from a headset test and from the car before any fix.
 Physical checks: kill Aalto, connect headset/car, press play -> last station starts; system media
 controls show an Aalto resume card.
+
+## Sync pull paging (branch `playback-resumption`, 2026-09-19)
+
+State: BUILT (assembleDebug, 2026-09-19); confirm unit tests. Touches protected Sync
+(SyncEngine, SyncModel, transports).
+
+Defect: `receive` returns at most 75 changes and one `syncOnce` pulled once, with nothing
+triggering the next pull, so a new device caught up one page per app start.
+Fix: `syncOnce` pulls page after page while the cursor advances and
+`RemoteSyncTransport.hasMoreAfter(count)` says the page was full (Firestore: count >= pageSize),
+at most `MAX_PULL_PAGES` = 20 per sync. A caught-up device still makes exactly one query.
+Tests: `newDeviceCatchesUpOnLongHistoryInOneSync`, `caughtUpDeviceMakesOnlyOnePullPerSync`.
+Still open (before public release): the ledger (`sync_mutations` in Firestore, local
+`sync_mutations` / `sync_applied_mutations`) is never pruned. Plan: new device bootstraps from the
+state documents, then TTL on the ledger. Architectural, to be designed separately.

@@ -114,6 +114,13 @@ sealed class SyncTransportSendResult {
 interface RemoteSyncTransport {
     suspend fun send(mutation: SyncMutation): SyncTransportSendResult
     suspend fun receive(deviceId: String): List<SyncMutation>
+
+    /**
+     * True when a [receive] that returned [receivedCount] items may have
+     * left more behind (the page was full). Lets the engine keep pulling
+     * without an extra, empty query on every normal sync.
+     */
+    fun hasMoreAfter(receivedCount: Int): Boolean = false
 }
 
 object SyncMutationIds {

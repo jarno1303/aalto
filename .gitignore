@@ -54,3 +54,6 @@ AGENTS.backup-*.md
 
 # Epaonnistuneiden testiajojen lokit: paikallisia, ei versionhallintaan.
 testilokit/
+
+# Screenshots from scripts/kuvakaappaukset.ps1
+kuvakaappaukset/

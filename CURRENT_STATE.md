@@ -305,7 +305,8 @@ shows the new station name, not the previous song.
 
 ## Catalog servers (branch `catalog-servers`, 2026-09-19)
 
-State: PHYSICAL PASS (owner 2026-09-19): catalog loads again after reinstall.
+State: PHYSICAL PASS (owner 2026-09-19): catalog loads again after reinstall; airplane-mode test
+shows the unavailable notice and "Yritä uudelleen" loads the catalog once online.
 Reported: only ~10 built-in stations in search, Finland selected. The catalog asked one name,
 all.api.radio-browser.info (one server per lookup); a down or slow server failed the whole catalog,
 and the UI did not say so. Fix: servers looked up from DNS and tried in turn, with a fixed list of

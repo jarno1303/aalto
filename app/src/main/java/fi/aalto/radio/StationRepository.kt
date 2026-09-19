@@ -96,7 +96,7 @@ class StationRepository(
                 deviceId = deviceId,
                 mutationId = mutationIdFactory(),
                 now = clock(),
-                payload = StationCatalog.stationById(stationId)?.let(StationSnapshotPayload::encode)
+                payload = stationSnapshotPayload(stationId)
             )
         }
     }
@@ -110,9 +110,18 @@ class StationRepository(
                 deviceId = deviceId,
                 mutationId = mutationIdFactory(),
                 now = clock(),
-                payload = StationCatalog.stationById(stationId)?.let(StationSnapshotPayload::encode)
+                payload = stationSnapshotPayload(stationId)
             )
         }
+    }
+
+    /**
+     * What the other device needs to know the station: built in, catalog or
+     * already stored here. Null only when the station is known nowhere.
+     */
+    private suspend fun stationSnapshotPayload(stationId: String): String? {
+        stationById(stationId)?.let { return StationSnapshotPayload.encode(it) }
+        return dao.stationsByIds(listOf(stationId)).firstOrNull()?.let(StationSnapshotPayload::encode)
     }
 
     suspend fun reorderFavorites(orderedStationIds: List<String>): Boolean {

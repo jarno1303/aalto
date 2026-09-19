@@ -113,7 +113,8 @@ class StationDialMathTest {
         val vega = requireNotNull(StationCatalog.stationById("yle-vega"))
         val rock = requireNotNull(StationCatalog.stationById("radio-rock"))
 
-        assertEquals("Yle Vega - Puhe & Viihde, puhe, kulttuuri - Suomi", stationDialTitle(vega))
+        // One genre in Aalto's words, not the raw tags after it (visual pass 2026-09-19).
+        assertEquals("Yle Vega - Puhe & Viihde - Suomi", stationDialTitle(vega))
         assertEquals("Radio Rock - Rock - Suomi", stationDialTitle(rock))
     }
 

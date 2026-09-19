@@ -395,6 +395,15 @@ abstract class LocalRadioDao {
     @Query("SELECT COUNT(*) FROM sync_mutations WHERE entityType = :entityType AND entityId = :entityId AND operation = :operation")
     abstract suspend fun mutationCount(entityType: String, entityId: String, operation: String): Int
 
+    @Query(
+        """
+        SELECT COUNT(*) FROM sync_mutations
+        WHERE entityType = :entityType AND entityId = :entityId AND operation = :operation
+            AND payload IS NOT NULL AND payload != ''
+        """
+    )
+    abstract suspend fun mutationWithPayloadCount(entityType: String, entityId: String, operation: String): Int
+
     @Transaction
     open suspend fun enqueueBootstrapFavorite(
         stationId: String,
@@ -403,7 +412,10 @@ abstract class LocalRadioDao {
         mutationId: String,
         now: Long
     ): Boolean {
-        if (mutationCount(SyncEntityType.FAVORITE.value, stationId, SyncOperation.UPSERT_FAVORITE.value) > 0) return false
+        // Once per favourite, counting only upserts that carried the station:
+        // catalog favourites used to be sent without it, and the other device
+        // could never show them. This sends them once more, now with the station.
+        if (mutationWithPayloadCount(SyncEntityType.FAVORITE.value, stationId, SyncOperation.UPSERT_FAVORITE.value) > 0) return false
         val current = favoriteById(stationId) ?: return false
         val version = nextLogicalVersion()
         val baseServerRevision = metadataLongValue(SyncMetadataEntity.LAST_APPLIED_SERVER_REVISION) ?: 0L
@@ -764,6 +776,12 @@ abstract class LocalRadioDao {
         StationSnapshotPayload.decode(mutation.payload)?.let { snapshot ->
             upsertStation(snapshot.toEntity(now))
         }
+        // A favourite needs its station row (foreign key). Without station data
+        // and without the station here, skip it: inserting would throw, abort the
+        // whole batch and stop Sync at this change for good.
+        if (stationExists(mutation.entityId) == null) {
+            return mutation.remoteApplyEvent(applied = false, reason = "missing_station")
+        }
         val current = favoriteById(mutation.entityId)
         if (!authoritativeRemote && !SyncConflictPolicy.favoriteMutationWins(mutation, current)) {
             return mutation.remoteApplyEvent(applied = false, reason = "conflict_lost")
@@ -791,6 +809,14 @@ abstract class LocalRadioDao {
         now: Long,
         authoritativeRemote: Boolean
     ): RemoteApplyEvent {
+        StationSnapshotPayload.decode(mutation.payload)?.let { snapshot ->
+            if (stationExists(snapshot.stationId) == null) upsertStation(snapshot.toEntity(now))
+        }
+        // Nothing to delete on a device that never had the station; a tombstone
+        // row would need the station row too (foreign key).
+        if (stationExists(mutation.entityId) == null) {
+            return mutation.remoteApplyEvent(applied = false, reason = "missing_station")
+        }
         val current = favoriteById(mutation.entityId)
         if (!authoritativeRemote && !SyncConflictPolicy.favoriteMutationWins(mutation, current)) {
             return mutation.remoteApplyEvent(applied = false, reason = "conflict_lost")

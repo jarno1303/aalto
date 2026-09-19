@@ -1047,6 +1047,71 @@ class SyncEngineTest {
         assertEquals(2, requireNotNull(deviceB.dao.stationGain("radio-rock")).gainDb)
     }
 
+    @Test
+    fun catalogFavoriteReachesOtherDeviceWithItsStation() = runTest {
+        val remote = InMemoryRemoteSyncState()
+        val deviceA = testApp("device-a", remote)
+        val deviceB = testApp("device-b", remote)
+        // A Radio Browser station: known on device A because it was browsed there,
+        // never seen on device B.
+        deviceA.repository.registerCatalogStations(listOf(catalogStation()))
+
+        deviceA.repository.addFavorite(CATALOG_ID)
+        deviceA.engine.syncOnce()
+        deviceB.engine.syncOnce()
+
+        assertTrue(deviceB.repository.favoriteIdsSnapshot().contains(CATALOG_ID))
+        val station = requireNotNull(deviceB.dao.stationsByIds(listOf(CATALOG_ID)).firstOrNull())
+        assertEquals("Radio Testi", station.name)
+        assertEquals("https://stream.example.fi/testi.mp3", station.streamUrl)
+    }
+
+    @Test
+    fun favoriteWithoutStationDataDoesNotStopSync() = runTest {
+        val app = testApp("device-b")
+        // Sent by an older version: an unknown station id and no station data.
+        app.transport.queueIncoming(
+            remoteAdd("unknown-station", CATALOG_ID, version = 3, deviceId = "device-a", serverRevision = 1L)
+        )
+        app.transport.queueIncoming(
+            remoteAdd("known-station", "radio-rock", version = 4, deviceId = "device-a", serverRevision = 2L)
+        )
+
+        app.engine.syncOnce()
+
+        assertFalse(app.repository.favoriteIdsSnapshot().contains(CATALOG_ID))
+        assertTrue("later changes still arrive", app.repository.favoriteIdsSnapshot().contains("radio-rock"))
+        assertEquals(2L, app.dao.metadataLongValue(SyncMetadataEntity.LAST_APPLIED_SERVER_REVISION))
+    }
+
+    @Test
+    fun catalogFavoriteSentWithoutStationIsSentAgainOnceWithIt() = runTest {
+        val app = testApp("device-a")
+        app.repository.registerCatalogStations(listOf(catalogStation()))
+        app.repository.addFavorite(CATALOG_ID)
+        // What an older version left behind: the upsert went out without the station.
+        app.database.openHelper.writableDatabase.execSQL("UPDATE sync_mutations SET payload = NULL")
+
+        assertTrue(app.dao.enqueueBootstrapFavorite(CATALOG_ID, "{}", "device-a", "bootstrap-1", now++))
+        assertFalse(
+            "only once",
+            app.dao.enqueueBootstrapFavorite(CATALOG_ID, "{}", "device-a", "bootstrap-2", now++)
+        )
+    }
+
+    private fun catalogStation() = RadioStation(
+        id = CATALOG_ID,
+        radioBrowserStationUuid = "b1b2c3d4-0000-4000-8000-000000000001",
+        name = "Radio Testi",
+        description = "Pop",
+        initials = "RT",
+        logoColorArgb = 0xFF1769FF,
+        streamUrl = "https://stream.example.fi/testi.mp3",
+        countryCode = "FI",
+        tags = listOf("pop"),
+        category = "pop"
+    )
+
     private suspend fun seedThreeFavorites(deviceA: TestApp, deviceB: TestApp) {
         deviceA.repository.addFavorite("radio-rock")
         deviceA.repository.addFavorite("ylex")
@@ -1357,5 +1422,6 @@ class SyncEngineTest {
         private const val C = "yle-radio-suomi"
         private const val D = "yle-radio-1"
         private const val PAGE_SIZE = 75
+        private const val CATALOG_ID = "rb-radio-testi"
     }
 }

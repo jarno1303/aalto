@@ -249,3 +249,17 @@ Round 2 (same branch, not yet built): tile names always two lines, text shrinks 
 window's navigation bar (`MatchSheetNavigationBar`); Night Screen logo unframed under a black
 veil; alarm volume slider without tick dots; widget logo frame has a night variant (the widget
 follows the phone's theme, not Aalto's own theme setting).
+
+## Catalog favourites in Sync (branch `sync-catalog-favorites`, 2026-09-19)
+
+State: CODE WRITTEN, NOT YET BUILT. Touches protected Sync (LocalRadioDao, SyncModel, coordinator).
+
+Defect (found by reading, reproduced by tests): a favourite for a non-built-in station was sent
+without station data (payload came only from `StationCatalog`). The receiving device lacking that
+station hit the favorites -> stations foreign key, the exception aborted the whole remote batch,
+the cursor never advanced and Sync stopped at that change for good.
+Fix: payload from built-in, registered catalog or stored station row (repository and bootstrap);
+receiver skips a favourite upsert/delete whose station it cannot know ("missing_station") instead
+of throwing; bootstrap re-sends once any favourite whose upserts never carried station data.
+Tests: catalogFavoriteReachesOtherDeviceWithItsStation, favoriteWithoutStationDataDoesNotStopSync,
+catalogFavoriteSentWithoutStationIsSentAgainOnceWithIt.

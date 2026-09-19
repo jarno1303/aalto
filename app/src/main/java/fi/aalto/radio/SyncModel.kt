@@ -82,6 +82,26 @@ object StationSnapshotPayload {
         }.toString()
     }
 
+    /**
+     * The same snapshot from the local station row, for stations that are not
+     * built in (catalog stations, and later the user's own). Without it the
+     * other device receives only an id it may never have seen.
+     */
+    fun encode(entity: StationEntity): String {
+        return JSONObject().apply {
+            put("stationId", entity.id)
+            put("radioBrowserStationUuid", entity.radioBrowserStationUuid)
+            put("name", entity.name)
+            put("streamUrl", entity.streamUrl)
+            put("preferredStreamUrl", entity.preferredStreamUrl)
+            put("lastKnownWorkingStreamUrl", entity.lastKnownWorkingStreamUrl)
+            put("faviconUrl", entity.faviconUrl)
+            put("countryCode", entity.countryCode)
+            put("tags", entity.tags.orEmpty())
+            put("category", entity.category)
+        }.toString()
+    }
+
     fun decode(payload: String?): StationSnapshot? = runCatching {
         val json = JSONObject(payload ?: return null)
         StationSnapshot(

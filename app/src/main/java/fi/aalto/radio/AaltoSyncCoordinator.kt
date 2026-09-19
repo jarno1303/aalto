@@ -118,10 +118,14 @@ class AaltoSyncCoordinator internal constructor(
         }
         val bootstrapDeviceId = deviceIdProvider()
         dao.favoriteIds().forEach { stationId ->
-            StationCatalog.stationById(stationId)?.let { station ->
+            // Built-in stations from the catalog in code; every other station
+            // (Radio Browser, the user's own) from its stored row.
+            val payload = StationCatalog.stationById(stationId)?.let(StationSnapshotPayload::encode)
+                ?: dao.stationsByIds(listOf(stationId)).firstOrNull()?.let(StationSnapshotPayload::encode)
+            if (payload != null) {
                 dao.enqueueBootstrapFavorite(
                     stationId = stationId,
-                    payload = StationSnapshotPayload.encode(station),
+                    payload = payload,
                     deviceId = bootstrapDeviceId,
                     mutationId = SyncMutationIds.newId(),
                     now = clock()

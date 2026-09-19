@@ -42,6 +42,7 @@ import fi.aalto.radio.AaltoSpaceL
 import fi.aalto.radio.AaltoSpaceS
 import fi.aalto.radio.AaltoSpaceXl
 import fi.aalto.radio.AaltoSpaceXs
+import fi.aalto.radio.MatchSheetNavigationBar
 import fi.aalto.radio.R
 import fi.aalto.radio.WheelChoiceDialog
 import fi.aalto.radio.plus.Plus
@@ -75,6 +76,7 @@ internal fun AudioSheet(
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+        MatchSheetNavigationBar()
         Column(
             modifier = Modifier
                 .fillMaxWidth()

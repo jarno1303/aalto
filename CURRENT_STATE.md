@@ -243,3 +243,9 @@ From a screenshot review against the Calm pillar:
 - Night Screen: station logo (dimmed) instead of initials, no "Toistaa", hint only while controls hidden.
 - Settings: body text not grey, theme as radio rows, scrollable. Alarm: days as one row of seven,
   notification warning neutral. Audio: no tick dots on the gain slider, shorter hint.
+
+Round 2 (same branch, not yet built): tile names always two lines, text shrinks in steps
+(down to 75 %) until every word fits; no playing badge over tile logos; sheets paint their own
+window's navigation bar (`MatchSheetNavigationBar`); Night Screen logo unframed under a black
+veil; alarm volume slider without tick dots; widget logo frame has a night variant (the widget
+follows the phone's theme, not Aalto's own theme setting).

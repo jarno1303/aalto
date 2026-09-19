@@ -28,6 +28,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.foundation.layout.Box
@@ -100,6 +101,7 @@ internal fun AlarmSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState
     ) {
+        MatchSheetNavigationBar()
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -332,6 +334,11 @@ internal fun AlarmSheet(
                     },
                     valueRange = 10f..100f,
                     steps = 8,
+                    // Snaps in tens, without dots on the track (as in the audio sheet).
+                    colors = SliderDefaults.colors(
+                        activeTickColor = Color.Transparent,
+                        inactiveTickColor = Color.Transparent
+                    ),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Text(

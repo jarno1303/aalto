@@ -43,7 +43,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -171,9 +170,20 @@ internal fun NightScreen(
             verticalArrangement = Arrangement.Center
         ) {
             // The station's own logo, dimmed for the dark: the same picture as
-            // everywhere else, not initials the user has never seen.
-            Box(modifier = Modifier.graphicsLayer { alpha = 0.55f }) {
-                StationLogo(station = station, size = 88.dp, cornerRadius = 24.dp)
+            // everywhere else, not initials. No white frame, and dimmed with a
+            // black veil rather than transparency, so colours darken instead of
+            // turning grey.
+            Box(
+                modifier = Modifier
+                    .size(88.dp)
+                    .clip(RoundedCornerShape(20.dp))
+            ) {
+                StationLogo(station = station, size = 88.dp, cornerRadius = 20.dp, framed = false)
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(AaltoNightBlack.copy(alpha = 0.45f))
+                )
             }
 
             Spacer(modifier = Modifier.height(22.dp))

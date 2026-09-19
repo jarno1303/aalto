@@ -697,19 +697,8 @@ internal fun StationCard(
                     }
                 }
 
-                if (isSelected && isPlaying) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(AaltoSpaceXs)
-                            .size(24.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        NowPlayingIndicator(size = 16.dp)
-                    }
-                }
+                // No playing badge on the tile: it covered the logo, and the blue
+                // frame and blue name already say which station this is.
             }
 
             Spacer(modifier = Modifier.height(AaltoSpaceXs))
@@ -724,9 +713,10 @@ internal fun StationCard(
 }
 
 /**
- * The name under a station tile. Two lines when every word fits on a line of
- * its own; otherwise one line with an ellipsis, because a word that does not
- * fit is broken mid-word ("SuomiR / ap"), which reads as a bug.
+ * The name under a station tile, always on two lines. A word that does not fit
+ * the width would be broken mid-word ("SuomiR / ap"), and one line with an
+ * ellipsis hides too much ("Radio …"), so the text is made a step smaller
+ * until every word fits; only past the smallest step does it ellipsize.
  */
 @Composable
 private fun StationTileLabel(
@@ -734,29 +724,36 @@ private fun StationTileLabel(
     isSelected: Boolean,
     availableWidth: Dp
 ) {
-    val style = MaterialTheme.typography.labelMedium.copy(
+    val base = MaterialTheme.typography.labelMedium.copy(
         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
     )
     val measurer = rememberTextMeasurer()
     val maxPx = with(LocalDensity.current) { availableWidth.roundToPx() }
-    val everyWordFits = remember(name, style, maxPx) {
-        name.split(' ').filter { it.isNotBlank() }.all { word ->
-            measurer.measure(word, style, maxLines = 1, softWrap = false).size.width <= maxPx
-        }
+    val style = remember(name, base, maxPx) {
+        val words = name.split(' ').filter { it.isNotBlank() }
+        TILE_LABEL_SCALES
+            .map { scale -> base.copy(fontSize = base.fontSize * scale, lineHeight = base.lineHeight * scale) }
+            .firstOrNull { candidate ->
+                words.all { word ->
+                    measurer.measure(word, candidate, maxLines = 1, softWrap = false).size.width <= maxPx
+                }
+            }
+            ?: base.copy(fontSize = base.fontSize * TILE_LABEL_SCALES.last(), lineHeight = base.lineHeight * TILE_LABEL_SCALES.last())
     }
-    val lines = if (everyWordFits) 2 else 1
     Text(
         text = name,
         style = style,
         color = if (isSelected) AaltoBlue else MaterialTheme.colorScheme.onSurface,
         textAlign = TextAlign.Center,
-        maxLines = lines,
-        minLines = lines,
-        softWrap = everyWordFits,
+        maxLines = 2,
+        minLines = 2,
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier.fillMaxWidth()
     )
 }
+
+/** Text size steps for a tile name, largest first: never below 75 %. */
+private val TILE_LABEL_SCALES = listOf(1f, 0.92f, 0.84f, 0.75f)
 
 // =============================================================
 // STATION ROW (search / favorites lists)

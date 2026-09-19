@@ -442,8 +442,26 @@ internal object RadioCountryPreference {
         context.applicationContext.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
             .edit()
             .putString(KEY, code.uppercase())
+            .putBoolean(KEY_ALL_OWN, false)
             .apply()
     }
+
+    /**
+     * "Kaikki omat maat": search shows every followed country at once. Off by
+     * default, so a new user sees their own country's stations, not all of them.
+     */
+    fun allOwn(context: android.content.Context): Boolean =
+        context.applicationContext.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
+            .getBoolean(KEY_ALL_OWN, false)
+
+    fun setAllOwn(context: android.content.Context, on: Boolean) {
+        context.applicationContext.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY_ALL_OWN, on)
+            .apply()
+    }
+
+    private const val KEY_ALL_OWN = "all_own"
 }
 
 /**

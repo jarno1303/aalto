@@ -167,32 +167,41 @@ private fun AaltoApp() {
     var radioCountryCode by rememberSaveable {
         mutableStateOf(RadioCountryPreference.get(context))
     }
+    var allOwnCountries by rememberSaveable {
+        mutableStateOf(RadioCountryPreference.allOwn(context))
+    }
+    // One country (the default), or every followed country at once.
+    val browseCountries = if (allOwnCountries && ownCountries.size > 1) ownCountries else listOf(radioCountryCode)
 
-    LaunchedEffect(catalogRepository, radioCountryCode) {
+    LaunchedEffect(catalogRepository, browseCountries) {
         catalogLoading = true
         catalogError = null
         catalogStations = emptyList()
 
-        when (val result = catalogRepository.getStationsByCountry(radioCountryCode, limit = 100)) {
-            is CatalogReadResult.Success -> {
-                catalogStations = result.snapshot.stations
-                if (result.snapshot.freshness == CatalogFreshness.STALE) {
-                    when (val refresh = catalogRepository.refreshCountry(radioCountryCode, limit = 100)) {
-                        is CatalogResult.Success -> {
-                            catalogStations = refresh.value
+        val loaded = mutableListOf<CatalogStation>()
+        browseCountries.forEach { code ->
+            when (val result = catalogRepository.getStationsByCountry(code, limit = 100)) {
+                is CatalogReadResult.Success -> {
+                    var countryStations = result.snapshot.stations
+                    if (result.snapshot.freshness == CatalogFreshness.STALE) {
+                        when (val refresh = catalogRepository.refreshCountry(code, limit = 100)) {
+                            is CatalogResult.Success -> countryStations = refresh.value
+                            is CatalogResult.Failure -> Unit
                         }
-                        is CatalogResult.Failure -> Unit
                     }
+                    loaded += countryStations
+                    // Show each country as soon as it is there, not after the last one.
+                    catalogStations = loaded.toList()
                 }
-            }
-            is CatalogReadResult.Failure -> {
-                catalogError = result.error.message
+                is CatalogReadResult.Failure -> {
+                    if (loaded.isEmpty()) catalogError = result.error.message
+                }
             }
         }
         catalogLoading = false
     }
 
-    LaunchedEffect(catalogRepository, radioCountryCode, searchQuery) {
+    LaunchedEffect(catalogRepository, browseCountries, searchQuery) {
         val query = searchQuery.trim()
         if (query.isBlank()) {
             catalogSearchStations = emptyList()
@@ -200,9 +209,11 @@ private fun AaltoApp() {
         }
 
         delay(300)
-        when (val result = catalogRepository.searchStations(query, radioCountryCode, limit = 100)) {
-            is CatalogReadResult.Success -> catalogSearchStations = result.snapshot.stations
-            is CatalogReadResult.Failure -> catalogSearchStations = emptyList()
+        catalogSearchStations = browseCountries.flatMap { code ->
+            when (val result = catalogRepository.searchStations(query, code, limit = 100)) {
+                is CatalogReadResult.Success -> result.snapshot.stations
+                is CatalogReadResult.Failure -> emptyList()
+            }
         }
     }
 
@@ -454,7 +465,13 @@ private fun AaltoApp() {
                     onEditCountries = { showCountries = true },
                     onRadioCountryChange = {
                         radioCountryCode = it
+                        allOwnCountries = false
                         RadioCountryPreference.set(context, it)
+                    },
+                    allOwnCountries = allOwnCountries && ownCountries.size > 1,
+                    onAllOwnCountries = {
+                        allOwnCountries = true
+                        RadioCountryPreference.setAllOwn(context, true)
                     },
                     selectedStation = selectedStation,
                     isPlaying = radioPlayer.isPlaying,

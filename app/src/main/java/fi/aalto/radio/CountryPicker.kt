@@ -56,6 +56,8 @@ internal fun CountryPickerDialog(
                     ) {
                         Checkbox(checked = isOn, onCheckedChange = null)
                         Spacer(modifier = Modifier.width(AaltoSpaceS))
+                        CountryFlag(code)
+                        Spacer(modifier = Modifier.width(AaltoSpaceS))
                         Text(
                             text = countryName(code),
                             style = MaterialTheme.typography.bodyLarge,

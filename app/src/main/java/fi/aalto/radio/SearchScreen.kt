@@ -73,6 +73,8 @@ internal fun SearchScreen(
     onRadioCountryChange: (String) -> Unit,
     ownCountries: List<String>,
     onEditCountries: () -> Unit,
+    allOwnCountries: Boolean = false,
+    onAllOwnCountries: () -> Unit = {},
     selectedStation: RadioStation,
     isPlaying: Boolean,
     favoriteIds: Set<String>,
@@ -83,7 +85,9 @@ internal fun SearchScreen(
     onStationFavoriteClick: (RadioStation) -> Unit
 ) {
     var countryMenuExpanded by remember { mutableStateOf(false) }
-    var categoryFilter by rememberSaveable { mutableStateOf(ALL_CATEGORIES) }
+    // Several genres at once, stored as "Pop|Rock" so it survives rotation.
+    var categoryFilterKey by rememberSaveable { mutableStateOf("") }
+    val categoryFilter = categoryFilterKey.split('|').filter { it.isNotBlank() }.toSet()
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
 
@@ -103,21 +107,23 @@ internal fun SearchScreen(
     val menuCountries = (ownCountries + activeCountryCode)
         .filter { it.isNotBlank() }
         .distinct()
-    val activeCategory = DiscoveryCategories.firstOrNull { it.label == categoryFilter }
+    val activeCategories = DiscoveryCategories.filter { it.label in categoryFilter }
+    val activeCountries = if (allOwnCountries) ownCountries.toSet() else setOf(activeCountryCode)
     val listState = rememberLazyListState()
     val resultStations = remember(
         searchableStations,
-        activeCountryCode,
+        activeCountries,
         categoryFilter,
         searchQuery
     ) {
         searchableStations
-            .filter { it.countryCode.equals(activeCountryCode, ignoreCase = true) }
-            .filter { station -> activeCategory?.matches?.invoke(station) ?: true }
+            .filter { it.countryCode.uppercase() in activeCountries }
+            // Any of the chosen genres; none chosen means all.
+            .filter { station -> activeCategories.isEmpty() || activeCategories.any { it.matches(station) } }
             .filter { searchQuery.isBlank() || stationMatchesQuery(it, searchQuery) }
             .distinctBy { it.stableId }
     }
-    val isBrowsing = searchQuery.isBlank() && categoryFilter == ALL_CATEGORIES
+    val isBrowsing = searchQuery.isBlank() && categoryFilter.isEmpty()
     val visibleRecents = if (isBrowsing) recentStations.distinctBy { it.stableId }.take(5) else emptyList()
     val showSkeleton = catalogLoading && resultStations.isEmpty()
 
@@ -212,15 +218,23 @@ internal fun SearchScreen(
         item {
             Box {
                 TextButton(onClick = { countryMenuExpanded = true }) {
-                    Icon(
-                        imageVector = Icons.Outlined.Public,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp)
-                    )
+                    // The country's flag; the globe only if the code is not a country.
+                    if (!allOwnCountries && countryFlag(activeCountryCode) != null) {
+                        CountryFlag(activeCountryCode)
+                    } else {
+                        Icon(
+                            imageVector = Icons.Outlined.Public,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                     Spacer(modifier = Modifier.width(AaltoSpaceS))
                     Text(
-                        text = stringResource(R.string.search_country, countryName(activeCountryCode)),
+                        text = stringResource(
+                            R.string.search_country,
+                            if (allOwnCountries) stringResource(R.string.search_all_own_countries) else countryName(activeCountryCode)
+                        ),
                         color = MaterialTheme.colorScheme.onSurface,
                         style = MaterialTheme.typography.labelLarge
                     )
@@ -235,9 +249,20 @@ internal fun SearchScreen(
                     expanded = countryMenuExpanded,
                     onDismissRequest = { countryMenuExpanded = false }
                 ) {
+                    if (ownCountries.size > 1) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.search_all_own_countries)) },
+                            onClick = {
+                                onAllOwnCountries()
+                                countryMenuExpanded = false
+                                hideKeyboard()
+                            }
+                        )
+                    }
                     menuCountries.forEach { countryCode ->
                         DropdownMenuItem(
                             text = { Text(countryName(countryCode)) },
+                            leadingIcon = { CountryFlag(countryCode) },
                             onClick = {
                                 onRadioCountryChange(countryCode)
                                 countryMenuExpanded = false
@@ -267,9 +292,14 @@ internal fun SearchScreen(
             ) {
                 (listOf(ALL_CATEGORIES) + DiscoveryCategories.map { it.label }).forEach { label ->
                     FilterChip(
-                        selected = categoryFilter == label,
+                        selected = if (label == ALL_CATEGORIES) categoryFilter.isEmpty() else label in categoryFilter,
                         onClick = {
-                            categoryFilter = label
+                            // "Kaikki" clears; a genre toggles on and off.
+                            categoryFilterKey = when {
+                                label == ALL_CATEGORIES -> ""
+                                label in categoryFilter -> (categoryFilter - label).joinToString("|")
+                                else -> (categoryFilter + label).joinToString("|")
+                            }
                             hideKeyboard()
                         },
                         label = { Text(label, maxLines = 1) }

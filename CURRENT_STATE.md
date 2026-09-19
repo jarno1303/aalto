@@ -282,3 +282,12 @@ Same id and place; the new address is probed, StreamMemory is cleared for the st
 UPSERT_FAVORITE carries the new station to other devices (`updateFavoriteStationAndEnqueueMutation`).
 Own stations are re-read from the database on every favourites emission. Another device may still
 try its remembered old address first; stream fallback then moves to the new one.
+
+## Flags, all own countries, several genres (branch `country-flags`, 2026-09-19)
+
+State: PHYSICAL PASS (owner, 2026-09-19). UI and catalog loading only.
+- Flags (emoji from the country code, `CountryFlags.kt`) on search's country line, its menu and the
+  Maat list; in search / favourite rows only for stations outside the phone's own country.
+- Search country menu: "Kaikki omat maat" (when more than one country is followed) loads and shows
+  every followed country; default stays one country (the home country), `RadioCountryPreference.allOwn`.
+- Genre chips toggle; several at once match any of them; "Kaikki" clears.

@@ -850,9 +850,11 @@ internal fun StationRow(
                     overflow = TextOverflow.Ellipsis
                 )
                 val metadata = stationMetadataLine(station)
+                // A flag only for stations from abroad: at home it says nothing.
+                val flag = foreignStationFlag(LocalContext.current, station.countryCode)
                 if (metadata.isNotBlank()) {
                     Text(
-                        text = metadata,
+                        text = if (flag != null) "$flag  $metadata" else metadata,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodySmall,
                         maxLines = 1,

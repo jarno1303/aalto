@@ -202,4 +202,5 @@
     <string name="custom_plus_body">With Aalto Plus you can add any stream address as a station. It plays in the car and syncs to your devices like the others.</string>
     <string name="custom_edit">Edit station</string>
     <string name="custom_save">Save</string>
+    <string name="search_all_own_countries">All my countries</string>
 </resources>

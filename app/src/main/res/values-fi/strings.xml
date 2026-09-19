@@ -194,4 +194,5 @@
     <string name="custom_plus_body">Aalto Plussalla voit lisätä minkä tahansa striimin osoitteen asemaksi. Se soi autossa ja synkronoituu laitteillesi kuten muutkin.</string>
     <string name="custom_edit">Muokkaa asemaa</string>
     <string name="custom_save">Tallenna</string>
+    <string name="search_all_own_countries">Kaikki omat maat</string>
 </resources>

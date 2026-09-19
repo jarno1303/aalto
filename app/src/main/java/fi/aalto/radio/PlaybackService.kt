@@ -73,6 +73,9 @@ class PlaybackService : MediaLibraryService() {
     @Volatile
     private var currentTrack: String? = null
 
+    /** The station [currentTrack] belongs to. */
+    private var trackStationId: String? = null
+
     /** The raw player, for the equalizer and the per-station gain. */
     private var exoPlayer: ExoPlayer? = null
 
@@ -157,9 +160,17 @@ class PlaybackService : MediaLibraryService() {
             mediaItem?.let { LastStationStore.save(this@PlaybackService, it) }
             // Each station keeps its own level.
             AudioEffects.applyStationGain(this@PlaybackService, mediaItem?.mediaId)
-            // A new station has not announced anything yet.
-            currentTrack = null
-            publishTrack(null)
+            // A new station has not announced anything yet. The same station
+            // reloaded (reconnect after a network blip, fallback address,
+            // play after a stop) keeps its song: most stations announce only
+            // when the next song starts, so clearing it would leave the line
+            // empty for minutes while the radio plays on.
+            val stationId = mediaItem?.mediaId
+            if (stationId != trackStationId) {
+                trackStationId = stationId
+                currentTrack = null
+                publishTrack(null)
+            }
             updateFavoriteButton()
             refreshWidget()
         }
@@ -468,6 +479,24 @@ class PlaybackService : MediaLibraryService() {
             val results = searchResults[query] ?: lookup.search(query).also { searchResults[query] = it }
             val items = results.map { browseItem(it) }
             LibraryResult.ofItemList(paged(items, page, pageSize), params)
+        }
+
+        /**
+         * "Play" from a car, a headset or the system's media controls when
+         * nothing is loaded, also when Aalto was not running: the last station
+         * starts. Without this the button press goes nowhere, or to another app.
+         * Falls back to the first own station on a fresh install.
+         */
+        @Suppress("OVERRIDE_DEPRECATION")
+        override fun onPlaybackResumption(
+            mediaSession: MediaSession,
+            controller: MediaSession.ControllerInfo
+        ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> = future {
+            val item = LastStationStore.load(this@PlaybackService)
+                ?: lookup.favorites().firstOrNull()?.let { StationMediaItems.build(this@PlaybackService, it) }
+                ?: throw UnsupportedOperationException("nothing to resume")
+            Log.d(TAG, "resume ${item.mediaId} for ${controller.packageName}")
+            MediaSession.MediaItemsWithStartPosition(listOf(item), 0, C.TIME_UNSET)
         }
 
         /**

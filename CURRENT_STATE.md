@@ -193,3 +193,22 @@ State: CODE WRITTEN. NOT YET BUILT OR PHYSICALLY VERIFIED.
 Known debt: an equalizer switched on earlier stays applied without Plus (playback path is
 not checked by design); the trial-end flow must switch it off once, with one explanation.
 Physical checks: history shows only today with Plus off, everything with it on; EQ hidden/shown.
+
+## Playback resumption (branch `playback-resumption`, 2026-09-19)
+
+State: PHYSICAL PASS (2026-09-19, owner): Bluetooth/car play resumes noticeably better, song line
+stays through reconnects. Touches PlaybackService (protected).
+
+- `PlaybackService.LibraryCallback.onPlaybackResumption`: a "play" from a car, headset or the
+  system media controls with nothing loaded (also with Aalto not running) starts the last
+  station (`LastStationStore`), or the first own station on a fresh install.
+- Manifest: `androidx.media3.session.MediaButtonReceiver` for `MEDIA_BUTTON`.
+- Song line: `onMediaItemTransition` now clears the announced song only when the station id
+  changes. Before, every reload of the same station (reconnect, fallback address, play after
+  stop) cleared it, and most stations re-announce only at the next song.
+- Nothing on the station-tap path changed.
+Open: phone keeps playing (from the speaker, after a delay) when the car disconnects. Code has
+`setHandleAudioBecomingNoisy(true)`; cause not yet verified. Suspect Android Auto disconnect not
+sending AUDIO_BECOMING_NOISY. Needs logcat from a headset test and from the car before any fix.
+Physical checks: kill Aalto, connect headset/car, press play -> last station starts; system media
+controls show an Aalto resume card.

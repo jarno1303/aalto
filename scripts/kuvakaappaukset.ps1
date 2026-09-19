@@ -60,9 +60,17 @@ if ($Nakymat) {
 }
 
 # ---- adb ----
-$adb = (Get-Command adb -ErrorAction SilentlyContinue).Source
-if (-not $adb) { $adb = Join-Path $env:LOCALAPPDATA 'Android\Sdk\platform-tools\adb.exe' }
-if (-not (Test-Path $adb)) { throw "adb ei löydy. Asenna Android SDK Platform-Tools tai lisää adb PATHiin." }
+# Sama adb kuin Android Studiolla. Jos PATHissa on eri versio, kaksi adb:tä
+# kaataa toistensa palvelimen ("adb server is out of date") ja yhteys katkeaa.
+$sdkJuuret = @($env:ANDROID_HOME, $env:ANDROID_SDK_ROOT, (Join-Path $env:LOCALAPPDATA 'Android\Sdk')) | Where-Object { $_ }
+$adb = $sdkJuuret | ForEach-Object { Join-Path $_ 'platform-tools\adb.exe' } | Where-Object { Test-Path $_ } | Select-Object -First 1
+if (-not $adb) { $adb = (Get-Command adb -ErrorAction SilentlyContinue).Source }
+if (-not $adb) { throw "adb ei löydy. Asenna Android SDK Platform-Tools tai lisää adb PATHiin." }
+Write-Host "adb: $adb"
+$muut = @(Get-Command adb -All -ErrorAction SilentlyContinue | Where-Object { $_.Source -ne $adb })
+if ($muut.Count -gt 0) {
+    Write-Host "Varoitus: PATHissa on toinen adb ($($muut[0].Source)). Se voi katkaista yhteyden kesken." -ForegroundColor Yellow
+}
 
 $kohde = @()
 if ($Laite) { $kohde = @('-s', $Laite) }

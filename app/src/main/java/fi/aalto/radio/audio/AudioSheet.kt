@@ -42,6 +42,7 @@ import fi.aalto.radio.AaltoSpaceXl
 import fi.aalto.radio.AaltoSpaceXs
 import fi.aalto.radio.R
 import fi.aalto.radio.WheelChoiceDialog
+import fi.aalto.radio.plus.Plus
 
 /**
  * Sound: the equalizer, and how loud this station should be compared to the
@@ -61,6 +62,7 @@ internal fun AudioSheet(
     var bands by remember { mutableStateOf(AudioEffects.bands) }
     var gainDb by remember(stationId) { mutableIntStateOf(AudioSettings.stationGainDb(context, stationId)) }
     var choosingPreset by remember { mutableStateOf(false) }
+    val plusActive = remember { Plus.access(context).isActive() }
     val presets = remember { AudioEffects.presetNames() }
 
     fun save(updated: EqualizerSettings) {
@@ -140,69 +142,82 @@ internal fun AudioSheet(
             )
 
             // ---- Equalizer ----
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = stringResource(R.string.audio_equalizer),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f)
-                )
-                Switch(
-                    checked = settings.enabled,
-                    enabled = AudioEffects.available,
-                    onCheckedChange = { on -> save(settings.copy(enabled = on)) }
-                )
-            }
-
-            if (!AudioEffects.available) {
-                Text(
-                    text = stringResource(R.string.audio_unavailable),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            } else if (settings.enabled) {
-                if (presets.isNotEmpty()) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 48.dp)
-                            .clickable(role = Role.Button) { choosingPreset = true },
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = stringResource(R.string.audio_preset),
-                            modifier = Modifier.weight(1f)
-                        )
-                        Text(
-                            text = presets.getOrNull(settings.preset)
-                                ?: stringResource(R.string.audio_preset_custom),
-                            color = AaltoBlue,
-                            maxLines = 1
-                        )
-                    }
+            // The Plus line for the equalizer: checked once, here at the entry point.
+            if (plusActive) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = stringResource(R.string.audio_equalizer),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Switch(
+                        checked = settings.enabled,
+                        enabled = AudioEffects.available,
+                        onCheckedChange = { on -> save(settings.copy(enabled = on)) }
+                    )
                 }
 
-                bands.forEach { band ->
+                if (!AudioEffects.available) {
                     Text(
-                        text = frequencyLabel(band.centerHz),
+                        text = stringResource(R.string.audio_unavailable),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Slider(
-                        value = band.levelMb.toFloat(),
-                        onValueChange = { value ->
-                            val levels = bands.map { it.levelMb }.toMutableList()
-                            levels[band.index] = value.toInt()
-                            save(
-                                settings.copy(
-                                    preset = EqualizerSettings.PRESET_CUSTOM,
-                                    bandLevels = levels
-                                )
+                } else if (settings.enabled) {
+                    if (presets.isNotEmpty()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 48.dp)
+                                .clickable(role = Role.Button) { choosingPreset = true },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.audio_preset),
+                                modifier = Modifier.weight(1f)
                             )
-                        },
-                        valueRange = band.minLevelMb.toFloat()..band.maxLevelMb.toFloat(),
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                            Text(
+                                text = presets.getOrNull(settings.preset)
+                                    ?: stringResource(R.string.audio_preset_custom),
+                                color = AaltoBlue,
+                                maxLines = 1
+                            )
+                        }
+                    }
+
+                    bands.forEach { band ->
+                        Text(
+                            text = frequencyLabel(band.centerHz),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Slider(
+                            value = band.levelMb.toFloat(),
+                            onValueChange = { value ->
+                                val levels = bands.map { it.levelMb }.toMutableList()
+                                levels[band.index] = value.toInt()
+                                save(
+                                    settings.copy(
+                                        preset = EqualizerSettings.PRESET_CUSTOM,
+                                        bandLevels = levels
+                                    )
+                                )
+                            },
+                            valueRange = band.minLevelMb.toFloat()..band.maxLevelMb.toFloat(),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
+            } else {
+                Text(
+                    text = stringResource(R.string.audio_equalizer),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = stringResource(R.string.audio_equalizer_plus),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
             Spacer(modifier = Modifier.height(AaltoSpaceL))

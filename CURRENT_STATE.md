@@ -178,3 +178,18 @@ Physical checks: both devices on the new APK and same account; set gain on A, he
 while the station plays; reset on B -> A back to 0; offline change then reconnect; existing
 gains from before the update appear on the other device.
 Known: a device still on an older APK skips gain mutations and will not backfill them later.
+
+## Plus line before beta (branch `plus-boundary`, 2026-09-19)
+
+State: CODE WRITTEN. NOT YET BUILT OR PHYSICALLY VERIFIED.
+
+- `plus/PlusAccess.kt`: the one entitlement check. No billing yet, so release answers false;
+  debug builds have an "Aalto Plus (debug)" switch in Settings.
+- Played songs: free view = current day (`history/HistoryWindow`), Plus = all kept rows.
+  Storage unchanged (300 rows), so nothing is lost. A quiet line says earlier days are kept.
+- Equalizer: controls only with Plus; without it the audio sheet says it is a Plus feature.
+- Checks live only in HistorySheet and AudioSheet (entry points). Playback, alarm, Auto,
+  widget and Sync untouched.
+Known debt: an equalizer switched on earlier stays applied without Plus (playback path is
+not checked by design); the trial-end flow must switch it off once, with one explanation.
+Physical checks: history shows only today with Plus off, everything with it on; EQ hidden/shown.

@@ -187,4 +187,6 @@
     <string name="menu_move_first">Move to top</string>
     <string name="menu_remove">Remove from my stations</string>
     <string name="action_more_options">More options</string>
+    <string name="history_plus_earlier">Earlier days are kept. They show with Aalto Plus.</string>
+    <string name="audio_equalizer_plus">Equaliser presets and bands come with Aalto Plus.</string>
 </resources>

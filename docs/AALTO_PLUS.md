@@ -27,9 +27,14 @@ tavoin) → ilmainen. Taajuuskorjain tuo lisää → Plus.
 Nämä eivät ole neuvoteltavissa. Niitä ei rajoiteta määrällä, ajalla eikä
 mainoksilla.
 
-- Soitto, haku, asemien selaus, omat asemat ja niiden järjestys
+- Soitto, haku, asemien selaus, omat asemat ja niiden järjestys. **Suosikkeja
+  ei rajoiteta määrällä**: raja osuisi käyttäjän omiin tietoihin, ei
+  lisäominaisuuteen.
 - Aalto Sync (palvelinkulu on olematon, ks. CURRENT_STATE.md)
-- Android Auto ja widget
+- Android Auto ja widget. Auto on Aallon kärki (Car-pilari), eikä autossa voi
+  eikä saa näyttää ostokehotusta: maksumuurin takana Auto näyttäisi
+  ilmaiskäyttäjälle vain rikkinäiseltä. Plus näkyy autossa välillisesti
+  (listat, kelaus), mutta ilmaisen käyttäjän auto ei ole koskaan rikki.
 - Yksi herätys, uniajastin, yönäyttö
 - Asemakohtainen äänenvoimakkuus
 - Soitetut kappaleet: kuluva päivä, ja hakulinkit Spotifyyn ja YouTubeen
@@ -39,6 +44,8 @@ mainoksilla.
 
 | Ominaisuus | Ilmaiseksi | Plus |
 |---|---|---|
+| Asemalistat | yksi, rajaton määrä asemia | useita omia listoja (Aamu, Auto, Työ) |
+| Oma striimiosoite (URL) | – | asemien lisäys omalla osoitteella |
 | Soitetut kappaleet | kuluva päivä | koko historia, haku, vienti |
 | Kelaus | 60 s | 30 min + hyppy ohjelman alkuun |
 | Taajuuskorjain | – | esiasetukset ja kaistat |
@@ -48,6 +55,38 @@ mainoksilla.
 
 Huomaa mitä taulukossa ei ole: **mikään rivi ei ole "poista mainokset"**,
 eikä yksikään ilmaissarake ole tyhjä siellä missä ominaisuus jo on olemassa.
+
+Tarkennukset:
+
+- **Oma URL:** jo lisätyt omat asemat soivat ja synkronoituvat myös Plussan
+  päätyttyä. Vain uuden oman aseman lisääminen vaatii Plussan.
+- **Asemalistat:** kun Plus päättyy, ylimääräiset listat eivät katoa eivätkä
+  lukitu. Ne jäävät näkyviin ja soitettaviksi, vain uuden listan luominen
+  vaatii Plussan.
+
+## Toteutuksen tila (2026-09-19)
+
+Taulukko on suunnitelma. Koodissa on tänään:
+
+| Ominaisuus | Tila |
+|---|---|
+| Asemalistat | yksi lista, useita ei ole |
+| Oma URL | ei toteutettu |
+| Soitetut kappaleet | 300 viimeisintä tallessa; ilman Plussaa näkyy kuluva päivä, Plussalla kaikki. Haku Spotifysta/YouTubesta. Historian haku ja vienti puuttuvat |
+| Kelaus | ei toteutettu |
+| Taajuuskorjain | toteutettu, Plussan takana |
+| Automaattinen äänentasaus | ei toteutettu |
+| Herätykset | yksi |
+| Teemat ja kuvakkeet | vaalea/tumma/järjestelmä, yksi kuvake |
+| Maksu | `PlusAccess` olemassa (`fi.aalto.radio.plus`), vastaa aina "ei" ilman Play Billingiä; debug-kytkin asetuksissa. Play Billing ei toteutettu |
+
+**Ennen betaa korjattavat** (koska "mikä on tänään ilmaista, pysyy ilmaisena"
+alkaa sitoa ensimmäisestä testaajasta) on tehty koodissa haarassa
+`plus-boundary`: kappalehistorian ilmaisnäkymä on kuluva päivä, ja
+taajuuskorjain on Plussan takana.
+
+Ilmaisversio julkaistaan ensin. Plus lanseerataan vasta, kun siinä on valmiina
+ominaisuuksia, joista kannattaa maksaa.
 
 ## Kokeilu ja hinta
 

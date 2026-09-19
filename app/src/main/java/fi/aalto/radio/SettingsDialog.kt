@@ -18,6 +18,13 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.material3.Switch
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import fi.aalto.radio.plus.Plus
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
@@ -91,6 +98,10 @@ internal fun SettingsDialog(
                     action = stringResource(R.string.audio_open),
                     onClick = onOpenAudio
                 )
+
+                if (BuildConfig.DEBUG) {
+                    DebugPlusRow()
+                }
 
                 HorizontalDivider(
                     color = MaterialTheme.colorScheme.outline,
@@ -193,6 +204,31 @@ private fun SettingsRow(title: String, action: String, onClick: () -> Unit) {
             style = MaterialTheme.typography.labelLarge,
             color = AaltoBlue,
             maxLines = 1
+        )
+    }
+}
+
+/** Debug builds only: switch Aalto Plus on and off to test both sides of the line. */
+@Composable
+private fun DebugPlusRow() {
+    val context = LocalContext.current
+    val access = remember(context) { Plus.access(context) }
+    var active by remember { mutableStateOf(access.isActive()) }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Aalto Plus (debug)",
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f)
+        )
+        Switch(
+            checked = active,
+            onCheckedChange = { on ->
+                access.setDebugActive(on)
+                active = on
+            }
         )
     }
 }

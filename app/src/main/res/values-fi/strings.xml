@@ -179,4 +179,6 @@
     <string name="menu_move_first">Siirrä ensimmäiseksi</string>
     <string name="menu_remove">Poista omista asemista</string>
     <string name="action_more_options">Lisää vaihtoehtoja</string>
+    <string name="history_plus_earlier">Aiemmat päivät ovat tallessa. Ne näkyvät Aalto Plussassa.</string>
+    <string name="audio_equalizer_plus">Taajuuskorjaimen esiasetukset ja kaistat kuuluvat Aalto Plussaan.</string>
 </resources>

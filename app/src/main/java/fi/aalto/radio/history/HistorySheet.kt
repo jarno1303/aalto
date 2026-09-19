@@ -41,6 +41,7 @@ import fi.aalto.radio.AaltoSpaceS
 import fi.aalto.radio.AaltoSpaceXl
 import fi.aalto.radio.AaltoSpaceXs
 import fi.aalto.radio.R
+import fi.aalto.radio.plus.Plus
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -60,6 +61,12 @@ internal fun HistorySheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var searchFor by remember { mutableStateOf<PlayedTrack?>(null) }
+    val context = LocalContext.current
+    // The Plus line for history: checked once, here at the entry point.
+    val plusActive = remember { Plus.access(context).isActive() }
+    val view = remember(tracks, plusActive) {
+        HistoryWindow.view(tracks, plusActive, System.currentTimeMillis(), ZoneId.systemDefault())
+    }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
@@ -84,7 +91,7 @@ internal fun HistorySheet(
                 }
             }
 
-            if (tracks.isEmpty()) {
+            if (view.visible.isEmpty()) {
                 Text(
                     text = stringResource(R.string.history_empty),
                     style = MaterialTheme.typography.bodyMedium,
@@ -93,11 +100,20 @@ internal fun HistorySheet(
                 )
             } else {
                 LazyColumn(modifier = Modifier.heightIn(max = 480.dp)) {
-                    items(items = tracks, key = { it.id }) { track ->
+                    items(items = view.visible, key = { it.id }) { track ->
                         TrackRow(track = track, onClick = { searchFor = track })
                         HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                     }
                 }
+            }
+
+            if (view.hiddenEarlier > 0) {
+                Text(
+                    text = stringResource(R.string.history_plus_earlier),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = AaltoSpaceM)
+                )
             }
 
             Spacer(modifier = Modifier.height(AaltoSpaceL))

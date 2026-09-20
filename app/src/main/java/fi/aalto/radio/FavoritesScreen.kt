@@ -288,11 +288,15 @@ internal fun FavoritesScreen(
     ) {
         item {
             Column(verticalArrangement = Arrangement.spacedBy(AaltoSpaceXs)) {
-                Text(
-                    text = stringResource(R.string.tab_favorites),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.titleLarge
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = stringResource(R.string.tab_favorites),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.weight(1f)
+                    )
+                    AddCustomStationRow(style = AddCustomStationStyle.PILL)
+                }
                 if (favoriteStations.size > 1) {
                     Text(
                         text = stringResource(R.string.favorites_reorder_hint),
@@ -428,16 +432,9 @@ internal fun FavoritesScreen(
                 )
             }
         }
-
-        // An Int key (saveable, and not a String: drag-and-drop treats String
-        // keys as station ids).
-        item(key = ADD_CUSTOM_STATION_KEY, contentType = "add-custom") {
-            AddCustomStationRow()
-        }
     }
 }
 
-private const val ADD_CUSTOM_STATION_KEY = Int.MIN_VALUE
 
 internal fun favoriteItemInfo(
     listState: LazyListState,

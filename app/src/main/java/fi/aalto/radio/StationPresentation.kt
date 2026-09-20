@@ -297,6 +297,9 @@ internal fun stationMatchesQuery(station: RadioStation, query: String): Boolean 
         append(station.tags.joinToString(" "))
         append(' ')
         append(station.languages.joinToString(" "))
+        append(' ')
+        // The place: "Tampere", "Uusimaa", "Bayern".
+        append(station.location.orEmpty())
     }.lowercase()
     return query.trim()
         .lowercase()

@@ -355,3 +355,13 @@ with a retry button. Tests: RadioBrowserServersTest. Root cause confirmed: fresh
 - PHYSICAL PASS 2026-09-20: sleep timer under its own button ("Ajastin" / "13 min") looks balanced and works (JarnoL).
 - PHYSICAL PASS 2026-09-20 (JarnoL): network return (flight mode on → "Ei verkkoyhteyttä – jatkuu…" → off → station plays again by itself) and background measuring of own stations. Phone call and Bluetooth disconnect resume live: PHYSICAL PASS 2026-09-20 (JarnoL).
 - main fast-forwarded to first-launch after the full device test round, tag known-good-2026-09-20b.
+
+## Favourites polish (branch `favorites-polish`, 2026-09-20)
+- "＋ Oma asema" pill next to the Favorites title (always in sight); the row at the end of the list was removed (JarnoL: a duplicate). In Search, below the results of any search: "Etkö löydä asemaa? Lisää se striimin osoitteella". All three open the editor with Plus, the short Plus note without; nothing is shown unasked.
+- Hearts: blue filled means favourite everywhere; in the favourites list the heart is only smaller (20 dp) instead of grey, which read as "not a favourite".
+- Not yet device-tested.
+- First launch changed (JarnoL, 2026-09-20): a tap only picks (playing on every tap made choosing a jumble); "Valmis" saves and starts the first picked station.
+- Removing the playing station from the own-stations list or the home long-press menu moves on to the next own station (the last one wraps to the first; with no other own station it keeps playing). Undo restores it and switches back if the listener is still on the next one. The Now Playing heart only unfavourites and keeps playing.
+- Search by place: the station directory is searched by name and by place ("state" in Radio Browser: "Tampere", "Uusimaa", "Bayern") at the same time and merged, name matches first; the local filter also looks at the station's place. Places are spelled as contributors wrote them (München, not Munich).
+- Search elsewhere: when the chosen country(ies) give fewer than 5 results, the same search runs worldwide and those stations show under "Muualta maailmasta", each with its flag. First launch stays one country on purpose (fast start); more countries in Settings and Search.
+- Tests: SearchMergeTest. PHYSICAL PASS 2026-09-20 (JarnoL): search by place and "Muualta maailmasta".

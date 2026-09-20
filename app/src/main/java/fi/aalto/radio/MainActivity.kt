@@ -61,6 +61,8 @@ import kotlinx.coroutines.launch
 private const val TAB_RADIO = 0
 private const val TAB_SEARCH = 1
 private const val TAB_FAVORITES = 2
+/** Fewer results than this at home, and the search looks elsewhere too. */
+private const val WORLD_SEARCH_BELOW = 5
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -141,6 +143,8 @@ private fun AaltoApp() {
     var nightScreenActive by rememberSaveable { mutableStateOf(false) }
     var catalogStations by remember { mutableStateOf<List<CatalogStation>>(emptyList()) }
     var catalogSearchStations by remember { mutableStateOf<List<CatalogStation>>(emptyList()) }
+    // A search that finds little at home also looks elsewhere ("Berlin", "Radio Bob").
+    var catalogWorldStations by remember { mutableStateOf<List<CatalogStation>>(emptyList()) }
     var catalogLoading by remember { mutableStateOf(false) }
     var catalogError by remember { mutableStateOf<String?>(null) }
     var recentStations by remember { mutableStateOf<List<RadioStation>>(emptyList()) }
@@ -153,7 +157,6 @@ private fun AaltoApp() {
     // install sees the station picker.
     var firstLaunch by remember { mutableStateOf(FirstLaunchPreference.state(context)) }
     var onboardingPicks by rememberSaveable { mutableStateOf(listOf<String>()) }
-    var onboardingPreviewed by rememberSaveable { mutableStateOf(false) }
     var onboardingRetry by remember { mutableStateOf(0) }
 
     var favoriteIds by remember {
@@ -214,6 +217,7 @@ private fun AaltoApp() {
         val query = searchQuery.trim()
         if (query.isBlank()) {
             catalogSearchStations = emptyList()
+            catalogWorldStations = emptyList()
             return@LaunchedEffect
         }
 
@@ -224,10 +228,23 @@ private fun AaltoApp() {
                 is CatalogReadResult.Failure -> emptyList()
             }
         }
+        val home = browseCountries.map { it.uppercase() }.toSet()
+        catalogWorldStations = if (catalogSearchStations.size < WORLD_SEARCH_BELOW) {
+            when (val result = catalogRepository.searchStations(query, null, limit = 40)) {
+                is CatalogReadResult.Success -> result.snapshot.stations
+                    .filter { it.countryCode?.uppercase() !in home }
+                is CatalogReadResult.Failure -> emptyList()
+            }
+        } else {
+            emptyList()
+        }
     }
 
-    val catalogRadioStations = remember(catalogStations, catalogSearchStations) {
-        (catalogStations + catalogSearchStations)
+    val worldRadioStations = remember(catalogWorldStations) {
+        catalogWorldStations.mapNotNull { it.toPlayableRadioStationOrNull() }.distinctByListing()
+    }
+    val catalogRadioStations = remember(catalogStations, catalogSearchStations, catalogWorldStations) {
+        (catalogStations + catalogSearchStations + catalogWorldStations)
             .mapNotNull { it.toPlayableRadioStationOrNull() }
             .distinctBy { it.stableId }
     }
@@ -340,9 +357,24 @@ private fun AaltoApp() {
      * screen, the heart in the favorites list and the heart in Now Playing
      * all land here and all offer the same undo.
      */
-    fun removeFavoriteWithUndo(station: RadioStation) {
+    /**
+     * [moveOn]: removed from the own-stations list or menu while it plays, so
+     * the radio goes on with the next own station instead of leaving the
+     * removed one playing. Undo brings it back and switches back to it.
+     * (The heart on the Now Playing card only unfavourites: it keeps playing.)
+     */
+    fun removeFavoriteWithUndo(station: RadioStation, moveOn: Boolean = false) {
         val previousOrder = favoriteOrder
         val previousIds = favoriteIds
+        val playingIt = station.id == selectedStationId && (radioPlayer.isPlaying || radioPlayer.isConnecting)
+        val next = if (moveOn && playingIt) {
+            val list = favoriteStations
+            val index = list.indexOfFirst { it.id == station.id }
+            if (index < 0 || list.size < 2) null else list[(index + 1) % list.size]
+        } else {
+            null
+        }
+        next?.let { playStation(it, openNowPlaying = false) }
         favoriteIds = favoriteIds - station.id
         coroutineScope.launch {
             val removed = runCatching { repository.removeFavorite(station.id) }.getOrDefault(false)
@@ -363,6 +395,8 @@ private fun AaltoApp() {
                     repository.reorderFavorites(previousOrder)
                 }
                 syncCoordinator.requestSync()
+                // Back to it, unless the listener has already moved elsewhere.
+                if (next != null && selectedStationId == next.id) playStation(station, openNowPlaying = false)
             }
         }
     }
@@ -506,7 +540,7 @@ private fun AaltoApp() {
                     onFavorite = { toggleFavorite(selectedStation) },
                     onFind = { selectedTab = TAB_SEARCH },
                     onOpenAlarm = { showAlarm = true },
-                    onRemoveOwnStation = { station -> removeFavoriteWithUndo(station) },
+                    onRemoveOwnStation = { station -> removeFavoriteWithUndo(station, moveOn = true) },
                     onMoveOwnStationFirst = { station -> moveFavoriteFirst(station) },
                     alarmLabel = nextAlarmMillis?.let(::alarmLabel),
                     onOpenHistory = { showHistory = true },
@@ -546,6 +580,7 @@ private fun AaltoApp() {
                     isPlaying = radioPlayer.isPlaying,
                     favoriteIds = favoriteIds,
                     catalogStations = catalogStations,
+                    worldStations = worldRadioStations,
                     catalogLoading = catalogLoading,
                     catalogError = catalogError,
                     onRetryCatalog = { catalogRetry += 1 },
@@ -569,7 +604,11 @@ private fun AaltoApp() {
                     onStationClick = { station ->
                         playStation(station, openNowPlaying = false)
                     },
-                    onStationFavoriteClick = ::toggleFavorite,
+                    // In the own-stations list the heart removes, and a playing
+                    // station hands over to the next one.
+                    onStationFavoriteClick = { station ->
+                        if (station.id in favoriteIds) removeFavoriteWithUndo(station, moveOn = true) else toggleFavorite(station)
+                    },
                     onReorder = { orderedIds -> commitFavoriteOrder(orderedIds) },
                     onFind = { selectedTab = TAB_SEARCH }
                 )
@@ -615,19 +654,21 @@ private fun AaltoApp() {
                 content = onboardingContent,
                 onRetry = { onboardingRetry += 1 },
                 picks = onboardingPicks,
+                // Picking only: a sound for every tap made choosing five
+                // stations a jumble. The radio starts with "Valmis".
                 onStationTap = { station ->
-                    val wasPicked = station.id in onboardingPicks
                     onboardingPicks = FirstLaunchDecision.togglePick(onboardingPicks, station.id)
-                    if (!wasPicked) {
-                        playStation(station, openNowPlaying = false)
-                        onboardingPreviewed = true
-                    }
                 },
-                playingStation = if (onboardingPreviewed) selectedStation else null,
+                playingStation = null,
                 isPlaying = radioPlayer.isPlaying,
                 isConnecting = radioPlayer.isConnecting,
                 onPlayPause = { radioPlayer.toggle(selectedStation) },
-                onDone = { finishOnboarding(onboardingPicks, seedDefaultIfEmpty = true) },
+                onDone = {
+                    val first = onboardingPicks.firstOrNull()?.let { repository.stationById(it) }
+                    finishOnboarding(onboardingPicks, seedDefaultIfEmpty = true)
+                    // One tap and the radio plays: the first station picked.
+                    first?.let { playStation(it, openNowPlaying = true) }
+                },
                 onSkip = { finishOnboarding(onboardingPicks, seedDefaultIfEmpty = true) },
                 onFindMore = {
                     finishOnboarding(onboardingPicks, seedDefaultIfEmpty = false, openSearch = true)

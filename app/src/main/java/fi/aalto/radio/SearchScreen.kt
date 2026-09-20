@@ -80,6 +80,7 @@ internal fun SearchScreen(
     isPlaying: Boolean,
     favoriteIds: Set<String>,
     catalogStations: List<CatalogStation>,
+    worldStations: List<RadioStation> = emptyList(),
     catalogLoading: Boolean,
     catalogError: String?,
     onRetryCatalog: () -> Unit = {},
@@ -434,6 +435,41 @@ internal fun SearchScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(vertical = AaltoSpaceL)
                 )
+            }
+        }
+
+        // Little or nothing at home: the same search elsewhere, each with its flag.
+        val elsewhere = if (searchQuery.isBlank()) {
+            emptyList()
+        } else {
+            worldStations.filter { station -> resultStations.none { it.stableId == station.stableId } }
+        }
+        if (elsewhere.isNotEmpty()) {
+            item(key = "world-title") { ListTitle(stringResource(R.string.search_elsewhere)) }
+            items(
+                items = elsewhere,
+                key = { station -> "world-${station.stableId}" },
+                contentType = { "station-row" }
+            ) { station ->
+                StationRow(
+                    station = station,
+                    isSelected = station.stableId == selectedStation.stableId,
+                    isPlaying = isPlaying,
+                    isFavorite = station.stableId in favoriteIds,
+                    onClick = {
+                        hideKeyboard()
+                        onStationClick(station)
+                    },
+                    onFavoriteClick = { onStationFavoriteClick(station) }
+                )
+            }
+        }
+
+        // A search that did not find it: the one moment the own-address
+        // option is worth mentioning.
+        if (searchQuery.isNotBlank() && !catalogLoading) {
+            item(key = "add-custom-hint") {
+                AddCustomStationRow(style = AddCustomStationStyle.SEARCH_HINT)
             }
         }
     }

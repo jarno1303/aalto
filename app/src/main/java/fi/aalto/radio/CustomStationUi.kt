@@ -1,5 +1,6 @@
 package fi.aalto.radio
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -46,37 +47,91 @@ import kotlinx.coroutines.launch
  * stations already added keep playing and syncing whatever the entitlement.
  */
 @Composable
-internal fun AddCustomStationRow() {
+internal fun AddCustomStationRow(style: AddCustomStationStyle = AddCustomStationStyle.ROW) {
     val context = LocalContext.current
     var dialog by remember { mutableStateOf<CustomStationDialog?>(null) }
+    // The Plus line: checked here, when the user asks, never shown unasked.
+    val open = {
+        dialog = if (Plus.access(context).isActive()) {
+            CustomStationDialog.ADD
+        } else {
+            CustomStationDialog.PLUS
+        }
+    }
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(AaltoSurfaceRadius))
-            .heightIn(min = 56.dp)
-            .clickable(role = Role.Button) {
-                dialog = if (Plus.access(context).isActive()) {
-                    CustomStationDialog.ADD
-                } else {
-                    CustomStationDialog.PLUS
-                }
+    when (style) {
+        AddCustomStationStyle.ROW -> Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(AaltoSurfaceRadius))
+                .heightIn(min = 56.dp)
+                .clickable(role = Role.Button) { open() }
+                .padding(horizontal = AaltoSpaceL),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Add,
+                contentDescription = null,
+                tint = AaltoBlue,
+                modifier = Modifier.size(22.dp)
+            )
+            Spacer(modifier = Modifier.width(AaltoSpaceM))
+            Text(
+                text = stringResource(R.string.custom_add),
+                style = MaterialTheme.typography.bodyLarge,
+                color = AaltoBlue
+            )
+        }
+
+        // Next to the Favorites title: always in sight, however long the list.
+        AddCustomStationStyle.PILL -> Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(50))
+                .background(AaltoBlue.copy(alpha = 0.12f))
+                .clickable(
+                    onClickLabel = stringResource(R.string.custom_add),
+                    role = Role.Button
+                ) { open() }
+                .heightIn(min = 36.dp)
+                .padding(start = AaltoSpaceS, end = AaltoSpaceM),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Add,
+                contentDescription = null,
+                tint = AaltoBlue,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(AaltoSpaceXs))
+            Text(
+                text = stringResource(R.string.custom_add_short),
+                style = MaterialTheme.typography.labelLarge,
+                color = AaltoBlue,
+                maxLines = 1
+            )
+        }
+
+        // Where the need arises: a search that did not find the station.
+        AddCustomStationStyle.SEARCH_HINT -> Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = AaltoSpaceS)
+        ) {
+            Text(
+                text = stringResource(R.string.custom_search_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            TextButton(onClick = { open() }) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(AaltoSpaceS))
+                Text(stringResource(R.string.custom_search_action))
             }
-            .padding(horizontal = AaltoSpaceL),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = Icons.Filled.Add,
-            contentDescription = null,
-            tint = AaltoBlue,
-            modifier = Modifier.size(22.dp)
-        )
-        Spacer(modifier = Modifier.width(AaltoSpaceM))
-        Text(
-            text = stringResource(R.string.custom_add),
-            style = MaterialTheme.typography.bodyLarge,
-            color = AaltoBlue
-        )
+        }
     }
 
     when (dialog) {
@@ -92,6 +147,8 @@ internal fun AddCustomStationRow() {
         null -> Unit
     }
 }
+
+internal enum class AddCustomStationStyle { ROW, PILL, SEARCH_HINT }
 
 private enum class CustomStationDialog { ADD, PLUS }
 

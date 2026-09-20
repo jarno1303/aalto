@@ -9,6 +9,8 @@ import fi.aalto.radio.catalog.StationCatalogSource
 import fi.aalto.radio.catalog.boundedLimit
 import fi.aalto.radio.catalog.normalizeCountryCode
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -98,10 +100,16 @@ class RadioBrowserCatalogSource(
         if (normalizedQuery.isBlank()) return invalidRequest("Search query is blank")
         val normalizedCode = countryCode?.let(::normalizeCountryCode)
             ?: if (countryCode == null) null else return invalidRequest("Invalid country code")
-        val queryParameters = commonQuery(limit).toMutableMap()
-        queryParameters["name"] = normalizedQuery
-        normalizedCode?.let { queryParameters["countrycode"] = it }
-        return request("/json/stations/search", queryParameters)
+        val base = commonQuery(limit).toMutableMap()
+        normalizedCode?.let { base["countrycode"] = it }
+        // By name, and by place ("Tampere", "Bayern"): Radio Browser keeps
+        // the place in "state", as the contributor wrote it. Both at once;
+        // name matches first. Either one answering is enough.
+        return coroutineScope {
+            val byName = async { request("/json/stations/search", base + ("name" to normalizedQuery)) }
+            val byPlace = async { request("/json/stations/search", base + ("state" to normalizedQuery)) }
+            mergeSearchResults(byName.await(), byPlace.await(), limit)
+        }
     }
 
     private suspend fun request(path: String, query: Map<String, String>): CatalogResult<List<CatalogStation>> {
@@ -210,4 +218,18 @@ private class UrlConnectionRadioBrowserTransport : RadioBrowserHttpTransport {
             connection.disconnect()
         }
     }
+}
+
+/** Name matches first, then place matches not already there; the first failure only if both failed. */
+internal fun mergeSearchResults(
+    byName: CatalogResult<List<CatalogStation>>,
+    byPlace: CatalogResult<List<CatalogStation>>,
+    limit: Int
+): CatalogResult<List<CatalogStation>> {
+    val names = (byName as? CatalogResult.Success)?.value
+    val places = (byPlace as? CatalogResult.Success)?.value
+    if (names == null && places == null) return byName
+    return CatalogResult.Success(
+        (names.orEmpty() + places.orEmpty()).distinctBy { it.sourceStationId }.take(limit)
+    )
 }

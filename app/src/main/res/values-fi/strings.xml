@@ -198,7 +198,7 @@
     <!-- Ensimmäinen käynnistys -->
     <string name="onboarding_title">Tervetuloa Aaltoon</string>
     <string name="onboarding_promise">Ei mainoksia. Ei nyt eikä koskaan.</string>
-    <string name="onboarding_instruction">Napauta asemia, joita kuuntelet. Napautus myös soittaa aseman.</string>
+    <string name="onboarding_instruction">Valitse asemat, joita kuuntelet. Radio alkaa soida, kun painat Valmis.</string>
     <string name="onboarding_change_country">Vaihda maa</string>
     <string name="onboarding_skip">Ohita</string>
     <string name="onboarding_find_more">Etsi muita asemia</string>
@@ -273,4 +273,8 @@
     <string name="audio_own_stations_progress">%1$d / %2$d tasattu – loput mitataan taustalla äänettömästi.</string>
     <string name="audio_own_stations_waiting">odottaa</string>
     <string name="audio_own_stations_failed">ei saatu yhteyttä</string>
+    <string name="custom_add_short">Oma asema</string>
+    <string name="custom_search_hint">Etkö löydä asemaa?</string>
+    <string name="custom_search_action">Lisää se striimin osoitteella</string>
+    <string name="search_elsewhere">Muualta maailmasta</string>
 </resources>

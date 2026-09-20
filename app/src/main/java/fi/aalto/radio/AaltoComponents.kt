@@ -905,12 +905,10 @@ internal fun StationRow(
                     contentDescription = stringResource(
                         if (isFavorite) R.string.favorite_remove else R.string.favorite_add
                     ),
-                    tint = when {
-                        isFavorite && quietFavorite -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
-                        isFavorite -> AaltoBlue
-                        else -> MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                    modifier = Modifier.size(22.dp)
+                    // Blue means "one of mine" everywhere. In the favourites
+                    // list, where every row is one, the heart is just smaller.
+                    tint = if (isFavorite) AaltoBlue else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(if (quietFavorite) 20.dp else 22.dp)
                 )
             }
         }

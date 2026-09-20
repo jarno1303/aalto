@@ -206,7 +206,7 @@
     <!-- First launch -->
     <string name="onboarding_title">Welcome to Aalto</string>
     <string name="onboarding_promise">No ads. Not now, not ever.</string>
-    <string name="onboarding_instruction">Tap the stations you listen to. A tap also plays the station.</string>
+    <string name="onboarding_instruction">Pick the stations you listen to. The radio starts when you tap Done.</string>
     <string name="onboarding_change_country">Change country</string>
     <string name="onboarding_skip">Skip</string>
     <string name="onboarding_find_more">Find other stations</string>
@@ -281,4 +281,8 @@
     <string name="audio_own_stations_progress">%1$d of %2$d levelled – the rest are measured silently in the background.</string>
     <string name="audio_own_stations_waiting">waiting</string>
     <string name="audio_own_stations_failed">not reachable</string>
+    <string name="custom_add_short">Own station</string>
+    <string name="custom_search_hint">Can\'t find the station?</string>
+    <string name="custom_search_action">Add it with its stream address</string>
+    <string name="search_elsewhere">Elsewhere in the world</string>
 </resources>

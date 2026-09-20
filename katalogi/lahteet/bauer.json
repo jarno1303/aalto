@@ -1,0 +1,195 @@
+{
+  "lahde": "rayo.fi (Bauer Media Finland)",
+  "haettu": "2026-09-20",
+  "huomio": "Premium-virrat (_prem.aac, hls-prem.hellorayo.co.uk) on jätetty pois: ne vaativat Bauerin maksullisen tilauksen.",
+  "asemat": [
+    {
+      "nimi": "Auran Aallot",
+      "ensisijainen": "https://live-bauerfi.sharp-stream.com/fi_auranaallot_128.mp3",
+      "varalla": [
+        "https://live-bauerfi.sharp-stream.com/fi_auranaallot_64.aac",
+        "http://streaming.radioplay.fi/fi_auranaallot_128.mp3"
+      ]
+    },
+    {
+      "nimi": "Basso",
+      "ensisijainen": "https://live-bauerfi.sharp-stream.com/fi_bassoradio_128.mp3",
+      "varalla": [
+        "https://live-bauerfi.sharp-stream.com/fi_bassoradio_64.aac",
+        "http://streaming.radioplay.fi/fi_bassoradio_128.mp3"
+      ]
+    },
+    {
+      "nimi": "Fresh",
+      "ensisijainen": "https://live-bauerfi.sharp-stream.com/fi_fresh_128.mp3",
+      "varalla": [
+        "https://live-bauerfi.sharp-stream.com/fi_fresh_64.aac"
+      ]
+    },
+    {
+      "nimi": "Iskelmä",
+      "ensisijainen": "https://stream.bauermedia.fi/iskelma/iskelma_128.mp3",
+      "varalla": [
+        "https://stream.bauermedia.fi/iskelma/iskelma_64.aac",
+        "https://live-bauerfi.sharp-stream.com/fi_iskelma_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_iskelma_64.aac",
+        "http://streaming.radioplay.fi/fi_iskelma_128.mp3"
+      ]
+    },
+    {
+      "nimi": "Kasari",
+      "ensisijainen": "https://live-bauerfi.sharp-stream.com/fi_kasari_128.mp3",
+      "varalla": [
+        "https://live-bauerfi.sharp-stream.com/fi_kasari_64.aac",
+        "http://streaming.radioplay.fi/fi_kasari_128.mp3"
+      ]
+    },
+    {
+      "nimi": "KISS",
+      "ensisijainen": "https://live-bauerfi.sharp-stream.com/fi_kiss_128.mp3",
+      "varalla": [
+        "https://live-bauerfi.sharp-stream.com/fi_kiss_64.aac",
+        "http://streaming.radioplay.fi/fi_kiss_128.mp3"
+      ]
+    },
+    {
+      "nimi": "NRJ",
+      "ensisijainen": "https://stream.bauermedia.fi/nrj/nrj_128.mp3",
+      "varalla": [
+        "https://stream.bauermedia.fi/nrj/nrj_64.aac",
+        "https://live-bauerfi.sharp-stream.com/fi_nrj_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_nrj_64.aac",
+        "http://streaming.radioplay.fi/fi_nrj_128.mp3"
+      ]
+    },
+    {
+      "nimi": "Pride Radio",
+      "ensisijainen": "https://live-bauerfi.sharp-stream.com/fi_pride_128.mp3",
+      "varalla": [
+        "https://live-bauerfi.sharp-stream.com/fi_pride_64.aac",
+        "http://streaming.radioplay.fi/fi_pride_128.mp3"
+      ]
+    },
+    {
+      "nimi": "Radio 957",
+      "ensisijainen": "https://stream.bauermedia.fi/radio957/radio957_128.mp3",
+      "varalla": [
+        "https://stream.bauermedia.fi/radio957/radio957_64.aac",
+        "https://live-bauerfi.sharp-stream.com/fi_radio957_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_radio957_64.aac",
+        "http://streaming.radioplay.fi/fi_radio957_128.mp3"
+      ]
+    },
+    {
+      "nimi": "Radio City",
+      "ensisijainen": "https://stream.bauermedia.fi/radiocity/radiocity_128.mp3",
+      "varalla": [
+        "https://stream.bauermedia.fi/radiocity/radiocity_64.aac",
+        "https://live-bauerfi.sharp-stream.com/fi_radiocity_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_radiocity_64.aac",
+        "http://streaming.radioplay.fi/fi_radiocity_128.mp3"
+      ]
+    },
+    {
+      "nimi": "Radio Classic",
+      "ensisijainen": "https://live-bauerfi.sharp-stream.com/fi_classic_128.mp3",
+      "varalla": [
+        "https://live-bauerfi.sharp-stream.com/fi_classic_64.aac",
+        "http://streaming.radioplay.fi/fi_classic_128.mp3"
+      ]
+    },
+    {
+      "nimi": "Radio Mega",
+      "ensisijainen": "https://live-bauerfi.sharp-stream.com/fi_radiomega_128.mp3",
+      "varalla": [
+        "https://live-bauerfi.sharp-stream.com/fi_radiomega_64.aac",
+        "http://streaming.radioplay.fi/fi_radiomega_128.mp3"
+      ]
+    },
+    {
+      "nimi": "Radio Nostalgia",
+      "ensisijainen": "https://stream.bauermedia.fi/nostalgia/nostalgia_128.mp3",
+      "varalla": [
+        "https://stream.bauermedia.fi/nostalgia/nostalgia_64.aac",
+        "https://live-bauerfi.sharp-stream.com/fi_nostalgia_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_nostalgia_64.aac",
+        "http://streaming.radioplay.fi/fi_nostalgia_128.mp3"
+      ]
+    },
+    {
+      "nimi": "Radio Nova",
+      "ensisijainen": "https://live-bauerfi.sharp-stream.com/fi_radionova_128.mp3",
+      "varalla": [
+        "https://live-bauerfi.sharp-stream.com/fi_radionova_64.aac",
+        "http://streaming.radioplay.fi/fi_radionova_128.mp3"
+      ]
+    },
+    {
+      "nimi": "Radio Pooki",
+      "ensisijainen": "https://stream.bauermedia.fi/radiopooki/radiopooki_128.mp3",
+      "varalla": [
+        "https://stream.bauermedia.fi/radiopooki/radiopooki_64.aac",
+        "https://live-bauerfi.sharp-stream.com/fi_radiopooki_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_radiopooki_64.aac",
+        "http://streaming.radioplay.fi/fi_radiopooki_128.mp3"
+      ]
+    },
+    {
+      "nimi": "Radio Pori",
+      "ensisijainen": "https://live-bauerfi.sharp-stream.com/fi_radiopori_128.mp3",
+      "varalla": [
+        "https://live-bauerfi.sharp-stream.com/fi_radiopori_64.aac",
+        "http://streaming.radioplay.fi/fi_radiopori_128.mp3"
+      ]
+    },
+    {
+      "nimi": "Radio Rodeo",
+      "ensisijainen": "https://live-bauerfi.sharp-stream.com/fi_rodeo_128.mp3",
+      "varalla": [
+        "https://live-bauerfi.sharp-stream.com/fi_rodeo_64.aac"
+      ]
+    },
+    {
+      "nimi": "SuomiRock",
+      "ensisijainen": "https://stream.bauermedia.fi/suomirock/suomirock_128.mp3",
+      "varalla": [
+        "https://stream.bauermedia.fi/suomirock/suomirock_64.aac",
+        "https://live-bauerfi.sharp-stream.com/fi_suomirock_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_suomirock_64.aac",
+        "http://streaming.radioplay.fi/fi_suomirock_128.mp3"
+      ]
+    },
+    {
+      "nimi": "SuomiRäp",
+      "ensisijainen": "https://live-bauerfi.sharp-stream.com/fi_suomirap_128.mp3",
+      "varalla": [
+        "https://live-bauerfi.sharp-stream.com/fi_suomirap_64.aac",
+        "http://streaming.radioplay.fi/fi_suomirap_128.mp3"
+      ]
+    },
+    {
+      "nimi": "Tekoälyradio",
+      "ensisijainen": "https://live-bauerfi.sharp-stream.com/fi_tekoalyradio_128.mp3",
+      "varalla": [
+        "https://live-bauerfi.sharp-stream.com/fi_tekoalyradio_64.aac",
+        "http://streaming.radioplay.fi/fi_tekoalyradio_128.mp3"
+      ]
+    },
+    {
+      "nimi": "Top51",
+      "ensisijainen": "https://live-bauerfi.sharp-stream.com/fi_top51_128.mp3",
+      "varalla": [
+        "https://live-bauerfi.sharp-stream.com/fi_top51_64.aac",
+        "http://streaming.radioplay.fi/fi_top51_128.mp3"
+      ]
+    },
+    {
+      "nimi": "Ysäri",
+      "ensisijainen": "https://live-bauerfi.sharp-stream.com/fi_ysari_128.mp3",
+      "varalla": [
+        "https://live-bauerfi.sharp-stream.com/fi_ysari_64.aac",
+        "http://streaming.radioplay.fi/fi_ysari_128.mp3"
+      ]
+    }
+  ]
+}

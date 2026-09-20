@@ -61,3 +61,6 @@ kuvakaappaukset/
 # Akkutestien tulokset ja paikalliset työtiedostot
 akku*.txt
 Claude outputs/
+katalogi/naytteet/
+katalogi/*.csv
+katalogi/kuunneltavat-*.txt

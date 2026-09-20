@@ -1,0 +1,40 @@
+{
+  "lahde": "icecast.live.yle.fi (koeluotaus + Radio Browserin nimivihjeet)",
+  "haettu": "2026-09-20",
+  "huomio": "Kaikki icecast-osoitteet vastasivat 200 ja content-type audio/aac. Vain YleX ja YleVega ilmoittivat icy-br:n (128); muut eivat ilmoita bitratea otsikoissa, mutta ovat samaa AAC-syotetta. YleRadio1Hifi on korkealaatuisempi. Yle Puhe ei ole taman icecast-palvelimen takana vaan pelkkana HLS-virtana.",
+  "kaava": "https://icecast.live.yle.fi/radio/<mount>/icecast.audio",
+  "asemat": [
+    { "nimi": "YleX", "mount": "YleX", "osoite": "https://icecast.live.yle.fi/radio/YleX/icecast.audio" },
+    { "nimi": "Yle Radio 1", "mount": "YleRadio1", "osoite": "https://icecast.live.yle.fi/radio/YleRadio1/icecast.audio" },
+    { "nimi": "Yle Radio 1 (Hifi)", "mount": "YleRadio1Hifi", "osoite": "https://icecast.live.yle.fi/radio/YleRadio1Hifi/icecast.audio" },
+    { "nimi": "Yle Klassinen", "mount": "YleKlassinen", "osoite": "https://icecast.live.yle.fi/radio/YleKlassinen/icecast.audio" },
+    { "nimi": "Yle X3M", "mount": "YleX3M", "osoite": "https://icecast.live.yle.fi/radio/YleX3M/icecast.audio" },
+    { "nimi": "Yle Vega", "mount": "YleVega", "osoite": "https://icecast.live.yle.fi/radio/YleVega/icecast.audio" },
+    { "nimi": "Yle Sámi", "mount": "YleSami", "osoite": "https://icecast.live.yle.fi/radio/YleSami/icecast.audio" },
+    { "nimi": "Yle Radio Suomi", "mount": "YleRS", "osoite": "https://icecast.live.yle.fi/radio/YleRS/icecast.audio" },
+    { "nimi": "Yle Radio Suomi - Tampere", "mount": "YleTampere", "osoite": "https://icecast.live.yle.fi/radio/YleTampere/icecast.audio" },
+    { "nimi": "Yle Radio Suomi - Turku", "mount": "YleTurku", "osoite": "https://icecast.live.yle.fi/radio/YleTurku/icecast.audio" },
+    { "nimi": "Yle Radio Suomi - Oulu", "mount": "YleOulu", "osoite": "https://icecast.live.yle.fi/radio/YleOulu/icecast.audio" },
+    { "nimi": "Yle Radio Suomi - Jyväskylä", "mount": "YleJKL", "osoite": "https://icecast.live.yle.fi/radio/YleJKL/icecast.audio" },
+    { "nimi": "Yle Radio Suomi - Kuopio", "mount": "YleKuopio", "osoite": "https://icecast.live.yle.fi/radio/YleKuopio/icecast.audio" },
+    { "nimi": "Yle Radio Suomi - Joensuu", "mount": "YleJoensuu", "osoite": "https://icecast.live.yle.fi/radio/YleJoensuu/icecast.audio" },
+    { "nimi": "Yle Radio Suomi - Mikkeli", "mount": "YleMikkeli", "osoite": "https://icecast.live.yle.fi/radio/YleMikkeli/icecast.audio" },
+    { "nimi": "Yle Radio Suomi - Kotka", "mount": "YleKotka", "osoite": "https://icecast.live.yle.fi/radio/YleKotka/icecast.audio" },
+    { "nimi": "Yle Radio Suomi - Lahti", "mount": "YleLahti", "osoite": "https://icecast.live.yle.fi/radio/YleLahti/icecast.audio" },
+    { "nimi": "Yle Radio Suomi - Pori", "mount": "YlePori", "osoite": "https://icecast.live.yle.fi/radio/YlePori/icecast.audio" },
+    { "nimi": "Yle Radio Suomi - Rovaniemi", "mount": "YleRovaniemi", "osoite": "https://icecast.live.yle.fi/radio/YleRovaniemi/icecast.audio" },
+    { "nimi": "Yle Radio Suomi - Seinäjoki", "mount": "YleSeinajoki", "osoite": "https://icecast.live.yle.fi/radio/YleSeinajoki/icecast.audio" },
+    { "nimi": "Yle Radio Suomi - Hämeenlinna", "mount": "YleHameenlinna", "osoite": "https://icecast.live.yle.fi/radio/YleHameenlinna/icecast.audio" },
+    { "nimi": "Yle Radio Suomi - Vaasa", "mount": "YlePohjanmaa", "osoite": "https://icecast.live.yle.fi/radio/YlePohjanmaa/icecast.audio" },
+    { "nimi": "Yle Radio Suomi - Kajaani", "mount": "YleKajaani", "osoite": "https://icecast.live.yle.fi/radio/YleKajaani/icecast.audio" },
+    { "nimi": "Yle Radio Suomi - Kokkola", "mount": "YleKokkola", "osoite": "https://icecast.live.yle.fi/radio/YleKokkola/icecast.audio" },
+    { "nimi": "Yle Radio Suomi - Kemi", "mount": "YleKemi", "osoite": "https://icecast.live.yle.fi/radio/YleKemi/icecast.audio" },
+    { "nimi": "Yle Vega - Åboland", "mount": "YleVegaAboland", "osoite": "https://icecast.live.yle.fi/radio/YleVegaAboland/icecast.audio" },
+    { "nimi": "Yle Vega - Österbotten", "mount": "YleVegaOsterbotten", "osoite": "https://icecast.live.yle.fi/radio/YleVegaOsterbotten/icecast.audio" },
+    { "nimi": "Yle Vega - Västnyland", "mount": "YleVegaVastnyland", "osoite": "https://icecast.live.yle.fi/radio/YleVegaVastnyland/icecast.audio" },
+    { "nimi": "Yle Vega - Östnyland", "mount": "YleVegaOstnyland", "osoite": "https://icecast.live.yle.fi/radio/YleVegaOstnyland/icecast.audio" }
+  ],
+  "vainHls": [
+    { "nimi": "Yle Puhe", "osoite": "https://yleradiolive.akamaized.net/hls/live/2027677/in-YlePuhe/master.m3u8" }
+  ]
+}

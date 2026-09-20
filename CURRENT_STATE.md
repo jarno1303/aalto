@@ -406,6 +406,17 @@ uutta ominaisuustyota. MUISTUTA TASTA.
 
 Katalogin maaliviiva - nama viisi ja ei muuta:
 1. CoreCatalogSource-koriste: ydin ensin, Radio Browser pitkana hantana
+   1a. radioBrowserIds mukaan yhdistamisavaimiin. Laatumoottorin
+       duplicateKeys yhdistaa asemat vain jaetun striimipalvelimen,
+       kotisivun tai lahettajan kautta. Kuratoitu Radio Nova on
+       live-bauerfi.sharp-stream.com -palvelimella ja Radio Browserin
+       vastine stream-redirect.bauermedia.fi -palvelimella, joten ne
+       jaavat eri ryhmiin ja sama asema nakyy listassa kahdesti.
+       Korjaus: CatalogStationiin aliasSourceIds, kuratoidun aseman
+       radioBrowserIds sinne muodossa "radio-browser:<uuid>", ja
+       duplicateKeys lisaa niista avaimet. Union-find hoitaa loput.
+       Testi odottaa @Ignore-tilassa: CoreCatalogTest
+       "kuratoitu asema yhdistyy Radio Browseriin eri palvelimella".
 2. fi.json assets-kansioon ja luku sielta
 3. Kertamigraatio vanhoille suosikeille (striimiosoite + radioBrowserUuid)
 4. Laitetestaus: suosikit sailyvat, Radio Nova soi 128 kbps

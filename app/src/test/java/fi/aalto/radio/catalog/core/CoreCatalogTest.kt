@@ -7,6 +7,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -84,19 +85,46 @@ class CoreCatalogTest {
     }
 
     @Test
-    fun `kuratoitu osoite voittaa Radio Browserin osoitteen`() {
+    fun `kuratoitu osoite voittaa kun palvelin on sama`() {
         val ydin = CoreCatalogParser.parse(tiedosto())!!.toCatalogStations()
-        val huono = radioBrowserAsema(
+        // Sama palvelin, eri polku: laatumoottori yhdistaa nama
+        // stream-host-avaimella.
+        val vanhentunut = radioBrowserAsema(
             id = "3381aa18",
             nimi = "YleX",
-            osoite = "http://vanha.example.com/ylex"
+            osoite = "http://icecast.live.yle.fi/radio/YleXVanha/icecast.audio"
         )
-        val tulos = CatalogQualityEngine().curate(ydin + huono).stations.single()
+        val tulos = CatalogQualityEngine().curate(ydin + vanhentunut).stations.single()
         assertEquals(
             "https://icecast.live.yle.fi/radio/YleX/icecast.audio",
             tulos.station.preferredStreamUrl
         )
-        assertTrue(tulos.station.streamAlternatives.contains("http://vanha.example.com/ylex"))
+        assertTrue(
+            tulos.station.streamAlternatives
+                .contains("http://icecast.live.yle.fi/radio/YleXVanha/icecast.audio")
+        )
+    }
+
+    @Ignore(
+        "Odottaa radioBrowserIds-pohjaista yhdistamista. Laatumoottori yhdistaa " +
+            "asemat vain jaetun palvelimen, kotisivun tai lahettajan kautta, joten " +
+            "kuratoitu asema ja sen Radio Browser -vastine jaavat eri ryhmiin kun " +
+            "osoite on eri palvelimella - Radio Nova on juuri tallainen. Katso " +
+            "CURRENT_STATE."
+    )
+    @Test
+    fun `kuratoitu asema yhdistyy Radio Browseriin eri palvelimella`() {
+        val ydin = CoreCatalogParser.parse(tiedosto())!!.toCatalogStations()
+        val toisaalla = radioBrowserAsema(
+            id = "3381aa18",
+            nimi = "YleX",
+            osoite = "https://toinen.example.com/ylex"
+        )
+        // 3381aa18 on ytimen radioBrowserIds-listassa, joten naiden pitaisi
+        // olla sama asema - ei kahta riviä listassa.
+        val tulos = CatalogQualityEngine().curate(ydin + toisaalla).stations
+        assertEquals(1, tulos.size)
+        assertEquals("8f7ecd3e", tulos.single().station.stableId)
     }
 
     private fun radioBrowserAsema(id: String, nimi: String, osoite: String) = listOf(

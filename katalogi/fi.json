@@ -1,0 +1,702 @@
+{
+  "versio": 1,
+  "paivitetty": "2026-09-20",
+  "maa": "FI",
+  "asemat": [
+    {
+      "id": "8f7ecd3e-7be3-4525-aa79-6408cef9fda8",
+      "omaId": "fi-yle-ylex",
+      "nimi": "YleX",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YleX/icecast.audio"
+      ],
+      "radioBrowserIds": [
+        "8f7ecd3e-7be3-4525-aa79-6408cef9fda8",
+        "3381aa18-02de-4c75-9e67-9298ba82ff7d"
+      ],
+      "jarjestys": 100
+    },
+    {
+      "id": "fi-yle-radio-1",
+      "omaId": "fi-yle-radio-1",
+      "nimi": "Yle Radio 1",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YleRadio1/icecast.audio"
+      ],
+      "radioBrowserIds": [],
+      "jarjestys": 101
+    },
+    {
+      "id": "c3a2ea0a-85ee-4b98-81fd-b75169da9ebd",
+      "omaId": "fi-yle-radio-1-hifi",
+      "nimi": "Yle Radio 1 (Hifi)",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YleRadio1Hifi/icecast.audio"
+      ],
+      "radioBrowserIds": [
+        "c3a2ea0a-85ee-4b98-81fd-b75169da9ebd",
+        "f6d91cef-82e6-4bd7-92ea-1c98e99cf3d0"
+      ],
+      "jarjestys": 102
+    },
+    {
+      "id": "22c402d1-2a7f-4713-8e2b-646070026dba",
+      "omaId": "fi-yle-klassinen",
+      "nimi": "Yle Klassinen",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YleKlassinen/icecast.audio"
+      ],
+      "radioBrowserIds": [
+        "22c402d1-2a7f-4713-8e2b-646070026dba"
+      ],
+      "jarjestys": 103
+    },
+    {
+      "id": "f8682eca-5a74-4385-ba72-5cde13e8ce98",
+      "omaId": "fi-yle-x3m",
+      "nimi": "Yle X3M",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YleX3M/icecast.audio"
+      ],
+      "radioBrowserIds": [
+        "f8682eca-5a74-4385-ba72-5cde13e8ce98"
+      ],
+      "jarjestys": 104
+    },
+    {
+      "id": "fi-yle-vega",
+      "omaId": "fi-yle-vega",
+      "nimi": "Yle Vega",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YleVega/icecast.audio"
+      ],
+      "radioBrowserIds": [],
+      "jarjestys": 105
+    },
+    {
+      "id": "e176bf3f-f6cb-4ab8-830a-e1025254462e",
+      "omaId": "fi-yle-sami",
+      "nimi": "Yle Sámi",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YleSami/icecast.audio"
+      ],
+      "radioBrowserIds": [
+        "e176bf3f-f6cb-4ab8-830a-e1025254462e"
+      ],
+      "jarjestys": 106
+    },
+    {
+      "id": "6489b751-acf5-413a-8b53-e345eee56fbb",
+      "omaId": "fi-yle-radio-suomi",
+      "nimi": "Yle Radio Suomi",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YleRS/icecast.audio"
+      ],
+      "radioBrowserIds": [
+        "6489b751-acf5-413a-8b53-e345eee56fbb",
+        "0fbf6ebe-052e-4799-a244-525b7cfffcac"
+      ],
+      "jarjestys": 107
+    },
+    {
+      "id": "ec8d5679-6b61-49b5-9bfc-3e71a8777c44",
+      "omaId": "fi-yle-radio-suomi-tampere",
+      "nimi": "Yle Radio Suomi - Tampere",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YleTampere/icecast.audio"
+      ],
+      "radioBrowserIds": [
+        "ec8d5679-6b61-49b5-9bfc-3e71a8777c44",
+        "e5d11894-7c55-4fbc-94c4-fa78596013c0"
+      ],
+      "jarjestys": 108
+    },
+    {
+      "id": "fc77ef15-f147-4652-9596-307866fbc012",
+      "omaId": "fi-yle-radio-suomi-turku",
+      "nimi": "Yle Radio Suomi - Turku",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YleTurku/icecast.audio"
+      ],
+      "radioBrowserIds": [
+        "fc77ef15-f147-4652-9596-307866fbc012"
+      ],
+      "jarjestys": 109
+    },
+    {
+      "id": "0d188bee-e18e-46be-8840-8f5a79ec2313",
+      "omaId": "fi-yle-radio-suomi-oulu",
+      "nimi": "Yle Radio Suomi - Oulu",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YleOulu/icecast.audio"
+      ],
+      "radioBrowserIds": [
+        "0d188bee-e18e-46be-8840-8f5a79ec2313"
+      ],
+      "jarjestys": 110
+    },
+    {
+      "id": "894979fa-cd9e-4d5e-bd01-548eb71f5c20",
+      "omaId": "fi-yle-radio-suomi-jyvaskyla",
+      "nimi": "Yle Radio Suomi - Jyväskylä",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YleJKL/icecast.audio"
+      ],
+      "radioBrowserIds": [
+        "894979fa-cd9e-4d5e-bd01-548eb71f5c20"
+      ],
+      "jarjestys": 111
+    },
+    {
+      "id": "19c02f0d-5c38-46df-bd0b-088fd057e16e",
+      "omaId": "fi-yle-radio-suomi-kuopio",
+      "nimi": "Yle Radio Suomi - Kuopio",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YleKuopio/icecast.audio"
+      ],
+      "radioBrowserIds": [
+        "19c02f0d-5c38-46df-bd0b-088fd057e16e"
+      ],
+      "jarjestys": 112
+    },
+    {
+      "id": "ee50d1e9-9168-4798-a68f-d7416d0791b5",
+      "omaId": "fi-yle-radio-suomi-joensuu",
+      "nimi": "Yle Radio Suomi - Joensuu",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YleJoensuu/icecast.audio"
+      ],
+      "radioBrowserIds": [
+        "ee50d1e9-9168-4798-a68f-d7416d0791b5"
+      ],
+      "jarjestys": 113
+    },
+    {
+      "id": "903f8f5e-541f-4296-bed8-7f3be8d43d8a",
+      "omaId": "fi-yle-radio-suomi-mikkeli",
+      "nimi": "Yle Radio Suomi - Mikkeli",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YleMikkeli/icecast.audio"
+      ],
+      "radioBrowserIds": [
+        "903f8f5e-541f-4296-bed8-7f3be8d43d8a"
+      ],
+      "jarjestys": 114
+    },
+    {
+      "id": "46c36cc2-e313-4a24-935a-fc667ad96730",
+      "omaId": "fi-yle-radio-suomi-kotka",
+      "nimi": "Yle Radio Suomi - Kotka",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YleKotka/icecast.audio"
+      ],
+      "radioBrowserIds": [
+        "46c36cc2-e313-4a24-935a-fc667ad96730"
+      ],
+      "jarjestys": 115
+    },
+    {
+      "id": "5ccaf433-c2df-46e7-8e38-61e4445fe43c",
+      "omaId": "fi-yle-radio-suomi-lahti",
+      "nimi": "Yle Radio Suomi - Lahti",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YleLahti/icecast.audio"
+      ],
+      "radioBrowserIds": [
+        "5ccaf433-c2df-46e7-8e38-61e4445fe43c"
+      ],
+      "jarjestys": 116
+    },
+    {
+      "id": "d1ca287d-bca5-43fd-bd88-e6b1c407cd22",
+      "omaId": "fi-yle-radio-suomi-pori",
+      "nimi": "Yle Radio Suomi - Pori",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YlePori/icecast.audio"
+      ],
+      "radioBrowserIds": [
+        "d1ca287d-bca5-43fd-bd88-e6b1c407cd22"
+      ],
+      "jarjestys": 117
+    },
+    {
+      "id": "8720abb1-9d81-4ff3-94f7-5ba4bc79ab48",
+      "omaId": "fi-yle-radio-suomi-rovaniemi",
+      "nimi": "Yle Radio Suomi - Rovaniemi",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YleRovaniemi/icecast.audio"
+      ],
+      "radioBrowserIds": [
+        "8720abb1-9d81-4ff3-94f7-5ba4bc79ab48"
+      ],
+      "jarjestys": 118
+    },
+    {
+      "id": "6178fc05-36af-4649-8fc2-66923a27cb7f",
+      "omaId": "fi-yle-radio-suomi-seinajoki",
+      "nimi": "Yle Radio Suomi - Seinäjoki",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YleSeinajoki/icecast.audio"
+      ],
+      "radioBrowserIds": [
+        "6178fc05-36af-4649-8fc2-66923a27cb7f"
+      ],
+      "jarjestys": 119
+    },
+    {
+      "id": "9d79fe27-142d-43b1-a723-0718482f6e09",
+      "omaId": "fi-yle-radio-suomi-hameenlinna",
+      "nimi": "Yle Radio Suomi - Hämeenlinna",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YleHameenlinna/icecast.audio"
+      ],
+      "radioBrowserIds": [
+        "9d79fe27-142d-43b1-a723-0718482f6e09"
+      ],
+      "jarjestys": 120
+    },
+    {
+      "id": "4d1a27b8-9c81-4bd1-b79d-ca43b75c1b0a",
+      "omaId": "fi-yle-radio-suomi-vaasa",
+      "nimi": "Yle Radio Suomi - Vaasa",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YlePohjanmaa/icecast.audio"
+      ],
+      "radioBrowserIds": [
+        "4d1a27b8-9c81-4bd1-b79d-ca43b75c1b0a"
+      ],
+      "jarjestys": 121
+    },
+    {
+      "id": "fi-yle-radio-suomi-kajaani",
+      "omaId": "fi-yle-radio-suomi-kajaani",
+      "nimi": "Yle Radio Suomi - Kajaani",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YleKajaani/icecast.audio"
+      ],
+      "radioBrowserIds": [],
+      "jarjestys": 122
+    },
+    {
+      "id": "fi-yle-radio-suomi-kokkola",
+      "omaId": "fi-yle-radio-suomi-kokkola",
+      "nimi": "Yle Radio Suomi - Kokkola",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YleKokkola/icecast.audio"
+      ],
+      "radioBrowserIds": [],
+      "jarjestys": 123
+    },
+    {
+      "id": "fi-yle-radio-suomi-kemi",
+      "omaId": "fi-yle-radio-suomi-kemi",
+      "nimi": "Yle Radio Suomi - Kemi",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YleKemi/icecast.audio"
+      ],
+      "radioBrowserIds": [],
+      "jarjestys": 124
+    },
+    {
+      "id": "ea090fe5-8c86-446c-b678-ca9be46b218e",
+      "omaId": "fi-yle-vega-aboland",
+      "nimi": "Yle Vega - Åboland",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YleVegaAboland/icecast.audio"
+      ],
+      "radioBrowserIds": [
+        "ea090fe5-8c86-446c-b678-ca9be46b218e"
+      ],
+      "jarjestys": 125
+    },
+    {
+      "id": "60b55178-8844-4a25-b1b9-2cbf3f10bb65",
+      "omaId": "fi-yle-vega-osterbotten",
+      "nimi": "Yle Vega - Österbotten",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YleVegaOsterbotten/icecast.audio"
+      ],
+      "radioBrowserIds": [
+        "60b55178-8844-4a25-b1b9-2cbf3f10bb65"
+      ],
+      "jarjestys": 126
+    },
+    {
+      "id": "892e5cbd-bd92-494f-a96b-ecb367221666",
+      "omaId": "fi-yle-vega-vastnyland",
+      "nimi": "Yle Vega - Västnyland",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YleVegaVastnyland/icecast.audio"
+      ],
+      "radioBrowserIds": [
+        "892e5cbd-bd92-494f-a96b-ecb367221666"
+      ],
+      "jarjestys": 127
+    },
+    {
+      "id": "2ceb9095-c509-4c30-a530-1df60e2600f1",
+      "omaId": "fi-yle-vega-ostnyland",
+      "nimi": "Yle Vega - Östnyland",
+      "lahettaja": "Yle",
+      "osoitteet": [
+        "https://icecast.live.yle.fi/radio/YleVegaOstnyland/icecast.audio"
+      ],
+      "radioBrowserIds": [
+        "2ceb9095-c509-4c30-a530-1df60e2600f1"
+      ],
+      "jarjestys": 128
+    },
+    {
+      "id": "ff752290-8b6d-48bf-a0de-608287c7d30b",
+      "omaId": "fi-bauer-auran-aallot",
+      "nimi": "Auran Aallot",
+      "lahettaja": "Bauer Media",
+      "osoitteet": [
+        "https://live-bauerfi.sharp-stream.com/fi_auranaallot_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_auranaallot_64.aac",
+        "http://streaming.radioplay.fi/fi_auranaallot_128.mp3"
+      ],
+      "radioBrowserIds": [
+        "ff752290-8b6d-48bf-a0de-608287c7d30b"
+      ],
+      "jarjestys": 200
+    },
+    {
+      "id": "fi-bauer-basso",
+      "omaId": "fi-bauer-basso",
+      "nimi": "Basso",
+      "lahettaja": "Bauer Media",
+      "osoitteet": [
+        "https://live-bauerfi.sharp-stream.com/fi_bassoradio_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_bassoradio_64.aac",
+        "http://streaming.radioplay.fi/fi_bassoradio_128.mp3"
+      ],
+      "radioBrowserIds": [],
+      "jarjestys": 201
+    },
+    {
+      "id": "fi-bauer-fresh",
+      "omaId": "fi-bauer-fresh",
+      "nimi": "Fresh",
+      "lahettaja": "Bauer Media",
+      "osoitteet": [
+        "https://live-bauerfi.sharp-stream.com/fi_fresh_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_fresh_64.aac"
+      ],
+      "radioBrowserIds": [],
+      "jarjestys": 202
+    },
+    {
+      "id": "451e4f89-5318-4995-b3ab-b10610874f6b",
+      "omaId": "fi-bauer-iskelma",
+      "nimi": "Iskelmä",
+      "lahettaja": "Bauer Media",
+      "osoitteet": [
+        "https://stream.bauermedia.fi/iskelma/iskelma_128.mp3",
+        "https://stream.bauermedia.fi/iskelma/iskelma_64.aac",
+        "https://live-bauerfi.sharp-stream.com/fi_iskelma_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_iskelma_64.aac",
+        "http://streaming.radioplay.fi/fi_iskelma_128.mp3"
+      ],
+      "radioBrowserIds": [
+        "451e4f89-5318-4995-b3ab-b10610874f6b"
+      ],
+      "jarjestys": 203
+    },
+    {
+      "id": "fi-bauer-kasari",
+      "omaId": "fi-bauer-kasari",
+      "nimi": "Kasari",
+      "lahettaja": "Bauer Media",
+      "osoitteet": [
+        "https://live-bauerfi.sharp-stream.com/fi_kasari_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_kasari_64.aac",
+        "http://streaming.radioplay.fi/fi_kasari_128.mp3"
+      ],
+      "radioBrowserIds": [],
+      "jarjestys": 204
+    },
+    {
+      "id": "fi-bauer-kiss",
+      "omaId": "fi-bauer-kiss",
+      "nimi": "KISS",
+      "lahettaja": "Bauer Media",
+      "osoitteet": [
+        "https://live-bauerfi.sharp-stream.com/fi_kiss_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_kiss_64.aac",
+        "http://streaming.radioplay.fi/fi_kiss_128.mp3"
+      ],
+      "radioBrowserIds": [],
+      "jarjestys": 205
+    },
+    {
+      "id": "31694e29-ec53-41c7-84eb-165d40739574",
+      "omaId": "fi-bauer-nrj",
+      "nimi": "NRJ",
+      "lahettaja": "Bauer Media",
+      "osoitteet": [
+        "https://stream.bauermedia.fi/nrj/nrj_128.mp3",
+        "https://stream.bauermedia.fi/nrj/nrj_64.aac",
+        "https://live-bauerfi.sharp-stream.com/fi_nrj_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_nrj_64.aac",
+        "http://streaming.radioplay.fi/fi_nrj_128.mp3"
+      ],
+      "radioBrowserIds": [
+        "31694e29-ec53-41c7-84eb-165d40739574",
+        "ac6dc287-20f4-4e8d-8748-ec0691acadd3"
+      ],
+      "jarjestys": 206
+    },
+    {
+      "id": "65ee044c-b0e0-4fc2-961e-3817014ff330",
+      "omaId": "fi-bauer-pride-radio",
+      "nimi": "Pride Radio",
+      "lahettaja": "Bauer Media",
+      "osoitteet": [
+        "https://live-bauerfi.sharp-stream.com/fi_pride_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_pride_64.aac",
+        "http://streaming.radioplay.fi/fi_pride_128.mp3"
+      ],
+      "radioBrowserIds": [
+        "65ee044c-b0e0-4fc2-961e-3817014ff330"
+      ],
+      "jarjestys": 207
+    },
+    {
+      "id": "fi-bauer-radio-957",
+      "omaId": "fi-bauer-radio-957",
+      "nimi": "Radio 957",
+      "lahettaja": "Bauer Media",
+      "osoitteet": [
+        "https://stream.bauermedia.fi/radio957/radio957_128.mp3",
+        "https://stream.bauermedia.fi/radio957/radio957_64.aac",
+        "https://live-bauerfi.sharp-stream.com/fi_radio957_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_radio957_64.aac",
+        "http://streaming.radioplay.fi/fi_radio957_128.mp3"
+      ],
+      "radioBrowserIds": [],
+      "jarjestys": 208
+    },
+    {
+      "id": "675970e4-ead1-4129-a680-1e7b64c96ecb",
+      "omaId": "fi-bauer-radio-city",
+      "nimi": "Radio City",
+      "lahettaja": "Bauer Media",
+      "osoitteet": [
+        "https://stream.bauermedia.fi/radiocity/radiocity_128.mp3",
+        "https://stream.bauermedia.fi/radiocity/radiocity_64.aac",
+        "https://live-bauerfi.sharp-stream.com/fi_radiocity_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_radiocity_64.aac",
+        "http://streaming.radioplay.fi/fi_radiocity_128.mp3"
+      ],
+      "radioBrowserIds": [
+        "675970e4-ead1-4129-a680-1e7b64c96ecb"
+      ],
+      "jarjestys": 209
+    },
+    {
+      "id": "7bbec1fb-da28-45db-b0c5-72100f09c37a",
+      "omaId": "fi-bauer-radio-classic",
+      "nimi": "Radio Classic",
+      "lahettaja": "Bauer Media",
+      "osoitteet": [
+        "https://live-bauerfi.sharp-stream.com/fi_classic_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_classic_64.aac",
+        "http://streaming.radioplay.fi/fi_classic_128.mp3"
+      ],
+      "radioBrowserIds": [
+        "7bbec1fb-da28-45db-b0c5-72100f09c37a"
+      ],
+      "jarjestys": 210
+    },
+    {
+      "id": "1898ce90-f0a9-4a9a-99bd-18ee739322bb",
+      "omaId": "fi-bauer-radio-mega",
+      "nimi": "Radio Mega",
+      "lahettaja": "Bauer Media",
+      "osoitteet": [
+        "https://live-bauerfi.sharp-stream.com/fi_radiomega_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_radiomega_64.aac",
+        "http://streaming.radioplay.fi/fi_radiomega_128.mp3"
+      ],
+      "radioBrowserIds": [
+        "1898ce90-f0a9-4a9a-99bd-18ee739322bb"
+      ],
+      "jarjestys": 211
+    },
+    {
+      "id": "fi-bauer-radio-nostalgia",
+      "omaId": "fi-bauer-radio-nostalgia",
+      "nimi": "Radio Nostalgia",
+      "lahettaja": "Bauer Media",
+      "osoitteet": [
+        "https://stream.bauermedia.fi/nostalgia/nostalgia_128.mp3",
+        "https://stream.bauermedia.fi/nostalgia/nostalgia_64.aac",
+        "https://live-bauerfi.sharp-stream.com/fi_nostalgia_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_nostalgia_64.aac",
+        "http://streaming.radioplay.fi/fi_nostalgia_128.mp3"
+      ],
+      "radioBrowserIds": [],
+      "jarjestys": 212
+    },
+    {
+      "id": "3ca1561c-75eb-4afd-b297-81162c88ddb3",
+      "omaId": "fi-bauer-radio-nova",
+      "nimi": "Radio Nova",
+      "lahettaja": "Bauer Media",
+      "osoitteet": [
+        "https://live-bauerfi.sharp-stream.com/fi_radionova_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_radionova_64.aac",
+        "http://streaming.radioplay.fi/fi_radionova_128.mp3"
+      ],
+      "radioBrowserIds": [
+        "3ca1561c-75eb-4afd-b297-81162c88ddb3"
+      ],
+      "jarjestys": 213
+    },
+    {
+      "id": "3a1f4391-13bb-408a-9762-ee8b756e1d96",
+      "omaId": "fi-bauer-radio-pooki",
+      "nimi": "Radio Pooki",
+      "lahettaja": "Bauer Media",
+      "osoitteet": [
+        "https://stream.bauermedia.fi/radiopooki/radiopooki_128.mp3",
+        "https://stream.bauermedia.fi/radiopooki/radiopooki_64.aac",
+        "https://live-bauerfi.sharp-stream.com/fi_radiopooki_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_radiopooki_64.aac",
+        "http://streaming.radioplay.fi/fi_radiopooki_128.mp3"
+      ],
+      "radioBrowserIds": [
+        "3a1f4391-13bb-408a-9762-ee8b756e1d96",
+        "184face6-0916-11e9-a80b-52543be04c81"
+      ],
+      "jarjestys": 214
+    },
+    {
+      "id": "fi-bauer-radio-pori",
+      "omaId": "fi-bauer-radio-pori",
+      "nimi": "Radio Pori",
+      "lahettaja": "Bauer Media",
+      "osoitteet": [
+        "https://live-bauerfi.sharp-stream.com/fi_radiopori_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_radiopori_64.aac",
+        "http://streaming.radioplay.fi/fi_radiopori_128.mp3"
+      ],
+      "radioBrowserIds": [],
+      "jarjestys": 215
+    },
+    {
+      "id": "fi-bauer-radio-rodeo",
+      "omaId": "fi-bauer-radio-rodeo",
+      "nimi": "Radio Rodeo",
+      "lahettaja": "Bauer Media",
+      "osoitteet": [
+        "https://live-bauerfi.sharp-stream.com/fi_rodeo_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_rodeo_64.aac"
+      ],
+      "radioBrowserIds": [],
+      "jarjestys": 216
+    },
+    {
+      "id": "af0a88c3-8936-11e8-aa66-52543be04c81",
+      "omaId": "fi-bauer-suomirock",
+      "nimi": "SuomiRock",
+      "lahettaja": "Bauer Media",
+      "osoitteet": [
+        "https://stream.bauermedia.fi/suomirock/suomirock_128.mp3",
+        "https://stream.bauermedia.fi/suomirock/suomirock_64.aac",
+        "https://live-bauerfi.sharp-stream.com/fi_suomirock_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_suomirock_64.aac",
+        "http://streaming.radioplay.fi/fi_suomirock_128.mp3"
+      ],
+      "radioBrowserIds": [
+        "af0a88c3-8936-11e8-aa66-52543be04c81"
+      ],
+      "jarjestys": 217
+    },
+    {
+      "id": "4ab82b0e-cef6-4d86-9235-2591c37813bf",
+      "omaId": "fi-bauer-suomirap",
+      "nimi": "SuomiRäp",
+      "lahettaja": "Bauer Media",
+      "osoitteet": [
+        "https://live-bauerfi.sharp-stream.com/fi_suomirap_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_suomirap_64.aac",
+        "http://streaming.radioplay.fi/fi_suomirap_128.mp3"
+      ],
+      "radioBrowserIds": [
+        "4ab82b0e-cef6-4d86-9235-2591c37813bf"
+      ],
+      "jarjestys": 218
+    },
+    {
+      "id": "64636a34-a2f0-4388-bc20-6b0415aa2434",
+      "omaId": "fi-bauer-tekoalyradio",
+      "nimi": "Tekoälyradio",
+      "lahettaja": "Bauer Media",
+      "osoitteet": [
+        "https://live-bauerfi.sharp-stream.com/fi_tekoalyradio_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_tekoalyradio_64.aac",
+        "http://streaming.radioplay.fi/fi_tekoalyradio_128.mp3"
+      ],
+      "radioBrowserIds": [
+        "64636a34-a2f0-4388-bc20-6b0415aa2434"
+      ],
+      "jarjestys": 219
+    },
+    {
+      "id": "fi-bauer-top51",
+      "omaId": "fi-bauer-top51",
+      "nimi": "Top51",
+      "lahettaja": "Bauer Media",
+      "osoitteet": [
+        "https://live-bauerfi.sharp-stream.com/fi_top51_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_top51_64.aac",
+        "http://streaming.radioplay.fi/fi_top51_128.mp3"
+      ],
+      "radioBrowserIds": [],
+      "jarjestys": 220
+    },
+    {
+      "id": "fi-bauer-ysari",
+      "omaId": "fi-bauer-ysari",
+      "nimi": "Ysäri",
+      "lahettaja": "Bauer Media",
+      "osoitteet": [
+        "https://live-bauerfi.sharp-stream.com/fi_ysari_128.mp3",
+        "https://live-bauerfi.sharp-stream.com/fi_ysari_64.aac",
+        "http://streaming.radioplay.fi/fi_ysari_128.mp3"
+      ],
+      "radioBrowserIds": [],
+      "jarjestys": 221
+    }
+  ]
+}

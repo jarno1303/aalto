@@ -1,5 +1,6 @@
 package fi.aalto.radio.catalog.quality
 
+import fi.aalto.radio.catalog.CatalogSource
 import fi.aalto.radio.catalog.CatalogStation
 import java.net.URI
 import java.security.MessageDigest
@@ -240,7 +241,8 @@ class CatalogQualityEngine(
     }
 
     private fun preferredOrdering(): Comparator<CuratedStation> {
-        return compareByDescending<CuratedStation> { it.appliedOverride?.preferredDuplicateMember == true }
+        return compareByDescending<CuratedStation> { it.station.source == CatalogSource.AALTO }
+            .thenByDescending { it.appliedOverride?.preferredDuplicateMember == true }
             .thenByDescending { it.qualityScore }
             .thenBy { it.station.sourceQualifiedId }
     }
@@ -263,6 +265,21 @@ class CatalogQualityEngine(
     }
 
     private fun canonicalGroupId(members: List<CuratedStation>): String {
+        // Kuratoidun aseman tunniste on pysyva ja voittaa tiivisteen.
+        //
+        // Ilman tata ryhman tunniste on tiiviste siita, mita kaksoiskappaleita
+        // Radio Browserissa sattui olemaan. Se muuttuu aina kun joku lisaa tai
+        // korjaa merkinnan, ja koska tunniste paatyy suosikin avaimeksi, sama
+        // asema ilmestyy hakuun tyhjalla sydamella ja paatyy suosikkeihin
+        // kahdesti. Kuratoiduilla asemilla tunniste tulee tiedostosta, ei
+        // datasta, joten se ei liiku.
+        members.firstOrNull { it.station.source == CatalogSource.AALTO }
+            ?.station
+            ?.canonicalId
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
+            ?.let { return it }
+
         val first = members.first().station
         val key = listOf(
             first.countryCode?.trim()?.uppercase().orEmpty(),

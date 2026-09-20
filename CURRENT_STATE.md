@@ -373,3 +373,29 @@ with a retry button. Tests: RadioBrowserServersTest. Root cause confirmed: fresh
 - Battery: the service's one-second beat (rewind state, levelling checkpoint) now runs only while something plays; a 30 s beat remains for a network that came back silently. Battery test still to be run (dumpsys batterystats, an hour with the screen off, over Bluetooth and over the speaker).
 - Station folders / lists: JarnoL's idea (6 stations in a named folder) is the same feature as the planned Plus "asemalistat"; to be done after the closed test, not now.
 - Not yet device-tested.
+
+## Avoimet kohdat (2026-09-20)
+
+### Akkumittaus kesken
+Kaiutinkierros ajettu: 6 %/h (5500 mAh, kirjattu kulutus 126 mAh). Aallon oma
+osuus noin 12,5 mAh eli alle 10 % kirjatusta - ei merkkia akkuviasta.
+Mittausta vaaristivat: Bluetooth paalla (10,8 mAh), langaton adb piti WiFin
+hereilla, muut sovellukset kayttivat noin 20 mAh suoritinta.
+
+MUISTUTA KAYTTAJAA: luotettava mittaus tehdaan ilman adb:ta - Bluetooth ja
+muut sovellukset pois, akkuprosentti puhelimen ruudulta, kaksi tuntia soittoa
+naytto sammutettuna, prosentti uudelleen. Bluetooth-kuulokkeilla oma kierros.
+
+### Suosikin tunniste ei ole vakaa (korjaus tyon alla)
+CatalogQualityEngine.canonicalGroupId laskee SHA-256-tiivisteen ryhman
+kokoonpanosta (jasenten nimet, striimipalvelimet, lahettaja). Se paatyy
+canonicalId -> stableId -> RadioStation.id -> favorites.stationId -> synkan
+entityId. Kun Radio Browseriin lisataan tai korjataan kaksoiskappale,
+tiiviste muuttuu: suosikki soi yha (asemarivi on tallessa), mutta sama asema
+nakyy haussa tyhjalla sydamella ja paatyy suosikkeihin kahdesti - molemmat
+synkronoituvat kaikille laitteille.
+
+Korjaus: kuratoidun ytimen asemat tuovat tunnisteen tiedostosta, ja
+canonicalGroupId palauttaa sen sellaisenaan. Kertamigraatio taysmayttaa
+vanhat suosikit striimiosoitteen ja radioBrowserStationUuid:n perusteella.
+Tehdaan ennen suljettua testia, koska kayttajamaara on nyt pienin mahdollinen.

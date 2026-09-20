@@ -1,7 +1,10 @@
 package fi.aalto.radio.catalog
 
 enum class CatalogSource {
-    RADIO_BROWSER
+    RADIO_BROWSER,
+
+    /** Aallon oma kuratoitu ydin: tarkistetut osoitteet ja pysyvat tunnisteet. */
+    AALTO
 }
 
 data class CatalogStation(
@@ -35,6 +38,7 @@ data class CatalogStation(
     val sourceQualifiedId: String
         get() = when (source) {
             CatalogSource.RADIO_BROWSER -> "radio-browser:$sourceStationId"
+            CatalogSource.AALTO -> "aalto:$sourceStationId"
         }
 
     val preferredStreamUrl: String?

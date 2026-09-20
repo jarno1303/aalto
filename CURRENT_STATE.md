@@ -399,3 +399,21 @@ Korjaus: kuratoidun ytimen asemat tuovat tunnisteen tiedostosta, ja
 canonicalGroupId palauttaa sen sellaisenaan. Kertamigraatio taysmayttaa
 vanhat suosikit striimiosoitteen ja radioBrowserStationUuid:n perusteella.
 Tehdaan ennen suljettua testia, koska kayttajamaara on nyt pienin mahdollinen.
+
+### Sitoumus: katalogi valmiiksi, sitten julkaisu (2026-09-20)
+Kun katalogityo on maalissa, siirrytaan julkaisun esteisiin eika aloiteta
+uutta ominaisuustyota. MUISTUTA TASTA.
+
+Katalogin maaliviiva - nama viisi ja ei muuta:
+1. CoreCatalogSource-koriste: ydin ensin, Radio Browser pitkana hantana
+2. fi.json assets-kansioon ja luku sielta
+3. Kertamigraatio vanhoille suosikeille (striimiosoite + radioBrowserUuid)
+4. Laitetestaus: suosikit sailyvat, Radio Nova soi 128 kbps
+5. Nelonen Median asemat mukaan TAI paatos etta ne jaavat myohemmaksi
+
+Etahaku (Firebase Hosting) EI kuulu maaliviivaan - assets riittaa suljettuun
+testiin. Kaikki muu katalogiin liittyva on julkaisun jalkeista tyota.
+
+Julkaisun esteet: tilin poisto, tietosuojaseloste + Data safety -lomake,
+release-allekirjoitus, Crashlytics, kauppasivu, suljettu testi (12 testaajaa
+/ 14 vrk - kalenteriaikaa jota ei voi nopeuttaa koodaamalla).

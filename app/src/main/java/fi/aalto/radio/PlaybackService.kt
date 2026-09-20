@@ -25,6 +25,11 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
 import fi.aalto.radio.audio.AudioEffects
+import fi.aalto.radio.audio.AutoLevel
+import fi.aalto.radio.audio.LoudnessProcessor
+import fi.aalto.radio.playback.IcyText
+import fi.aalto.radio.playback.Timeshift
+import fi.aalto.radio.playback.TimeshiftDataSourceFactory
 import fi.aalto.radio.history.StreamTrack
 import fi.aalto.radio.history.TrackHistory
 import fi.aalto.radio.history.TrackTitle
@@ -83,7 +88,27 @@ class PlaybackService : MediaLibraryService() {
         super.onCreate()
         lookup = StationLookup(this)
 
-        val exo = ExoPlayer.Builder(this)
+        // The renderers are ExoPlayer's defaults with one pass-through meter in
+        // the audio path (automatic levelling measures what it hears). The
+        // data sources are the defaults too, with a copy of live MP3/AAC kept
+        // for rewinding. Both step aside on any failure.
+        val renderers = object : androidx.media3.exoplayer.DefaultRenderersFactory(this) {
+            override fun buildAudioSink(
+                context: android.content.Context,
+                enableFloatOutput: Boolean,
+                enableAudioOutputPlaybackParams: Boolean
+            ): androidx.media3.exoplayer.audio.AudioSink? =
+                androidx.media3.exoplayer.audio.DefaultAudioSink.Builder(context)
+                    .setEnableFloatOutput(enableFloatOutput)
+                    .setEnableAudioOutputPlaybackParameters(enableAudioOutputPlaybackParams)
+                    .setAudioProcessors(arrayOf<androidx.media3.common.audio.AudioProcessor>(LoudnessProcessor()))
+                    .build()
+        }
+        val mediaSources = androidx.media3.exoplayer.source.DefaultMediaSourceFactory(
+            TimeshiftDataSourceFactory(this, androidx.media3.datasource.DefaultDataSource.Factory(this))
+        )
+        val exo = ExoPlayer.Builder(this, renderers)
+            .setMediaSourceFactory(mediaSources)
             .setHandleAudioBecomingNoisy(true)
             // Gives way to calls and navigation prompts (required in the car).
             .setAudioAttributes(
@@ -98,10 +123,66 @@ class PlaybackService : MediaLibraryService() {
 
         val player = AaltoSessionPlayer(this, exo, scope) { presets }
         sessionPlayer = player
+        runCatching {
+            getSystemService(android.net.ConnectivityManager::class.java)
+                ?.registerDefaultNetworkCallback(networkCallback)
+        }
+        // After a pause a rewound listener goes back to live too.
+        player.onResumeLive = {
+            if (Timeshift.isTimeshiftUri(exo.currentMediaItem?.localConfiguration?.uri?.toString())) {
+                Timeshift.live()
+                true
+            } else {
+                false
+            }
+        }
         exoPlayer = exo
         exo.addListener(widgetAndResumeListener)
         // Sound shaping sits beside the player, never in its path.
         AudioEffects.attach(this, exo, exo.audioSessionId)
+        Timeshift.attach(this, object : Timeshift.Host {
+            override val player: Player get() = exo
+            override fun currentUri(): String? = exo.currentMediaItem?.localConfiguration?.uri?.toString()
+            override fun replaceUri(uri: String) {
+                sessionPlayer?.replaceCurrentUri(uri)
+            }
+        })
+        // Songs met while playing from the rewind buffer come this way,
+        // because the buffer carries no in-band metadata for the player.
+        Timeshift.titleListener = { raw ->
+            val (title, url) = IcyText.parse(raw)
+            handleStreamMetadata(
+                androidx.media3.common.Metadata(
+                    androidx.media3.extractor.metadata.icy.IcyInfo(raw, title, url)
+                ),
+                record = false
+            )
+        }
+        scope.launch {
+            var seconds = 0
+            while (true) {
+                kotlinx.coroutines.delay(1_000)
+                seconds++
+                runCatching { Timeshift.tick(this@PlaybackService) }
+                // Backup for networks that come back without telling
+                // (the callback below is the quick path).
+                if (seconds % 15 == 0 && hasInternet()) sessionPlayer?.retryIfWaitingForNetwork()
+                // Often enough that a finished measurement shows up at once.
+                if (seconds % 2 == 0) {
+                    runCatching {
+                        // A station heard for the first time has been measured:
+                        // bring it to level once, gently.
+                        if (AutoLevel.checkpoint(this@PlaybackService)) {
+                            AudioEffects.applyStationGain(
+                                this@PlaybackService,
+                                exo.currentMediaItem?.mediaId,
+                                smooth = true
+                            )
+                        }
+                    }
+                }
+            }
+        }
 
         val openApp = PendingIntent.getActivity(
             this,
@@ -133,7 +214,31 @@ class PlaybackService : MediaLibraryService() {
         return mediaSession
     }
 
+    /** Network is back: a station that failed for lack of it plays again. */
+    private val networkCallback = object : android.net.ConnectivityManager.NetworkCallback() {
+        override fun onCapabilitiesChanged(
+            network: android.net.Network,
+            capabilities: android.net.NetworkCapabilities
+        ) {
+            if (capabilities.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED)) {
+                mainHandler.post { sessionPlayer?.retryIfWaitingForNetwork() }
+            }
+        }
+    }
+    private val mainHandler by lazy { android.os.Handler(android.os.Looper.getMainLooper()) }
+
+    private fun hasInternet(): Boolean = runCatching {
+        val connectivity = getSystemService(android.net.ConnectivityManager::class.java) ?: return false
+        val caps = connectivity.getNetworkCapabilities(connectivity.activeNetwork) ?: return false
+        caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+    }.getOrDefault(false)
+
     override fun onDestroy() {
+        runCatching {
+            getSystemService(android.net.ConnectivityManager::class.java)?.unregisterNetworkCallback(networkCallback)
+        }
+        Timeshift.detach()
+        Timeshift.titleListener = null
         AudioEffects.release()
         exoPlayer = null
         mediaSession?.let { session ->
@@ -157,7 +262,15 @@ class PlaybackService : MediaLibraryService() {
         }
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-            mediaItem?.let { LastStationStore.save(this@PlaybackService, it) }
+            // The rewind buffer's address is never "the last station".
+            mediaItem?.takeUnless { Timeshift.isTimeshiftUri(it.localConfiguration?.uri?.toString()) }
+                ?.let { LastStationStore.save(this@PlaybackService, it) }
+            if (mediaItem?.mediaId != levelStationId) {
+                // Another station, not the same one from another address.
+                levelStationId = mediaItem?.mediaId
+                AutoLevel.startStation(this@PlaybackService, levelStationId)
+                Timeshift.stationChanged(this@PlaybackService)
+            }
             // Each station keeps its own level.
             AudioEffects.applyStationGain(this@PlaybackService, mediaItem?.mediaId)
             // A new station has not announced anything yet. The same station
@@ -188,7 +301,18 @@ class PlaybackService : MediaLibraryService() {
          * title (the station name) takes precedence there, so the song never
          * appears in it.
          */
-        override fun onMetadata(metadata: androidx.media3.common.Metadata) {
+        override fun onMetadata(metadata: androidx.media3.common.Metadata) = handleStreamMetadata(metadata)
+    }
+
+    /** The station whose level and rewind buffer are current. */
+    private var levelStationId: String? = null
+
+    /**
+     * [record] is false for songs met while rewound: they were already put in
+     * the song history when they were first heard live.
+     */
+    private fun handleStreamMetadata(metadata: androidx.media3.common.Metadata, record: Boolean = true) {
+        run {
             val announcement = StreamTrack.from(metadata)
             if (announcement == null) {
                 // Something arrived but carried no song: worth seeing, because
@@ -211,7 +335,7 @@ class PlaybackService : MediaLibraryService() {
             currentTrack = line
             publishTrack(line)
             refreshWidget()
-            if (line != null) {
+            if (line != null && record) {
                 scope.launch {
                     runCatching { TrackHistory.record(this@PlaybackService, stationId, stationName, line) }
                 }

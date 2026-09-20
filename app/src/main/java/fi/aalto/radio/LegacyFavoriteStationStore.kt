@@ -16,6 +16,9 @@ class LegacyFavoriteStationStore(
             ?: FavoriteIds.defaultFavorites
     }
 
+    /** Favourites saved by the pre-Room app: this is an existing user. */
+    fun hasStoredFavorites(): Boolean = preferences.contains(KEY_FAVORITE_STATION_IDS)
+
     fun isRoomMigrationComplete(): Boolean {
         return preferences.getBoolean(KEY_ROOM_MIGRATION_COMPLETE, false)
     }

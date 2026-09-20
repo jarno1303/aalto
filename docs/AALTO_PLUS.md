@@ -38,7 +38,7 @@ mainoksilla.
 - Yksi herätys, uniajastin, yönäyttö
 - Asemakohtainen äänenvoimakkuus
 - Soitetut kappaleet: kuluva päivä, ja hakulinkit Spotifyyn ja YouTubeen
-- Kelaus taaksepäin 60 sekuntia (kun ominaisuus on rakennettu)
+- Kelaus taaksepäin 30 sekuntia (päätetty 2026-09-20)
 
 ## Mikä on Plussaa
 
@@ -47,7 +47,7 @@ mainoksilla.
 | Asemalistat | yksi, rajaton määrä asemia | useita omia listoja (Aamu, Auto, Työ) |
 | Oma striimiosoite (URL) | – | asemien lisäys omalla osoitteella |
 | Soitetut kappaleet | kuluva päivä | koko historia, haku, vienti |
-| Kelaus | 60 s | 30 min + hyppy ohjelman alkuun |
+| Kelaus | 30 s | 30 min (hyppy ohjelman alkuun myöhemmin) |
 | Taajuuskorjain | – | esiasetukset ja kaistat |
 | Automaattinen äänentasaus | – | kyllä |
 | Herätykset | yksi | useita, eri kanava eri päiville |
@@ -73,9 +73,9 @@ Taulukko on suunnitelma. Koodissa on tänään:
 | Asemalistat | yksi lista, useita ei ole |
 | Oma URL | toteutettu (Suosikit → "Lisää oma asema"), Plussan takana. Betassa ei näy testaajille, koska maksua ei vielä ole; debug-kytkimellä testattavissa |
 | Soitetut kappaleet | 300 viimeisintä tallessa; ilman Plussaa näkyy kuluva päivä, Plussalla kaikki. Haku Spotifysta/YouTubesta. Historian haku ja vienti puuttuvat |
-| Kelaus | ei toteutettu |
+| Kelaus | toteutettu 2026-09-20 (MP3/AAC-streamit; HLS, Ogg ja FLAC eivät kelaudu): 30 s ilmaiseksi, 30 min Plussalla. Odottaa laitetestiä |
 | Taajuuskorjain | toteutettu, Plussan takana |
-| Automaattinen äänentasaus | ei toteutettu |
+| Automaattinen äänentasaus | toteutettu 2026-09-20: mittaus (BS.1770 / LUFS) kaikille, tasaus −16 LUFS:iin Plussalla, oma säätö päälle. Odottaa laitetestiä |
 | Herätykset | yksi |
 | Teemat ja kuvakkeet | vaalea/tumma/järjestelmä, yksi kuvake |
 | Maksu | `PlusAccess` olemassa (`fi.aalto.radio.plus`), vastaa aina "ei" ilman Play Billingiä; debug-kytkin asetuksissa. Play Billing ei toteutettu |

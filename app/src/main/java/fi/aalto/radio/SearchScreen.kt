@@ -24,6 +24,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -86,6 +87,8 @@ internal fun SearchScreen(
     onStationFavoriteClick: (RadioStation) -> Unit
 ) {
     var countryMenuExpanded by remember { mutableStateOf(false) }
+    var countryGridOpen by rememberSaveable { mutableStateOf(false) }
+    var genreSheetOpen by rememberSaveable { mutableStateOf(false) }
     // Several genres at once, stored as "Pop|Rock" so it survives rotation.
     var categoryFilterKey by rememberSaveable { mutableStateOf("") }
     val categoryFilter = categoryFilterKey.split('|').filter { it.isNotBlank() }.toSet()
@@ -102,13 +105,16 @@ internal fun SearchScreen(
         searchableStations.map { it.countryCode.uppercase() })
         .filter { it.isNotBlank() }
         .distinct()
-    val activeCountryCode = radioCountryCode.takeIf { it in countryCodes } ?: countryCodes.firstOrNull().orEmpty()
+    // A country chosen from the world grid is shown at once, before (or even
+    // without) any of its stations having loaded.
+    val activeCountryCode = radioCountryCode.takeIf { it.matches(Regex("[A-Z]{2}")) }
+        ?: countryCodes.firstOrNull().orEmpty()
     // The playing country is always visible as a chip, even when it is not one
     // of the user's own (chosen in the car, or accepted from the travel bar).
     val menuCountries = (ownCountries + activeCountryCode)
         .filter { it.isNotBlank() }
         .distinct()
-    val activeCategories = DiscoveryCategories.filter { it.label in categoryFilter }
+    val activeCategories = AllGenres.filter { it.label in categoryFilter }
     val activeCountries = if (allOwnCountries) ownCountries.toSet() else setOf(activeCountryCode)
     val listState = rememberLazyListState()
     val resultStations = remember(
@@ -273,6 +279,22 @@ internal fun SearchScreen(
                     }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                     DropdownMenuItem(
+                        text = { Text(stringResource(R.string.countries_browse_world)) },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Outlined.Public,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        },
+                        onClick = {
+                            countryMenuExpanded = false
+                            hideKeyboard()
+                            countryGridOpen = true
+                        }
+                    )
+                    DropdownMenuItem(
                         text = { Text(stringResource(R.string.countries_edit)) },
                         onClick = {
                             countryMenuExpanded = false
@@ -291,7 +313,11 @@ internal fun SearchScreen(
                 horizontalArrangement = Arrangement.spacedBy(AaltoSpaceS),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                (listOf(ALL_CATEGORIES) + DiscoveryCategories.map { it.label }).forEach { label ->
+                // Main genres always; a chosen subgenre (from the genre sheet)
+                // shows up front, so what filters the list is always visible.
+                val mainLabels = GenreGroups.map { it.main.label }
+                val chosenSubgenres = categoryFilter.filter { it !in mainLabels }.sorted()
+                (listOf(ALL_CATEGORIES) + chosenSubgenres + mainLabels).forEach { label ->
                     FilterChip(
                         selected = if (label == ALL_CATEGORIES) categoryFilter.isEmpty() else label in categoryFilter,
                         onClick = {
@@ -306,6 +332,21 @@ internal fun SearchScreen(
                         label = { Text(label, maxLines = 1) }
                     )
                 }
+                FilterChip(
+                    selected = false,
+                    onClick = {
+                        hideKeyboard()
+                        genreSheetOpen = true
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Filled.Tune,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    },
+                    label = { Text(stringResource(R.string.genres_more), maxLines = 1) }
+                )
             }
         }
 
@@ -395,6 +436,31 @@ internal fun SearchScreen(
                 )
             }
         }
+    }
+
+    if (genreSheetOpen) {
+        GenreSheet(
+            selected = categoryFilter,
+            onToggle = { label ->
+                categoryFilterKey = (if (label in categoryFilter) categoryFilter - label else categoryFilter + label)
+                    .joinToString("|")
+            },
+            onClear = { categoryFilterKey = "" },
+            matchCount = resultStations.size,
+            onDismiss = { genreSheetOpen = false }
+        )
+    }
+
+    if (countryGridOpen) {
+        CountryGridSheet(
+            ownCountries = ownCountries,
+            selected = if (allOwnCountries) "" else activeCountryCode,
+            onPick = { code ->
+                countryGridOpen = false
+                onRadioCountryChange(code)
+            },
+            onDismiss = { countryGridOpen = false }
+        )
     }
 }
 

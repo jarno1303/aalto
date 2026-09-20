@@ -288,6 +288,55 @@ class StationRepositoryRoomTest {
         assertEquals(3, database.localRadioDao().recentStationCount())
     }
 
+    @Test
+    fun firstLaunchPickerStartsWithoutDefaultFavorite() = runTest {
+        val database = inMemoryDatabase()
+        val store = legacyStore()
+        val repository = repository(database, store)
+
+        repository.prepareLocalData(seedDefaultFavorites = false)
+
+        assertTrue(repository.favoriteIdsSnapshot().isEmpty())
+        assertTrue(store.isRoomMigrationComplete())
+    }
+
+    @Test
+    fun skippedPickerGetsDefaultWithoutSyncMutation() = runTest {
+        val database = inMemoryDatabase()
+        val repository = repository(database)
+
+        repository.prepareLocalData(seedDefaultFavorites = false)
+        repository.seedDefaultFavorites()
+
+        assertEquals(FavoriteIds.defaultFavorites, repository.favoriteIdsSnapshot())
+        assertEquals(0, database.localRadioDao().syncMutationCount())
+    }
+
+    @Test
+    fun pickedStationsAreSavedInTapOrder() = runTest {
+        val database = inMemoryDatabase()
+        val repository = repository(database)
+        val picks = listOf("radio-rock", "yle-radio-suomi", "ylex")
+
+        repository.prepareLocalData(seedDefaultFavorites = false)
+        picks.forEach { repository.addFavorite(it) }
+        repository.reorderFavorites(picks)
+
+        assertEquals(picks, database.localRadioDao().activeFavoriteIdsInOrder())
+    }
+
+    @Test
+    fun legacyFavoritesStillMigrateWhenPickerIsPending() = runTest {
+        val database = inMemoryDatabase()
+        val store = legacyStore()
+        store.saveLegacyFavoriteIds(setOf("radio-rock"))
+        val repository = repository(database, store)
+
+        repository.prepareLocalData(seedDefaultFavorites = false)
+
+        assertEquals(setOf("radio-rock"), repository.favoriteIdsSnapshot())
+    }
+
     private fun inMemoryDatabase(): AaltoDatabase {
         return Room.inMemoryDatabaseBuilder(context, AaltoDatabase::class.java)
             .allowMainThreadQueries()

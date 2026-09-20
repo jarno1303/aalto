@@ -81,7 +81,9 @@ internal fun RadioScreen(
     alarmLabel: String? = null,
     onRemoveOwnStation: ((RadioStation) -> Unit)? = null,
     onMoveOwnStationFirst: ((RadioStation) -> Unit)? = null,
-    onOpenHistory: (() -> Unit)? = null
+    onOpenHistory: (() -> Unit)? = null,
+    onOpenAudio: (() -> Unit)? = null,
+    qualityLabel: String? = null
 ) {
     val showOwnStations = favoriteStations.isNotEmpty()
     val shelfStations = (if (showOwnStations) favoriteStations else popularStations)
@@ -142,7 +144,9 @@ internal fun RadioScreen(
                 onNext = onNext,
                 trackTitle = trackTitle,
                 expanded = expanded,
-                onOpenHistory = onOpenHistory
+                onOpenHistory = onOpenHistory,
+                onOpenAudio = onOpenAudio,
+                qualityLabel = qualityLabel
             )
         }
 

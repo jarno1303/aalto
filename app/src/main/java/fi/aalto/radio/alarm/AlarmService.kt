@@ -154,17 +154,62 @@ class AlarmService : Service() {
             AlarmLog.add(this, "ei aseman osoitetta -> hälytysääni")
             startFallback()
         } else {
+            pendingRetryUrl = url
+            if (!networkCallbackRegistered) {
+                networkCallbackRegistered = runCatching {
+                    getSystemService(android.net.ConnectivityManager::class.java)
+                        ?.registerDefaultNetworkCallback(networkCallback)
+                    true
+                }.getOrDefault(false)
+            }
             startRadio(url)
             // The network can take a while to wake up with the phone. The tone
             // starts after a short wait, but the radio keeps trying and takes
-            // over as soon as it plays.
-            handler.postDelayed(::checkStarted, FALLBACK_AFTER_MS)
+            // over as soon as it plays. With no network at all (flight mode,
+            // no coverage) the wait is only a few seconds.
+            fallbackAfterMs = if (hasNetwork()) FALLBACK_AFTER_MS else NO_NETWORK_FALLBACK_MS
+            if (fallbackAfterMs != FALLBACK_AFTER_MS) AlarmLog.add(this, "ei verkkoa -> hälytysääni pian")
+            handler.postDelayed(::checkStarted, fallbackAfterMs)
         }
         handler.postDelayed({
             AlarmLog.add(this, "hiljennetty automaattisesti")
             stopAlarm()
         }, AUTO_STOP_MS)
     }
+
+    private var fallbackAfterMs = FALLBACK_AFTER_MS
+    private var pendingRetryUrl: String? = null
+
+    private val retryRadio = Runnable {
+        val url = pendingRetryUrl
+        if (AlarmRuntime.ringing && url != null && radioStartedAt == 0L) startRadio(url)
+    }
+
+    /** The network came back while the tone rings: try the radio now, not at the next retry. */
+    private val networkCallback = object : android.net.ConnectivityManager.NetworkCallback() {
+        override fun onCapabilitiesChanged(
+            network: android.net.Network,
+            capabilities: android.net.NetworkCapabilities
+        ) {
+            if (!capabilities.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED)) return
+            handler.post {
+                // Only after a failed try: a first connection still under way is left alone.
+                if (AlarmRuntime.ringing && radioStartedAt == 0L && retries > 0 && pendingRetryUrl != null) {
+                    AlarmLog.add(this@AlarmService, "verkko palasi -> radio")
+                    handler.removeCallbacks(retryRadio)
+                    retryRadio.run()
+                }
+            }
+        }
+    }
+    private var networkCallbackRegistered = false
+
+    private fun hasNetwork(): Boolean = runCatching {
+        val connectivity = getSystemService(android.net.ConnectivityManager::class.java) ?: return true
+        val network = connectivity.activeNetwork ?: return false
+        val caps = connectivity.getNetworkCapabilities(network) ?: return false
+        caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }.getOrDefault(true)
 
     private fun startRadio(url: String) {
         player?.release()
@@ -205,11 +250,17 @@ class AlarmService : Service() {
     private fun onRadioError(url: String, error: PlaybackException) {
         val elapsed = SystemClock.elapsedRealtime() - startedAt
         if (retries < 3) AlarmLog.add(this, "virhe: ${error.errorCodeName}, yritetään uudelleen")
-        if (radioStartedAt == 0L && elapsed >= FALLBACK_AFTER_MS) startFallback()
+        if (radioStartedAt == 0L && elapsed >= fallbackAfterMs) startFallback()
         if (elapsed < RADIO_GIVE_UP_MS && retries < MAX_RETRIES) {
             retries++
             radioStartedAt = 0L
-            handler.postDelayed({ if (AlarmRuntime.ringing) startRadio(url) }, RETRY_DELAY_MS)
+            // Quick tries first (a network waking up with the phone), then
+            // calmly every 15 s for as long as the alarm rings: the moment the
+            // network is back (flight mode off), the radio takes over the tone.
+            val delay = if (elapsed < 60_000L) RETRY_DELAY_MS else SLOW_RETRY_DELAY_MS
+            pendingRetryUrl = url
+            handler.removeCallbacks(retryRadio)
+            handler.postDelayed(retryRadio, delay)
         } else {
             AlarmLog.add(this, "radio ei käynnisty -> hälytysääni")
             player?.release()
@@ -220,7 +271,7 @@ class AlarmService : Service() {
 
     private fun checkStarted() {
         if (player?.isPlaying != true) {
-            AlarmLog.add(this, "radio ei soi ${FALLBACK_AFTER_MS / 1000} s -> hälytysääni, radio yrittää yhä")
+            AlarmLog.add(this, "radio ei soi ${fallbackAfterMs / 1000} s -> hälytysääni, radio yrittää yhä")
             startFallback()
         }
     }
@@ -272,6 +323,13 @@ class AlarmService : Service() {
 
     private fun stopPlayers() {
         handler.removeCallbacksAndMessages(null)
+        if (networkCallbackRegistered) {
+            runCatching {
+                getSystemService(android.net.ConnectivityManager::class.java)?.unregisterNetworkCallback(networkCallback)
+            }
+            networkCallbackRegistered = false
+        }
+        pendingRetryUrl = null
         player?.release()
         player = null
         fallbackPlayer?.let { runCatching { it.stop() }; it.release() }
@@ -498,9 +556,12 @@ class AlarmService : Service() {
         private const val CHANNEL_ID = "aalto_alarm"
         private const val NOTIFICATION_ID = 4101
         private const val FALLBACK_AFTER_MS = 20_000L
-        private const val RADIO_GIVE_UP_MS = 120_000L
+        private const val NO_NETWORK_FALLBACK_MS = 5_000L
+        /** The radio is tried for as long as the alarm rings. */
+        private const val RADIO_GIVE_UP_MS = 30L * 60_000L
         private const val RETRY_DELAY_MS = 4_000L
-        private const val MAX_RETRIES = 20
+        private const val SLOW_RETRY_DELAY_MS = 15_000L
+        private const val MAX_RETRIES = 200
         private const val RAMP_MS = 45_000L
         private const val RAMP_STEP_MS = 250L
         private const val RAMP_START_DB = -36f

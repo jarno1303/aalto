@@ -18,7 +18,10 @@ data class RadioStation(
     val languages: List<String> = emptyList(),
     val location: String? = null,
     val logoCandidates: List<String> = emptyList(),
-    val streamAlternatives: List<String> = emptyList()
+    val streamAlternatives: List<String> = emptyList(),
+    /** What the station directory says the stream is; null when unknown. */
+    val declaredCodec: String? = null,
+    val declaredBitrateKbps: Int? = null
 ) {
     val logoUrl: String?
         get() = faviconUrl

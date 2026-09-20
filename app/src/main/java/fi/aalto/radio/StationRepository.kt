@@ -45,7 +45,12 @@ class StationRepository(
         }
     }
 
-    suspend fun prepareLocalData() {
+    /**
+     * [seedDefaultFavorites] is false on a first launch that shows the station
+     * picker: the user's own choice replaces the built-in default, so nothing
+     * is put there first (and nothing has to be taken away afterwards).
+     */
+    suspend fun prepareLocalData(seedDefaultFavorites: Boolean = true) {
         withContext(ioDispatcher) {
             runCatching {
                 dao.upsertStations(stations.map { it.toEntity(updatedAt = clock()) })
@@ -54,7 +59,7 @@ class StationRepository(
             }
 
             runCatching {
-                migrateFavoritesIfNeeded()
+                migrateFavoritesIfNeeded(seedDefaultFavorites)
             }.onFailure { error ->
                 Log.w(TAG, "Favorite migration failed", error)
             }
@@ -232,12 +237,33 @@ class StationRepository(
         }
     }
 
-    private suspend fun migrateFavoritesIfNeeded() {
+    /**
+     * The built-in default station, for a user who skipped the first-launch
+     * picker. Stored the way the first-run default always was: locally, with
+     * no Sync mutation, so it never lands in an account the user signs in to.
+     */
+    suspend fun seedDefaultFavorites() {
+        withContext(ioDispatcher) {
+            FavoriteIds.defaultFavorites
+                .filter { stationById(it) != null }
+                .forEach { stationId ->
+                    ensureStationPersisted(stationId)
+                    dao.addFavoriteForMigration(stationId = stationId, now = clock())
+                }
+        }
+    }
+
+    private suspend fun migrateFavoritesIfNeeded(seedDefaultFavorites: Boolean) {
         if (legacyFavoriteStore.isRoomMigrationComplete()) {
             return
         }
 
-        legacyFavoriteStore.favoriteIdsForMigration()
+        val legacyIds = if (seedDefaultFavorites || legacyFavoriteStore.hasStoredFavorites()) {
+            legacyFavoriteStore.favoriteIdsForMigration()
+        } else {
+            emptySet()
+        }
+        legacyIds
             .filter { stationById(it) != null }
             .forEach { stationId ->
                 ensureStationPersisted(stationId)

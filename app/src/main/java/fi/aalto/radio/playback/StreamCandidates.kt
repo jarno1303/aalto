@@ -29,7 +29,8 @@ internal object StreamCandidates {
             .distinct()
 
     fun fromItem(item: MediaItem): List<String> {
-        val current = item.localConfiguration?.uri?.toString()
+        // A rewound station plays from the ring buffer: never a stream address.
+        val current = item.localConfiguration?.uri?.toString()?.takeUnless { it.startsWith("aalto-timeshift:") }
         val extras = item.mediaMetadata.extras?.getStringArrayList(EXTRA_STREAMS).orEmpty()
         return (listOfNotNull(current) + extras).distinct()
     }

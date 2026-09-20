@@ -42,8 +42,14 @@ class AlarmReceiver : BroadcastReceiver() {
     private fun startRinging(context: Context) {
         val serviceIntent = Intent(context, AlarmService::class.java)
             .setAction(AlarmService.ACTION_START)
-        // Allowed from the background: alarm-clock alarms are exempt.
-        ContextCompat.startForegroundService(context, serviceIntent)
+        // Allowed from the background: alarm-clock alarms are exempt. An
+        // inexact alarm (exact alarms not allowed) is not, and the start can
+        // be refused: then the backup alarm rings instead of nothing.
+        runCatching { ContextCompat.startForegroundService(context, serviceIntent) }
+            .onFailure { error ->
+                AlarmLog.add(context, "palvelu ei käynnistynyt (${error.javaClass.simpleName}) -> varaherätys")
+                BackupAlarm.ring(context)
+            }
     }
 
     companion object {

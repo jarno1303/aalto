@@ -30,6 +30,10 @@ internal object AudioSettings {
     private const val KEY_EQ_PRESET = "eq_preset"
     private const val KEY_EQ_BANDS = "eq_bands"
     private const val KEY_GAIN_PREFIX = "gain_"
+    private const val KEY_AUTO_LEVEL = "auto_level"
+    private const val KEY_REFERENCE_LUFS = "reference_lufs"
+    private const val KEY_REFERENCE_NAME = "reference_name"
+    private const val KEY_OLD_GAINS_ASKED = "auto_level_old_gains_asked"
 
     /** How far a station can be nudged, in decibels. */
     const val MIN_GAIN_DB = -8
@@ -53,6 +57,42 @@ internal object AudioSettings {
             .putInt(KEY_EQ_PRESET, settings.preset)
             .putString(KEY_EQ_BANDS, settings.bandLevels.joinToString(","))
             .apply()
+    }
+
+    /** Automatic levelling (Aalto Plus) is on unless the user turned it off. */
+    fun autoLevelOn(context: Context): Boolean = prefs(context).getBoolean(KEY_AUTO_LEVEL, true)
+
+    fun setAutoLevelOn(context: Context, on: Boolean) {
+        prefs(context).edit().putBoolean(KEY_AUTO_LEVEL, on).apply()
+    }
+
+    /**
+     * The level every station is brought to, when the user chose a station
+     * of their own as the reference ("Käytä tätä asemaa tasona"); null means
+     * the default level.
+     */
+    fun referenceLufs(context: Context): Double? {
+        val prefs = prefs(context)
+        return if (prefs.contains(KEY_REFERENCE_LUFS)) prefs.getFloat(KEY_REFERENCE_LUFS, 0f).toDouble() else null
+    }
+
+    fun referenceName(context: Context): String? = prefs(context).getString(KEY_REFERENCE_NAME, null)
+
+    fun setReference(context: Context, lufs: Double?, stationName: String?) {
+        val editor = prefs(context).edit()
+        if (lufs == null) {
+            editor.remove(KEY_REFERENCE_LUFS).remove(KEY_REFERENCE_NAME)
+        } else {
+            editor.putFloat(KEY_REFERENCE_LUFS, lufs.toFloat()).putString(KEY_REFERENCE_NAME, stationName)
+        }
+        editor.apply()
+    }
+
+    /** Whether the user has been asked once about adjustments made before levelling. */
+    fun oldGainsAsked(context: Context): Boolean = prefs(context).getBoolean(KEY_OLD_GAINS_ASKED, false)
+
+    fun markOldGainsAsked(context: Context) {
+        prefs(context).edit().putBoolean(KEY_OLD_GAINS_ASKED, true).apply()
     }
 
     /** Extra decibels for one station; 0 means "as broadcast". */
@@ -85,6 +125,10 @@ internal object AudioSettings {
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 }
+
+/** Decibels as a volume multiplier, for any gain; boosts are the enhancer's job. */
+internal fun decibelsToVolume(db: Double): Float =
+    10.0.pow(db.coerceAtMost(0.0) / 20.0).toFloat().coerceIn(0.05f, 1f)
 
 /** Decibels as a volume multiplier: -6 dB is half as loud in amplitude. */
 internal fun decibelsToVolume(db: Int): Float =

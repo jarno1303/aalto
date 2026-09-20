@@ -29,6 +29,11 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.filled.Forward30
+import androidx.compose.material.icons.filled.Replay30
+import androidx.compose.runtime.collectAsState
+import androidx.compose.material.icons.outlined.GraphicEq
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -245,7 +250,9 @@ internal fun NowPlayingPlayPauseButton(
 
 @Composable
 internal fun NightScreenTrigger(
-    onNightScreen: () -> Unit
+    onNightScreen: () -> Unit,
+    labeled: Boolean = false,
+    round: Boolean = false
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
@@ -261,26 +268,238 @@ internal fun NightScreenTrigger(
         label = "nightScreenTriggerIconAlpha"
     )
 
-    IconButton(
-        onClick = {
-            hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-            onNightScreen()
-        },
-        modifier = Modifier
-            .size(48.dp)
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            },
-        interactionSource = interactionSource
+    CardAction(
+        label = if (labeled) stringResource(R.string.action_label_night) else null,
+        round = round
     ) {
-        Icon(
-            imageVector = Icons.Outlined.DarkMode,
-            contentDescription = stringResource(R.string.night_screen_open),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = iconAlpha),
-            modifier = Modifier.size(22.dp)
-        )
+        IconButton(
+            onClick = {
+                hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                onNightScreen()
+            },
+            modifier = Modifier
+                .size(48.dp)
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                },
+            interactionSource = interactionSource
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.DarkMode,
+                contentDescription = stringResource(R.string.night_screen_open),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = iconAlpha),
+                modifier = Modifier.size(22.dp)
+            )
+        }
     }
+}
+
+/**
+ * −30 s, how far behind live, +30 s. Tapping the "behind" text goes live.
+ * Free: 30 seconds back; Aalto Plus: 30 minutes (Timeshift decides).
+ */
+@Composable
+private fun TimeshiftRow(state: fi.aalto.radio.playback.TimeshiftState) {
+    val context = LocalContext.current
+    // The first time only: say what being behind means and how to get back.
+    var hintSeen by remember { mutableStateOf(TimeshiftHint.seen(context)) }
+    var hintShown by remember { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(state.live) {
+        if (state.live && hintShown && !hintSeen) {
+            TimeshiftHint.markSeen(context)
+            hintSeen = true
+        }
+    }
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Three columns: the text sits exactly above the play button, the
+        // back button left of it and +30 (or the same empty space) right of
+        // it, so the row never looks lopsided.
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
+            // At the limit the button greys out but still answers: a free
+            // listener is told once, briefly, that further back is Plus. No
+            // lasting Plus text on the player.
+            val atLimit = !state.live && state.maxBackMs < 1_000L
+            IconButton(
+                onClick = {
+                    if (atLimit) {
+                        if (state.atFreeLimit) {
+                            android.widget.Toast.makeText(
+                                context,
+                                R.string.timeshift_plus,
+                                android.widget.Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    } else {
+                        fi.aalto.radio.playback.Timeshift.back(context, 30)
+                    }
+                },
+                modifier = Modifier.size(44.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Replay30,
+                    contentDescription = stringResource(R.string.timeshift_back),
+                    tint = if (atLimit) {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            }
+            Text(
+                text = if (state.live) {
+                    stringResource(R.string.timeshift_live)
+                } else {
+                    stringResource(R.string.timeshift_behind, behindLabel(state.behindMs))
+                },
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = if (state.live) FontWeight.Normal else FontWeight.SemiBold,
+                color = if (state.live) MaterialTheme.colorScheme.onSurfaceVariant else AaltoBlue,
+                maxLines = 1,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(
+                        enabled = !state.live,
+                        onClickLabel = stringResource(R.string.timeshift_go_live),
+                        role = Role.Button
+                    ) { fi.aalto.radio.playback.Timeshift.live() }
+                    .padding(horizontal = AaltoSpaceS, vertical = AaltoSpaceXs)
+            )
+            // Up to 30 s behind, +30 would only do what "Palaa suoraan" does.
+            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+            if (state.behindMs > 30_000L) {
+                IconButton(
+                    onClick = { fi.aalto.radio.playback.Timeshift.forward(context, 30) },
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Forward30,
+                        contentDescription = stringResource(R.string.timeshift_forward),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+            }
+        }
+        if (!state.live && !hintSeen) {
+            androidx.compose.runtime.SideEffect { hintShown = true }
+            Text(
+                text = stringResource(R.string.timeshift_hint, behindLabel(state.behindMs)),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier.padding(horizontal = AaltoSpaceL)
+            )
+        }
+    }
+}
+
+/** Whether the one-time "you are behind live" explanation has been seen. */
+internal object TimeshiftHint {
+    private const val PREFS = "aalto_home"
+    private const val KEY = "timeshift_hint_seen"
+
+    fun seen(context: android.content.Context): Boolean =
+        context.applicationContext.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
+            .getBoolean(KEY, false)
+
+    fun markSeen(context: android.content.Context) {
+        context.applicationContext.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY, true)
+            .apply()
+    }
+}
+
+/** "0:45", "12:03" */
+internal fun behindLabel(ms: Long): String {
+    val total = (ms / 1000).coerceAtLeast(1)
+    return "${total / 60}:${(total % 60).toString().padStart(2, '0')}"
+}
+
+/**
+ * A secondary action on the Now Playing card with its name under it, so
+ * nobody has to guess what a moon or a clock does. Round (a soft filled
+ * circle) in the roomy card, a plain icon in the compact one.
+ */
+@Composable
+internal fun CardAction(
+    label: String?,
+    round: Boolean,
+    labelColor: Color? = null,
+    button: @Composable () -> Unit
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            modifier = if (round) {
+                Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            } else {
+                Modifier
+            },
+            contentAlignment = Alignment.Center
+        ) {
+            button()
+        }
+        if (label != null) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = labelColor ?: MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                modifier = Modifier.padding(top = if (round) AaltoSpaceXs else 0.dp)
+            )
+        }
+    }
+}
+
+/** A plain labeled action (song history, sound) for the roomy card. */
+@Composable
+private fun SimpleCardAction(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit
+) {
+    CardAction(label = label, round = true) {
+        IconButton(onClick = onClick, modifier = Modifier.size(48.dp)) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(22.dp)
+            )
+        }
+    }
+}
+
+/**
+ * "AAC · 128 kbps": what the stream is, small and quiet, for the people who
+ * care about sound and a sign of care for everyone else.
+ */
+@Composable
+internal fun StreamQualityBadge(label: String) {
+    Text(
+        text = label,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 1,
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(horizontal = 6.dp, vertical = 1.dp)
+    )
 }
 
 /**
@@ -306,7 +525,9 @@ internal fun NowPlayingCard(
     onNext: (() -> Unit)? = null,
     trackTitle: String? = null,
     expanded: Boolean = false,
-    onOpenHistory: (() -> Unit)? = null
+    onOpenHistory: (() -> Unit)? = null,
+    onOpenAudio: (() -> Unit)? = null,
+    qualityLabel: String? = null
 ) {
     stationTrace("ui_current_state", station)
     val canSkip = onPrevious != null && onNext != null
@@ -418,19 +639,33 @@ internal fun NowPlayingCard(
                         // No history icon here: the song line itself opens the
                         // history, and the icon only took room from the title.
                     }
+                    val badge = qualityLabel?.takeIf { isPlaying && playbackError == null }
                     val details = when {
-                        sleepMinutes != null -> stringResource(R.string.sleep_timer_remaining, sleepMinutes)
+                        // With the quality badge there is room for the genre only;
+                        // the place would be cut to "Pop · …" anyway.
+                        badge != null -> stationGenreAndTags(station).ifBlank { stationMetadataLine(station) }
                         else -> stationMetadataLine(station).ifBlank { station.description }
                     }
-                    if (details.isNotBlank() && playbackError == null) {
-                        Text(
-                            text = details,
-                            color = if (sleepMinutes != null) AaltoBlue else MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodySmall,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
+                    if ((details.isNotBlank() || badge != null) && playbackError == null) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.padding(top = 2.dp)
-                        )
+                        ) {
+                            if (details.isNotBlank()) {
+                                Text(
+                                    text = details,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f, fill = false)
+                                )
+                            }
+                            if (badge != null) {
+                                if (details.isNotBlank()) Spacer(modifier = Modifier.width(6.dp))
+                                StreamQualityBadge(badge)
+                            }
+                        }
                     }
                 }
 
@@ -468,12 +703,13 @@ internal fun NowPlayingCard(
                 Spacer(modifier = Modifier.height(AaltoSpaceS))
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                SleepTimerButton(active = sleepMinutes != null)
+            // Rewind: only for streams that can be kept (MP3 / AAC).
+            val timeshift by fi.aalto.radio.playback.Timeshift.state.collectAsState()
+            if (timeshift.available && playbackError == null) {
+                TimeshiftRow(state = timeshift)
+            }
+
+            val transport: @Composable () -> Unit = {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(if (tight) 0.dp else AaltoSpaceS)
@@ -487,7 +723,52 @@ internal fun NowPlayingCard(
                     )
                     SkipButton(visible = canSkip, isNext = true, onClick = { onNext?.invoke() })
                 }
-                NightScreenTrigger(onNightScreen = onNightScreen)
+            }
+            if (expanded) {
+                // Room to spare: playback in the middle, then the other
+                // actions as a row of labelled round buttons.
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    transport()
+                }
+                Spacer(modifier = Modifier.height(AaltoSpaceM))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    SleepTimerButton(active = sleepMinutes != null, labeled = true, round = true, minutesLeft = sleepMinutes)
+                    if (onOpenHistory != null) {
+                        SimpleCardAction(
+                            icon = Icons.Outlined.History,
+                            label = stringResource(R.string.action_label_songs),
+                            onClick = onOpenHistory
+                        )
+                    }
+                    if (onOpenAudio != null) {
+                        SimpleCardAction(
+                            icon = Icons.Outlined.GraphicEq,
+                            label = stringResource(R.string.action_label_sound),
+                            onClick = onOpenAudio
+                        )
+                    }
+                    NightScreenTrigger(onNightScreen = onNightScreen, labeled = true, round = true)
+                }
+                Spacer(modifier = Modifier.height(AaltoSpaceS))
+            } else {
+                // Equal sides, so play sits in the exact middle of the card (and
+                // under the rewind row) whatever the two labels' lengths.
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                        SleepTimerButton(active = sleepMinutes != null, labeled = true, minutesLeft = sleepMinutes)
+                    }
+                    transport()
+                    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
+                        NightScreenTrigger(onNightScreen = onNightScreen, labeled = true)
+                    }
+                }
             }
         }
     }
@@ -510,23 +791,37 @@ internal fun rememberSleepTimerMinutes(): Int? {
 @Composable
 internal fun SleepTimerButton(
     active: Boolean,
-    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant
+    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    labeled: Boolean = false,
+    round: Boolean = false,
+    /** While the timer runs its label is the time left ("13 min"), in blue. */
+    minutesLeft: Int? = null
 ) {
     val context = LocalContext.current
     var pickerOpen by remember { mutableStateOf(false) }
 
-    IconButton(
-        onClick = { pickerOpen = true },
-        modifier = Modifier.size(48.dp)
+    CardAction(
+        label = when {
+            !labeled -> null
+            minutesLeft != null -> stringResource(R.string.sleep_timer_minutes, minutesLeft)
+            else -> stringResource(R.string.action_label_timer)
+        },
+        round = round,
+        labelColor = if (minutesLeft != null) AaltoBlue else null
     ) {
-        Icon(
-            imageVector = Icons.Outlined.Timer,
-            contentDescription = stringResource(R.string.sleep_timer),
-            // Secondary to previous / play / next: same size and weight as the
-            // Night Screen moon on the other side, quieter than the playback controls.
-            tint = if (active) AaltoBlue else tint.copy(alpha = 0.82f),
-            modifier = Modifier.size(22.dp)
-        )
+        IconButton(
+            onClick = { pickerOpen = true },
+            modifier = Modifier.size(48.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Timer,
+                contentDescription = stringResource(R.string.sleep_timer),
+                // Secondary to previous / play / next: same size and weight as the
+                // Night Screen moon on the other side, quieter than the playback controls.
+                tint = if (active) AaltoBlue else tint.copy(alpha = 0.82f),
+                modifier = Modifier.size(22.dp)
+            )
+        }
     }
 
     if (pickerOpen) {

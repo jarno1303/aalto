@@ -50,6 +50,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -321,8 +322,21 @@ internal fun playbackStateText(
     isPlaying: Boolean,
     isConnecting: Boolean,
     hasError: Boolean
+): String {
+    // Offline, the error is not the station's: say that it will come back.
+    val online = rememberOnline()
+    return playbackStateTextFor(isPlaying, isConnecting, hasError, online)
+}
+
+@Composable
+private fun playbackStateTextFor(
+    isPlaying: Boolean,
+    isConnecting: Boolean,
+    hasError: Boolean,
+    online: Boolean
 ): String = stringResource(
     when {
+        hasError && !online -> R.string.state_waiting_network
         hasError -> R.string.state_error
         isConnecting -> R.string.state_connecting
         isPlaying -> R.string.state_playing
@@ -397,13 +411,29 @@ internal fun MiniPlayer(
                 )
                 Spacer(modifier = Modifier.width(AaltoSpaceM))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = station.name,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    // Behind live is always visible, here too: nobody should
+                    // hear the time or the traffic news late without knowing.
+                    val timeshift by fi.aalto.radio.playback.Timeshift.state.collectAsState()
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = station.name,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        if (!timeshift.live) {
+                            Spacer(modifier = Modifier.width(AaltoSpaceS))
+                            Text(
+                                text = "−" + behindLabel(timeshift.behindMs),
+                                color = AaltoBlue,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1
+                            )
+                        }
+                    }
                     Text(
                         text = trackTitle?.takeIf { isPlaying && !hasError }
                             ?: playbackStateText(isPlaying, isConnecting, hasError),
@@ -719,7 +749,7 @@ internal fun StationCard(
  * until every word fits; only past the smallest step does it ellipsize.
  */
 @Composable
-private fun StationTileLabel(
+internal fun StationTileLabel(
     name: String,
     isSelected: Boolean,
     availableWidth: Dp

@@ -85,6 +85,7 @@ internal class AaltoSessionPlayer(
                 Player.STATE_BUFFERING -> if (!readyOnce) scheduleTimeout()
                 Player.STATE_READY -> {
                     cancelTimeout()
+                    waitingSinceMs = 0L
                     readyOnce = true
                     recovering = false
                     retriesForCandidate = 0
@@ -96,11 +97,34 @@ internal class AaltoSessionPlayer(
             }
         }
 
+        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+            // Paused by anyone: the app, the car, a headset, a Bluetooth
+            // disconnect, another app taking the sound.
+            pausedAtMs = if (playWhenReady) 0L else android.os.SystemClock.elapsedRealtime()
+        }
+
+        override fun onPlaybackSuppressionReasonChanged(playbackSuppressionReason: Int) {
+            // A phone call (or anything else holding the sound for a while).
+            // ExoPlayer resumes by itself afterwards; it should resume live.
+            if (playbackSuppressionReason == Player.PLAYBACK_SUPPRESSION_REASON_TRANSIENT_AUDIO_FOCUS_LOSS) {
+                suppressedAtMs = android.os.SystemClock.elapsedRealtime()
+            } else if (suppressedAtMs > 0L) {
+                val away = android.os.SystemClock.elapsedRealtime() - suppressedAtMs
+                suppressedAtMs = 0L
+                // A voice assistant's beep or a short sound is not worth a reconnect.
+                if (away >= SUPPRESSION_LIVE_MS && exo.playWhenReady) handler.post { goLive("interruption ${away / 1000} s") }
+            }
+        }
+
         override fun onPlayerErrorChanged(error: PlaybackException?) {
             if (error == null || recovering) return
             if (canRecover()) {
                 recovering = true
                 handler.post(::recover)
+            } else if (waitingSinceMs == 0L) {
+                // Every address failed: from now on, a returning network
+                // brings the station back by itself (retryIfWaitingForNetwork).
+                waitingSinceMs = android.os.SystemClock.elapsedRealtime()
             }
         }
     }
@@ -263,8 +287,11 @@ internal class AaltoSessionPlayer(
 
     // ---- Fallback ----------------------------------------------------------
 
-    private fun startTracking(item: MediaItem?) {
+    private fun startTracking(item: MediaItem?, keepWaiting: Boolean = false) {
         cancelTimeout()
+        if (!keepWaiting) waitingSinceMs = 0L
+        pausedAtMs = 0L
+        suppressedAtMs = 0L
         currentId = item?.mediaId
         candidates.clear()
         if (item != null) candidates.addAll(StreamCandidates.fromItem(item))
@@ -330,6 +357,95 @@ internal class AaltoSessionPlayer(
         try {
             exo.replaceMediaItem(exo.currentMediaItemIndex, replacement)
             exo.prepare()
+        } finally {
+            switching = false
+        }
+    }
+
+    // ---- Back by itself when the network returns ---------------------------
+
+    /** When the station finally failed (every address); 0 when not waiting. */
+    private var waitingSinceMs = 0L
+
+    /**
+     * A tunnel, a dead zone, flight mode: the station failed because the
+     * network was gone, and the listener did not stop it. When the network is
+     * back (the service calls this), play the station again, live, trying all
+     * its addresses afresh. Only for [NETWORK_RETRY_WINDOW_MS]: after that the
+     * radio does not suddenly start playing on its own.
+     */
+    fun retryIfWaitingForNetwork(): Boolean {
+        if (waitingSinceMs == 0L) return false
+        if (android.os.SystemClock.elapsedRealtime() - waitingSinceMs > NETWORK_RETRY_WINDOW_MS) {
+            waitingSinceMs = 0L
+            return false
+        }
+        if (exo.playerError == null || !exo.playWhenReady) return false
+        val item = exo.currentMediaItem ?: return false
+        android.util.Log.d("AALTO_PLAYBACK", "network back: playing ${item.mediaId} again")
+        startTracking(item, keepWaiting = true)
+        exo.prepare()
+        return true
+    }
+
+    // ---- After a pause, always live ----------------------------------------
+
+    /** When playback was paused with the station loaded; 0 when not paused. */
+    private var pausedAtMs = 0L
+    private var suppressedAtMs = 0L
+
+    /**
+     * Set by the service. Called when playback resumes after a pause; returns
+     * true when it brought the listener back to live itself (they were
+     * rewound). Otherwise the stream is simply reloaded at its live edge.
+     */
+    var onResumeLive: (() -> Boolean)? = null
+
+    override fun play() {
+        resumeLiveIfPaused()
+        super.play()
+    }
+
+    override fun setPlayWhenReady(playWhenReady: Boolean) {
+        if (playWhenReady) resumeLiveIfPaused()
+        super.setPlayWhenReady(playWhenReady)
+    }
+
+    /**
+     * Radio is "now": after a pause it continues from what is on air, not
+     * from where it stopped (docs: CURRENT_STATE, rewind rules). The price is
+     * a second or two of connecting, as in most radio apps.
+     */
+    private fun resumeLiveIfPaused() {
+        if (pausedAtMs == 0L || exo.playWhenReady) return
+        if (exo.currentMediaItem == null || exo.playbackState == Player.STATE_IDLE) {
+            pausedAtMs = 0L
+            return
+        }
+        goLive("pause ${(android.os.SystemClock.elapsedRealtime() - pausedAtMs) / 1000} s")
+    }
+
+    private fun goLive(why: String) {
+        pausedAtMs = 0L
+        android.util.Log.d("AALTO_PLAYBACK", "resume live after $why")
+        if (onResumeLive?.invoke() == true) return
+        // A live stream's default position is the live edge; for a plain
+        // stream this reconnects, for HLS it jumps to the newest segment.
+        exo.seekToDefaultPosition()
+    }
+
+    /**
+     * Plays the current station from another address without it counting as
+     * a station change: used for rewinding (the ring buffer's address) and
+     * for going back to live. The fallback addresses stay as they are, so an
+     * error while rewound recovers to the live stream.
+     */
+    fun replaceCurrentUri(uri: String) {
+        val item = exo.currentMediaItem ?: return
+        switching = true
+        try {
+            exo.replaceMediaItem(exo.currentMediaItemIndex, item.buildUpon().setUri(uri).build())
+            if (exo.playbackState == Player.STATE_IDLE) exo.prepare()
         } finally {
             switching = false
         }
@@ -473,6 +589,8 @@ internal class AaltoSessionPlayer(
 
     private companion object {
         const val START_TIMEOUT_MS = 12_000L
+        const val SUPPRESSION_LIVE_MS = 5_000L
+        const val NETWORK_RETRY_WINDOW_MS = 15L * 60_000L
         const val RETRY_DELAY_MS = 1_500L
         val STEP_COMMANDS = setOf(
             Player.COMMAND_SEEK_TO_NEXT,

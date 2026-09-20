@@ -59,7 +59,9 @@ fun CatalogStation.toPlayableRadioStationOrNull(): RadioStation? {
             .joinToString(", "),
         lastKnownWorkingStreamUrl = stream,
         logoCandidates = logoCandidates,
-        streamAlternatives = streamAlternatives
+        streamAlternatives = streamAlternatives,
+        declaredCodec = codec?.trim()?.takeIf { it.isNotBlank() },
+        declaredBitrateKbps = bitrateKbps?.takeIf { it > 0 }
     )
 }
 

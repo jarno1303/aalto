@@ -67,15 +67,19 @@ internal object AlarmScheduler {
         if (skip != 0L && skip < System.currentTimeMillis()) AlarmStore.setSkipAt(context, 0L)
 
         val next = nextRegularMillis(context)
-        if (next != null && canScheduleExact(context)) {
-            setAlarmClock(context, manager, next, operation)
+        if (next != null) {
+            arm(context, manager, next, operation)
             val showAt = next - UPCOMING_LEAD_MS
             if (showAt <= System.currentTimeMillis()) {
                 showUpcoming(context)
             } else {
                 cancelUpcomingNotification(context)
                 runCatching {
-                    manager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, showAt, upcoming)
+                    if (canScheduleExact(context)) {
+                        manager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, showAt, upcoming)
+                    } else {
+                        manager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, showAt, upcoming)
+                    }
                 }
             }
         } else {
@@ -84,8 +88,8 @@ internal object AlarmScheduler {
 
         // A snooze that is still ahead survives reboots and time changes.
         val snoozeAt = AlarmStore.snoozeAt(context)
-        if (snoozeAt > System.currentTimeMillis() && canScheduleExact(context)) {
-            setAlarmClock(
+        if (snoozeAt > System.currentTimeMillis()) {
+            arm(
                 context,
                 manager,
                 snoozeAt,
@@ -96,10 +100,9 @@ internal object AlarmScheduler {
 
     fun scheduleSnooze(context: Context, minutes: Int) {
         val manager = context.getSystemService(AlarmManager::class.java) ?: return
-        if (!canScheduleExact(context)) return
         val at = System.currentTimeMillis() + minutes * 60_000L
         AlarmStore.setSnoozeAt(context, at)
-        setAlarmClock(
+        arm(
             context,
             manager,
             at,
@@ -183,6 +186,22 @@ internal object AlarmScheduler {
 
     fun cancelUpcomingNotification(context: Context) {
         NotificationManagerCompat.from(context).cancel(UPCOMING_NOTIFICATION_ID)
+    }
+
+    /**
+     * An alarm is never left unscheduled. With exact alarms allowed it is an
+     * alarm clock (on time, shown in the status bar). Without, it is the best
+     * the system allows: an inexact alarm that also runs in Doze and may be
+     * some minutes late. The alarm sheet tells the user and offers the
+     * permission; before this change the alarm was silently not set at all.
+     */
+    private fun arm(context: Context, manager: AlarmManager, triggerAt: Long, operation: PendingIntent) {
+        if (canScheduleExact(context)) {
+            setAlarmClock(context, manager, triggerAt, operation)
+        } else {
+            AlarmLog.add(context, "tarkat hälytykset estetty -> epätarkka ajastus")
+            runCatching { manager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, operation) }
+        }
     }
 
     private fun setAlarmClock(

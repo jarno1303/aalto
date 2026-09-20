@@ -133,6 +133,7 @@ private fun AaltoApp() {
     // The alarm rings either way; the permission only makes its screen visible.
     // The state is followed so the warning goes the moment permission is given.
     val notifications = rememberNotificationsEnabled()
+    val alarmPermissions = fi.aalto.radio.alarm.rememberAlarmPermissions()
     val notificationPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { notifications.refresh() }
@@ -147,6 +148,13 @@ private fun AaltoApp() {
     var selectedStationId by rememberSaveable {
         mutableStateOf(StationCatalog.DEFAULT_STATION_ID)
     }
+
+    // Decided before the favourites migration below runs: only a brand-new
+    // install sees the station picker.
+    var firstLaunch by remember { mutableStateOf(FirstLaunchPreference.state(context)) }
+    var onboardingPicks by rememberSaveable { mutableStateOf(listOf<String>()) }
+    var onboardingPreviewed by rememberSaveable { mutableStateOf(false) }
+    var onboardingRetry by remember { mutableStateOf(0) }
 
     var favoriteIds by remember {
         mutableStateOf(repository.initialFavoriteIds())
@@ -253,6 +261,17 @@ private fun AaltoApp() {
         stationsForRadioHome(radioStations, selectedStation, maxCount = 10)
     }
 
+    // What the playing stream is ("AAC · 128 kbps"), read from the decoder;
+    // the directory's figures only fill in what the stream does not say.
+    val streamFormat = fi.aalto.radio.playback.rememberStreamFormat()
+    val qualityLabel = remember(streamFormat, selectedStation) {
+        fi.aalto.radio.playback.StreamQuality.label(
+            measured = streamFormat,
+            declaredCodec = selectedStation.declaredCodec,
+            declaredBitrateKbps = selectedStation.declaredBitrateKbps
+        )
+    }
+
     // Recently played, refreshed whenever the playing station changes.
     LaunchedEffect(repository, selectedStationId) {
         recentStations = runCatching { repository.recentStations() }.getOrDefault(emptyList())
@@ -265,7 +284,7 @@ private fun AaltoApp() {
     }
 
     LaunchedEffect(repository) {
-        repository.prepareLocalData()
+        repository.prepareLocalData(seedDefaultFavorites = firstLaunch == FirstLaunchState.DONE)
         repository.observeFavoriteIds().collect { persistedFavoriteIds ->
             favoriteIds = persistedFavoriteIds
         }
@@ -385,6 +404,53 @@ private fun AaltoApp() {
         }
     }
 
+    /**
+     * Ends the first-launch picker. The picked stations become the user's own
+     * stations in the order they were tapped; playback is left as it is.
+     * Skipping keeps the old first-run default, stored without a Sync
+     * mutation so it never reaches an account signed in to later.
+     */
+    fun finishOnboarding(picks: List<String>, seedDefaultIfEmpty: Boolean, openSearch: Boolean = false) {
+        FirstLaunchPreference.markDone(context)
+        firstLaunch = FirstLaunchState.DONE
+        if (openSearch) selectedTab = TAB_SEARCH
+        coroutineScope.launch {
+            if (picks.isEmpty()) {
+                if (seedDefaultIfEmpty) runCatching { repository.seedDefaultFavorites() }
+                return@launch
+            }
+            picks.forEach { id -> runCatching { repository.addFavorite(id) } }
+            runCatching { repository.reorderFavorites(picks) }
+            syncCoordinator.requestSync()
+        }
+    }
+
+    // One quiet suggestion, once: after a week with three or more own
+    // stations, offer an account so they survive a new phone.
+    LaunchedEffect(firstLaunch, favoriteIds.size, syncState.accountEmail, syncState.enabled) {
+        if (firstLaunch != FirstLaunchState.DONE) return@LaunchedEffect
+        val due = FirstLaunchDecision.shouldNudgeSync(
+            signedIn = syncState.enabled || syncState.accountEmail != null,
+            favoriteCount = favoriteIds.size,
+            firstSeenAt = FirstLaunchPreference.firstSeenAt(context),
+            now = System.currentTimeMillis(),
+            alreadyShown = FirstLaunchPreference.syncNudgeShown(context)
+        )
+        if (!due) return@LaunchedEffect
+        // Let the sign-in state settle and the screen appear first.
+        delay(4_000)
+        FirstLaunchPreference.markSyncNudgeShown(context)
+        val result = snackbarHostState.showSnackbar(
+            message = context.getString(R.string.sync_nudge_message),
+            actionLabel = context.getString(R.string.sync_nudge_action),
+            withDismissAction = true,
+            duration = androidx.compose.material3.SnackbarDuration.Long
+        )
+        if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+            (context as? ComponentActivity)?.let { activity -> syncCoordinator.signIn(activity) }
+        }
+    }
+
     NightScreenSystemBars(active = nightScreenActive)
     BackHandler(enabled = nightScreenActive) {
         nightScreenActive = false
@@ -444,6 +510,8 @@ private fun AaltoApp() {
                     onMoveOwnStationFirst = { station -> moveFavoriteFirst(station) },
                     alarmLabel = nextAlarmMillis?.let(::alarmLabel),
                     onOpenHistory = { showHistory = true },
+                    onOpenAudio = { showAudio = true },
+                    qualityLabel = qualityLabel,
                     onStationClick = { station ->
                         playStation(station, openNowPlaying = false)
                     },
@@ -528,6 +596,55 @@ private fun AaltoApp() {
                 trackTitle = radioPlayer.nowPlayingTrack
             )
         }
+
+        AnimatedVisibility(
+            visible = firstLaunch == FirstLaunchState.PENDING,
+            exit = fadeOut(animationSpec = tween(durationMillis = 220)),
+            modifier = Modifier
+                .fillMaxSize()
+                .zIndex(5f)
+        ) {
+            val onboardingContent = rememberOnboardingStations(radioCountryCode, onboardingRetry)
+            OnboardingScreen(
+                countryCode = radioCountryCode,
+                onCountryChange = { code ->
+                    radioCountryCode = code
+                    allOwnCountries = false
+                    RadioCountryPreference.set(context, code)
+                },
+                content = onboardingContent,
+                onRetry = { onboardingRetry += 1 },
+                picks = onboardingPicks,
+                onStationTap = { station ->
+                    val wasPicked = station.id in onboardingPicks
+                    onboardingPicks = FirstLaunchDecision.togglePick(onboardingPicks, station.id)
+                    if (!wasPicked) {
+                        playStation(station, openNowPlaying = false)
+                        onboardingPreviewed = true
+                    }
+                },
+                playingStation = if (onboardingPreviewed) selectedStation else null,
+                isPlaying = radioPlayer.isPlaying,
+                isConnecting = radioPlayer.isConnecting,
+                onPlayPause = { radioPlayer.toggle(selectedStation) },
+                onDone = { finishOnboarding(onboardingPicks, seedDefaultIfEmpty = true) },
+                onSkip = { finishOnboarding(onboardingPicks, seedDefaultIfEmpty = true) },
+                onFindMore = {
+                    finishOnboarding(onboardingPicks, seedDefaultIfEmpty = false, openSearch = true)
+                },
+                onSignIn = {
+                    (context as? ComponentActivity)?.let { activity ->
+                        coroutineScope.launch {
+                            // Signed in: the account's stations arrive by Sync,
+                            // so no default is added on top of them.
+                            if (syncCoordinator.signIn(activity).isSuccess) {
+                                finishOnboarding(onboardingPicks, seedDefaultIfEmpty = false)
+                            }
+                        }
+                    }
+                }
+            )
+        }
     }
 
     // The car, steering wheel, notification or widget can switch station:
@@ -578,7 +695,8 @@ private fun AaltoApp() {
         AudioSheet(
             stationId = selectedStation.id,
             stationName = selectedStation.name,
-            onDismiss = { showAudio = false }
+            onDismiss = { showAudio = false },
+            ownStations = favoriteStations
         )
     }
 
@@ -605,6 +723,10 @@ private fun AaltoApp() {
             stations = alarmStations,
             log = if (isDebugBuild) AlarmLog.read(context) else emptyList(),
             notificationsEnabled = notifications.enabled,
+            exactAlarmsAllowed = alarmPermissions.exactAllowed,
+            onAllowExactAlarms = alarmPermissions::openExactSettings,
+            fullScreenAllowed = alarmPermissions.fullScreenAllowed,
+            onAllowFullScreen = alarmPermissions::openFullScreenSettings,
             onEnableNotifications = {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                     ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=

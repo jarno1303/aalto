@@ -365,3 +365,4 @@ with a retry button. Tests: RadioBrowserServersTest. Root cause confirmed: fresh
 - Search by place: the station directory is searched by name and by place ("state" in Radio Browser: "Tampere", "Uusimaa", "Bayern") at the same time and merged, name matches first; the local filter also looks at the station's place. Places are spelled as contributors wrote them (München, not Munich).
 - Search elsewhere: when the chosen country(ies) give fewer than 5 results, the same search runs worldwide and those stations show under "Muualta maailmasta", each with its flag. First launch stays one country on purpose (fast start); more countries in Settings and Search.
 - Tests: SearchMergeTest. PHYSICAL PASS 2026-09-20 (JarnoL): search by place and "Muualta maailmasta".
+- PHYSICAL PASS 2026-09-20 (JarnoL): first launch without sound on tap, "Valmis" starts the first pick; install → radio playing takes about 15 s in practice.

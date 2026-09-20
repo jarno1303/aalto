@@ -19,6 +19,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -111,6 +112,16 @@ internal fun AddCustomStationRow(style: AddCustomStationStyle = AddCustomStation
             )
         }
 
+        // Quiet and always there, next to the Search title.
+        AddCustomStationStyle.ICON -> IconButton(onClick = { open() }) {
+            Icon(
+                imageVector = Icons.Filled.Add,
+                contentDescription = stringResource(R.string.custom_add),
+                tint = AaltoBlue,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
         // Where the need arises: a search that did not find the station.
         AddCustomStationStyle.SEARCH_HINT -> Column(
             modifier = Modifier
@@ -148,7 +159,7 @@ internal fun AddCustomStationRow(style: AddCustomStationStyle = AddCustomStation
     }
 }
 
-internal enum class AddCustomStationStyle { ROW, PILL, SEARCH_HINT }
+internal enum class AddCustomStationStyle { ROW, PILL, ICON, SEARCH_HINT }
 
 private enum class CustomStationDialog { ADD, PLUS }
 

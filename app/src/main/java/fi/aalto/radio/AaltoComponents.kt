@@ -11,6 +11,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -369,6 +370,7 @@ internal fun NowPlayingIndicator(
  * Compact now-playing bar shown above the bottom navigation on Search and Favorites,
  * so the user always sees what plays and can pause without leaving the list.
  */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 internal fun MiniPlayer(
     station: RadioStation,
@@ -434,9 +436,9 @@ internal fun MiniPlayer(
                             )
                         }
                     }
+                    val song = trackTitle?.takeIf { isPlaying && !hasError }
                     Text(
-                        text = trackTitle?.takeIf { isPlaying && !hasError }
-                            ?: playbackStateText(isPlaying, isConnecting, hasError),
+                        text = song ?: playbackStateText(isPlaying, isConnecting, hasError),
                         color = if (hasError) {
                             MaterialTheme.colorScheme.error
                         } else {
@@ -447,7 +449,8 @@ internal fun MiniPlayer(
                         // and the artist vanished without an ellipsis.
                         maxLines = 1,
                         softWrap = false,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = if (song != null) Modifier.basicMarquee(iterations = Int.MAX_VALUE) else Modifier
                     )
                 }
                 Box(

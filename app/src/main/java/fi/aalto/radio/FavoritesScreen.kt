@@ -288,15 +288,11 @@ internal fun FavoritesScreen(
     ) {
         item {
             Column(verticalArrangement = Arrangement.spacedBy(AaltoSpaceXs)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = stringResource(R.string.tab_favorites),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.weight(1f)
-                    )
-                    AddCustomStationRow(style = AddCustomStationStyle.PILL)
-                }
+                Text(
+                    text = stringResource(R.string.tab_favorites),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    style = MaterialTheme.typography.titleLarge
+                )
                 if (favoriteStations.size > 1) {
                     Text(
                         text = stringResource(R.string.favorites_reorder_hint),

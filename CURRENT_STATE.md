@@ -366,3 +366,10 @@ with a retry button. Tests: RadioBrowserServersTest. Root cause confirmed: fresh
 - Search elsewhere: when the chosen country(ies) give fewer than 5 results, the same search runs worldwide and those stations show under "Muualta maailmasta", each with its flag. First launch stays one country on purpose (fast start); more countries in Settings and Search.
 - Tests: SearchMergeTest. PHYSICAL PASS 2026-09-20 (JarnoL): search by place and "Muualta maailmasta".
 - PHYSICAL PASS 2026-09-20 (JarnoL): first launch without sound on tap, "Valmis" starts the first pick; install → radio playing takes about 15 s in practice.
+
+## Own station's place, scrolling song, battery (2026-09-20)
+- Adding a station by its address moved to Search: a quiet "+" beside the "Hae" title, plus the contextual "Etkö löydä asemaa?" under search results. The pill was removed from Favorites (it competed with the title; adding by address is finding a station, not managing favourites).
+- A song title too long for the line now scrolls (basicMarquee) on the Now Playing card and in the mini player; station names do not scroll.
+- Battery: the service's one-second beat (rewind state, levelling checkpoint) now runs only while something plays; a 30 s beat remains for a network that came back silently. Battery test still to be run (dumpsys batterystats, an hour with the screen off, over Bluetooth and over the speaker).
+- Station folders / lists: JarnoL's idea (6 stations in a named folder) is the same feature as the planned Plus "asemalistat"; to be done after the closed test, not now.
+- Not yet device-tested.

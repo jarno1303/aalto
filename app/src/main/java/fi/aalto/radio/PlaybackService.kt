@@ -158,29 +158,12 @@ class PlaybackService : MediaLibraryService() {
                 record = false
             )
         }
+        // Slow beat, always: only for a network that came back without
+        // telling (the callback is the quick path). Cheap when nothing plays.
         scope.launch {
-            var seconds = 0
             while (true) {
-                kotlinx.coroutines.delay(1_000)
-                seconds++
-                runCatching { Timeshift.tick(this@PlaybackService) }
-                // Backup for networks that come back without telling
-                // (the callback below is the quick path).
-                if (seconds % 15 == 0 && hasInternet()) sessionPlayer?.retryIfWaitingForNetwork()
-                // Often enough that a finished measurement shows up at once.
-                if (seconds % 2 == 0) {
-                    runCatching {
-                        // A station heard for the first time has been measured:
-                        // bring it to level once, gently.
-                        if (AutoLevel.checkpoint(this@PlaybackService)) {
-                            AudioEffects.applyStationGain(
-                                this@PlaybackService,
-                                exo.currentMediaItem?.mediaId,
-                                smooth = true
-                            )
-                        }
-                    }
-                }
+                kotlinx.coroutines.delay(30_000)
+                if (hasInternet()) runCatching { sessionPlayer?.retryIfWaitingForNetwork() }
             }
         }
 
@@ -234,6 +217,7 @@ class PlaybackService : MediaLibraryService() {
     }.getOrDefault(false)
 
     override fun onDestroy() {
+        stopPlaybackTicker()
         runCatching {
             getSystemService(android.net.ConnectivityManager::class.java)?.unregisterNetworkCallback(networkCallback)
         }
@@ -290,6 +274,9 @@ class PlaybackService : MediaLibraryService() {
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             refreshWidget()
+            // The second-by-second beat (rewind state, levelling) runs only
+            // while something plays: no waking the phone for nothing.
+            if (isPlaying) startPlaybackTicker() else stopPlaybackTicker()
             if (isPlaying) recordRecent()
         }
 
@@ -306,6 +293,41 @@ class PlaybackService : MediaLibraryService() {
 
     /** The station whose level and rewind buffer are current. */
     private var levelStationId: String? = null
+
+    private var playbackTicker: kotlinx.coroutines.Job? = null
+
+    private fun startPlaybackTicker() {
+        if (playbackTicker?.isActive == true) return
+        playbackTicker = scope.launch {
+            var seconds = 0
+            while (true) {
+                kotlinx.coroutines.delay(1_000)
+                seconds++
+                runCatching { Timeshift.tick(this@PlaybackService) }
+                // Often enough that a finished measurement shows up at once.
+                if (seconds % 2 == 0) {
+                    runCatching {
+                        // A station heard for the first time has been measured:
+                        // bring it to level once, gently.
+                        if (AutoLevel.checkpoint(this@PlaybackService)) {
+                            AudioEffects.applyStationGain(
+                                this@PlaybackService,
+                                exoPlayer?.currentMediaItem?.mediaId,
+                                smooth = true
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun stopPlaybackTicker() {
+        playbackTicker?.cancel()
+        playbackTicker = null
+        // One last update, so the rewind row is right when playback stops.
+        runCatching { Timeshift.tick(this) }
+    }
 
     /**
      * [record] is false for songs met while rewound: they were already put in

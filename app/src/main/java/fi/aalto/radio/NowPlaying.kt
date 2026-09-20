@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -509,6 +510,7 @@ internal fun StreamQualityBadge(label: String) {
  * sends one) and station details on the right; favorite in the corner.
  * One control row: sleep timer, previous / play / next, Night Screen.
  */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 internal fun NowPlayingCard(
     station: RadioStation,
@@ -633,8 +635,13 @@ internal fun NowPlayingCard(
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = if (showTrack) FontWeight.Medium else FontWeight.Normal,
                             maxLines = 1,
+                            softWrap = false,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false)
+                            // A long song title scrolls by, as it does on a car
+                            // display, instead of ending mid-word.
+                            modifier = Modifier
+                                .weight(1f, fill = false)
+                                .then(if (showTrack) Modifier.basicMarquee(iterations = Int.MAX_VALUE) else Modifier)
                         )
                         // No history icon here: the song line itself opens the
                         // history, and the icon only took room from the title.

@@ -154,11 +154,17 @@ internal fun SearchScreen(
         verticalArrangement = Arrangement.spacedBy(AaltoRowSpacing)
     ) {
         item {
-            Text(
-                text = stringResource(R.string.tab_search),
-                color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.titleLarge
-            )
+            // Adding a station by its address is finding a station, so it
+            // lives here, quietly, beside the title.
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(R.string.tab_search),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.weight(1f)
+                )
+                AddCustomStationRow(style = AddCustomStationStyle.ICON)
+            }
         }
 
         item {

@@ -57,3 +57,7 @@ testilokit/
 
 # Screenshots from scripts/kuvakaappaukset.ps1
 kuvakaappaukset/
+
+# Akkutestien tulokset ja paikalliset työtiedostot
+akku*.txt
+Claude outputs/

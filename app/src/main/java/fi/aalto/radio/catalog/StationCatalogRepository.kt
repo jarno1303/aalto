@@ -18,7 +18,8 @@ enum class CatalogFreshness {
 data class CatalogSnapshot(
     val stations: List<CatalogStation>,
     val freshness: CatalogFreshness,
-    val fetchedAtEpochMs: Long?
+    val fetchedAtEpochMs: Long?,
+    val needsRefresh: Boolean = freshness == CatalogFreshness.STALE
 )
 
 sealed interface CatalogReadResult {
@@ -34,6 +35,11 @@ class StationCatalogRepository(
     private val refreshScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 ) {
     private val qualityEngine = CatalogQualityEngine()
+    // Coverage is not the number left after duplicate cleanup. A 40-row fetch
+    // cannot satisfy a later 100-row request, even while its timestamp is fresh.
+    // Persisted caches from an earlier process have unknown coverage: show them
+    // immediately, then refill once if they are shorter than the requested list.
+    private val countryCoverage = ConcurrentHashMap<String, Pair<Long, Int>>()
 
     suspend fun getStationsByCountry(
         countryCode: String,
@@ -46,7 +52,8 @@ class StationCatalogRepository(
             val snapshot = CatalogSnapshot(
                 stations = cleanStations(entry.stations).take(boundedLimit),
                 freshness = if (isFresh(entry)) CatalogFreshness.FRESH else CatalogFreshness.STALE,
-                fetchedAtEpochMs = entry.fetchedAtEpochMs
+                fetchedAtEpochMs = entry.fetchedAtEpochMs,
+                needsRefresh = !isFresh(entry) || !coversCountry(normalizedCode, entry, boundedLimit)
             )
             return CatalogReadResult.Success(snapshot)
         }
@@ -73,18 +80,45 @@ class StationCatalogRepository(
                 CatalogError(CatalogErrorKind.INVALID_REQUEST, "Invalid country code")
             )
         val boundedLimit = boundedLimit(limit)
-        cache.getSearch(normalizedQuery, normalizedCode)?.takeIf { isFresh(it) }?.let {
+        val cacheKey = "query:$boundedLimit:$normalizedQuery"
+        cache.getSearch(cacheKey, normalizedCode)?.takeIf { isFresh(it) }?.let {
             return CatalogReadResult.Success(CatalogSnapshot(cleanStations(it.stations).take(boundedLimit), CatalogFreshness.FRESH, it.fetchedAtEpochMs))
         }
 
         val result = source.search(normalizedQuery, normalizedCode, boundedLimit)
         if (result is CatalogResult.Success) {
             val cleaned = cleanStations(result.value)
-            cache.putSearch(normalizedQuery, normalizedCode, CatalogCacheEntry(cleaned, clock()))
+            cache.putSearch(cacheKey, normalizedCode, CatalogCacheEntry(cleaned, clock()))
             return CatalogReadResult.Success(CatalogSnapshot(cleaned, CatalogFreshness.FRESH, clock()))
         }
         val failure = result as CatalogResult.Failure
         return CatalogReadResult.Failure(failure.error)
+    }
+
+    suspend fun getStationsByTag(
+        tag: String,
+        countryCode: String?,
+        limit: Int = DEFAULT_CATALOG_RESULT_LIMIT
+    ): CatalogReadResult {
+        val normalizedTag = tag.trim().lowercase()
+        val normalizedCode = countryCode?.let(::normalizeCountryCode)
+        if (normalizedTag.isBlank() || (countryCode != null && normalizedCode == null)) {
+            return CatalogReadResult.Failure(CatalogError(CatalogErrorKind.INVALID_REQUEST, "Invalid tag search"))
+        }
+        val boundedLimit = boundedLimit(limit)
+        val key = "tag:$boundedLimit:$normalizedTag"
+        cache.getSearch(key, normalizedCode)?.takeIf { isFresh(it) }?.let {
+            return CatalogReadResult.Success(CatalogSnapshot(it.stations, CatalogFreshness.FRESH, it.fetchedAtEpochMs))
+        }
+        return when (val result = source.stationsByTag(normalizedTag, normalizedCode, boundedLimit)) {
+            is CatalogResult.Success -> {
+                val cleaned = cleanStations(result.value)
+                val fetchedAt = clock()
+                cache.putSearch(key, normalizedCode, CatalogCacheEntry(cleaned, fetchedAt))
+                CatalogReadResult.Success(CatalogSnapshot(cleaned, CatalogFreshness.FRESH, fetchedAt))
+            }
+            is CatalogResult.Failure -> CatalogReadResult.Failure(result.error)
+        }
     }
 
     suspend fun refreshCountry(
@@ -108,11 +142,18 @@ class StationCatalogRepository(
             }
             val attemptAt = clock()
             cache.markCountryFetchAttempt(normalizedCode, attemptAt)
-            when (val result = source.stationsByCountry(normalizedCode, boundedLimit)) {
+            val fetchLimit = maxOf(
+                boundedLimit,
+                cache.getCountry(normalizedCode)?.stations?.size ?: 0,
+                countryCoverage[normalizedCode]?.second ?: 0
+            ).coerceAtMost(MAX_CATALOG_RESULT_LIMIT)
+            when (val result = source.stationsByCountry(normalizedCode, fetchLimit)) {
                 is CatalogResult.Success -> {
                     val cleaned = cleanStations(result.value)
-                    cache.putCountry(normalizedCode, CatalogCacheEntry(cleaned, clock()))
-                    CatalogResult.Success(cleaned)
+                    val fetchedAt = clock()
+                    cache.putCountry(normalizedCode, CatalogCacheEntry(cleaned, fetchedAt))
+                    countryCoverage[normalizedCode] = fetchedAt to fetchLimit
+                    CatalogResult.Success(cleaned.take(boundedLimit))
                 }
                 is CatalogResult.Failure -> result
             }
@@ -125,6 +166,12 @@ class StationCatalogRepository(
 
     private fun isFresh(entry: CatalogCacheEntry): Boolean {
         return clock() - entry.fetchedAtEpochMs in 0..cacheTtlMs
+    }
+
+    private fun coversCountry(code: String, entry: CatalogCacheEntry, limit: Int): Boolean {
+        if (entry.stations.size >= limit) return true
+        val coverage = countryCoverage[code] ?: return false
+        return coverage.first == entry.fetchedAtEpochMs && coverage.second >= limit
     }
 
     fun close() {

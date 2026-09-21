@@ -20,6 +20,51 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35])
 class RadioBrowserCatalogTest {
     @Test
+    fun genreUsesProviderTagFilterRatherThanStationName() = runBlocking {
+        var requestedUrl = ""
+        val source = RadioBrowserCatalogSource(
+            baseUrlProvider = RadioBrowserBaseUrlProvider { listOf("https://mirror.example") },
+            transport = RadioBrowserHttpTransport { url, _ ->
+                requestedUrl = url
+                RadioBrowserHttpResponse(200, "[]")
+            }
+        )
+        source.stationsByTag("jazz", "fi", 100)
+        assertTrue(requestedUrl.contains("tag=jazz"))
+        assertTrue(requestedUrl.contains("countrycode=FI"))
+        assertTrue(requestedUrl.contains("hidebroken=true"))
+        assertTrue(!requestedUrl.contains("name="))
+    }
+
+    @Test
+    fun textSearchAlsoFindsGenreMatchesWhoseNameIsDifferent() = runBlocking {
+        val source = RadioBrowserCatalogSource(
+            baseUrlProvider = RadioBrowserBaseUrlProvider { listOf("https://mirror.example") },
+            transport = RadioBrowserHttpTransport { url, _ ->
+                RadioBrowserHttpResponse(200, if (url.contains("tag=jazz")) {
+                    """[{"stationuuid":"jazz-id","name":"Blue Note FM","url":"https://example.com/stream","countrycode":"FI","tags":"jazz"}]"""
+                } else "[]")
+            }
+        )
+        val result = source.search("jazz", "FI", 100) as CatalogResult.Success
+        assertEquals("Blue Note FM", result.value.single().canonicalName)
+    }
+
+    @Test
+    fun malformedMirrorResponseFallsBackToTheNextServer() = runBlocking {
+        val requested = mutableListOf<String>()
+        val source = RadioBrowserCatalogSource(
+            baseUrlProvider = RadioBrowserBaseUrlProvider { listOf("https://first.example", "https://second.example") },
+            transport = RadioBrowserHttpTransport { url, _ ->
+                requested += url
+                RadioBrowserHttpResponse(200, if (url.startsWith("https://first")) "<html>unavailable</html>" else "[]")
+            }
+        )
+        assertTrue(source.stationsByCountry("FI", 100) is CatalogResult.Success)
+        assertEquals(2, requested.size)
+    }
+
+    @Test
     fun mapsAndNormalizesStationMetadata() {
         val station = RadioBrowserStationDto(
             stationUuid = "uuid-1",

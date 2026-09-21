@@ -4,6 +4,12 @@ class RoomStationCatalogCache(
     private val dao: CatalogStationDao,
     private val source: CatalogSource = CatalogSource.RADIO_BROWSER
 ) : StationCatalogCache {
+    // Search responses are transient; keep a bounded memory cache without
+    // adding writes or a schema migration to the user's station database.
+    private val searches = object : LinkedHashMap<Pair<String, String?>, CatalogCacheEntry>(32, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Pair<String, String?>, CatalogCacheEntry>?): Boolean =
+            size > 32
+    }
     override suspend fun getCountry(countryCode: String): CatalogCacheEntry? {
         val normalizedCode = countryCode.uppercase()
         val metadata = dao.countryMetadata(source.name, normalizedCode) ?: return null
@@ -37,11 +43,18 @@ class RoomStationCatalogCache(
         dao.markCountryFetchAttempt(source.name, countryCode.uppercase(), attemptedAtEpochMs)
     }
 
-    override suspend fun getSearch(query: String, countryCode: String?): CatalogCacheEntry? = null
+    override suspend fun getSearch(query: String, countryCode: String?): CatalogCacheEntry? = synchronized(searches) {
+        searches[query.trim().lowercase() to countryCode?.uppercase()]
+    }
 
-    override suspend fun putSearch(query: String, countryCode: String?, entry: CatalogCacheEntry) = Unit
+    override suspend fun putSearch(query: String, countryCode: String?, entry: CatalogCacheEntry) {
+        synchronized(searches) {
+            searches[query.trim().lowercase() to countryCode?.uppercase()] = entry
+        }
+    }
 
     override suspend fun clear() {
+        synchronized(searches) { searches.clear() }
         dao.deleteAllStations()
         dao.deleteAllMetadata()
     }

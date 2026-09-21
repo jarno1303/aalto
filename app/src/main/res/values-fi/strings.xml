@@ -47,6 +47,8 @@
     <string name="search_recent">Viimeksi kuunnellut</string>
     <string name="search_country">Maa: %1$s</string>
     <string name="search_no_results">Ei asemia tällä rajauksella</string>
+    <string name="search_loading">Haetaan asemia…</string>
+    <string name="search_unavailable">Kaikkia hakutuloksia ei voitu ladata. Yritä uudelleen.</string>
     <string name="catalog_loading">Ladataan asemia…</string>
     <string name="catalog_unavailable">Asemaluettelo ei ole nyt saatavilla. Omat asemasi toimivat silti.</string>
 

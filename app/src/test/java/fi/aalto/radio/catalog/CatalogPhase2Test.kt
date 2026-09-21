@@ -21,6 +21,19 @@ class CatalogPhase2Test {
     private lateinit var context: Context
     private val databaseNames = mutableListOf<String>()
 
+    @Test
+    fun roomBackedAppCachesSearchesInMemoryAndClearInvalidatesThem() = runTest {
+        val database = open(uniqueDatabaseName())
+        val cache = RoomStationCatalogCache(database.catalogStationDao())
+        val entry = CatalogCacheEntry(listOf(station("jazz", "FI")), 100L)
+        cache.putSearch("tag:100:jazz", "fi", entry)
+        assertEquals(entry, cache.getSearch("tag:100:JAZZ", "FI"))
+        assertEquals(null, cache.getSearch("tag:100:jazz", "DE"))
+        cache.clear()
+        assertEquals(null, cache.getSearch("tag:100:jazz", "FI"))
+        database.close()
+    }
+
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()

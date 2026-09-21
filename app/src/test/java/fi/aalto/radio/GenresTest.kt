@@ -27,6 +27,20 @@ class GenresTest {
     }
 
     @Test
+    fun everyPositiveGenreHasProviderSearchTags() {
+        AllGenres.filter { it.label != "Muut" }.forEach {
+            assertTrue(it.label, genreSearchTags(setOf(it.label)).isNotEmpty())
+        }
+        assertTrue(genreSearchTags(setOf("Muut")).isEmpty())
+    }
+
+    @Test
+    fun selectedGenresAreAlternativesAndTagsAreDeduplicated() {
+        assertEquals(setOf("rock", "jazz"), genreSearchTags(setOf("Rock", "Jazz")))
+        assertEquals(setOf("jazz", "soul"), genreSearchTags(setOf("Jazz", "Jazz & soul")))
+    }
+
+    @Test
     fun mainGenresAreTheSearchChipsPlusDecades() {
         val mains = GenreGroups.map { it.main.label }
         assertTrue(DiscoveryCategories.all { it.label in mains })

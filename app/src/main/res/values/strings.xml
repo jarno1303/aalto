@@ -51,6 +51,8 @@
     <string name="search_recent">Recently played</string>
     <string name="search_country">Country: %1$s</string>
     <string name="search_no_results">No stations match this</string>
+    <string name="search_loading">Finding stations…</string>
+    <string name="search_unavailable">Some search results could not be loaded. Please try again.</string>
     <string name="catalog_loading">Loading stations…</string>
     <string name="catalog_unavailable">The station directory is unavailable right now. Your own stations still work.</string>
 

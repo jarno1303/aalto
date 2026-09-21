@@ -9,6 +9,7 @@ import fi.aalto.radio.catalog.StationCatalogSource
 import fi.aalto.radio.catalog.boundedLimit
 import fi.aalto.radio.catalog.normalizeCountryCode
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
@@ -44,7 +45,13 @@ class DefaultRadioBrowserBaseUrlProvider(
 
     override suspend fun baseUrls(): List<String> {
         cached?.let { return it }
-        val found = runCatching { lookup() }.getOrDefault(emptyList())
+        val found = try {
+            lookup()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            emptyList()
+        }
         return serverOrder(found).also { if (found.isNotEmpty()) cached = it }
     }
 
@@ -102,14 +109,26 @@ class RadioBrowserCatalogSource(
             ?: if (countryCode == null) null else return invalidRequest("Invalid country code")
         val base = commonQuery(limit).toMutableMap()
         normalizedCode?.let { base["countrycode"] = it }
-        // By name, and by place ("Tampere", "Bayern"): Radio Browser keeps
-        // the place in "state", as the contributor wrote it. Both at once;
-        // name matches first. Either one answering is enough.
+        // Search name, contributor-provided place ("state"), and genre tags
+        // concurrently. Keep name matches first and retain successful results
+        // when another search field is unavailable.
         return coroutineScope {
             val byName = async { request("/json/stations/search", base + ("name" to normalizedQuery)) }
             val byPlace = async { request("/json/stations/search", base + ("state" to normalizedQuery)) }
-            mergeSearchResults(byName.await(), byPlace.await(), limit)
+            val byTag = async { request("/json/stations/search", base + ("tag" to normalizedQuery)) }
+            mergeSearchResults(mergeSearchResults(byName.await(), byPlace.await(), limit), byTag.await(), limit)
         }
+    }
+
+    override suspend fun stationsByTag(tag: String, countryCode: String?, limit: Int): CatalogResult<List<CatalogStation>> {
+        val normalizedTag = tag.trim()
+        if (normalizedTag.isBlank()) return invalidRequest("Tag is blank")
+        val normalizedCode = countryCode?.let(::normalizeCountryCode)
+        if (countryCode != null && normalizedCode == null) return invalidRequest("Invalid country code")
+        val query = commonQuery(limit).toMutableMap()
+        query["tag"] = normalizedTag
+        normalizedCode?.let { query["countrycode"] = it }
+        return request("/json/stations/search", query)
     }
 
     private suspend fun request(path: String, query: Map<String, String>): CatalogResult<List<CatalogStation>> {
@@ -122,11 +141,13 @@ class RadioBrowserCatalogSource(
                     lastFailure = CatalogError(CatalogErrorKind.PROVIDER_FAILURE, "Radio Browser HTTP ${response.statusCode}")
                     continue
                 }
-                return try {
-                    CatalogResult.Success(parseStations(response.body))
+                try {
+                    return CatalogResult.Success(parseStations(response.body))
                 } catch (_: Exception) {
-                    CatalogResult.Failure(CatalogError(CatalogErrorKind.MALFORMED_RESPONSE, "Invalid station response"))
+                    lastFailure = CatalogError(CatalogErrorKind.MALFORMED_RESPONSE, "Invalid station response")
                 }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (_: IOException) {
                 lastFailure = CatalogError(CatalogErrorKind.NETWORK_UNAVAILABLE, "Radio Browser unavailable")
             } catch (_: Exception) {

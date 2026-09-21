@@ -51,7 +51,9 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.zIndex
-import fi.aalto.radio.catalog.CatalogFreshness
+import fi.aalto.radio.catalog.CatalogSearchLoader
+import fi.aalto.radio.catalog.CatalogSearchRequest
+import fi.aalto.radio.catalog.CatalogSearchState
 import fi.aalto.radio.catalog.CatalogReadResult
 import fi.aalto.radio.catalog.CatalogResult
 import fi.aalto.radio.catalog.CatalogStation
@@ -61,8 +63,6 @@ import kotlinx.coroutines.launch
 private const val TAB_RADIO = 0
 private const val TAB_SEARCH = 1
 private const val TAB_FAVORITES = 2
-/** Fewer results than this at home, and the search looks elsewhere too. */
-private const val WORLD_SEARCH_BELOW = 5
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -110,6 +110,7 @@ private fun AaltoApp() {
     val catalogRepository = remember(context) {
         AaltoAppContainer.stationCatalogRepository(context)
     }
+    val searchLoader = remember(catalogRepository) { CatalogSearchLoader(catalogRepository) }
     val coroutineScope = rememberCoroutineScope()
     val radioPlayer = rememberRadioPlayer()
     val syncCoordinator = remember(context) { AaltoAppContainer.syncCoordinator(context) }
@@ -142,9 +143,8 @@ private fun AaltoApp() {
     // Saveable so the Night Screen survives rotation (e.g. mounting the phone in a car holder).
     var nightScreenActive by rememberSaveable { mutableStateOf(false) }
     var catalogStations by remember { mutableStateOf<List<CatalogStation>>(emptyList()) }
-    var catalogSearchStations by remember { mutableStateOf<List<CatalogStation>>(emptyList()) }
-    // A search that finds little at home also looks elsewhere ("Berlin", "Radio Bob").
-    var catalogWorldStations by remember { mutableStateOf<List<CatalogStation>>(emptyList()) }
+    var catalogSearchState by remember { mutableStateOf<CatalogSearchState?>(null) }
+    var searchRetry by remember { mutableStateOf(0) }
     var catalogLoading by remember { mutableStateOf(false) }
     var catalogError by remember { mutableStateOf<String?>(null) }
     var recentStations by remember { mutableStateOf<List<RadioStation>>(emptyList()) }
@@ -174,6 +174,7 @@ private fun AaltoApp() {
     var searchQuery by rememberSaveable {
         mutableStateOf("")
     }
+    var categoryFilterKey by rememberSaveable { mutableStateOf("") }
 
     var radioCountryCode by rememberSaveable {
         mutableStateOf(RadioCountryPreference.get(context))
@@ -183,6 +184,16 @@ private fun AaltoApp() {
     }
     // One country (the default), or every followed country at once.
     val browseCountries = if (allOwnCountries && ownCountries.size > 1) ownCountries else listOf(radioCountryCode)
+    val searchRequest = remember(searchQuery, browseCountries, categoryFilterKey) {
+        CatalogSearchRequest(
+            query = searchQuery.trim(),
+            countries = browseCountries,
+            tags = genreSearchTags(categoryFilterKey.split('|').filter(String::isNotBlank).toSet())
+        )
+    }
+    val searchState = catalogSearchState?.forRequest(searchRequest) ?: CatalogSearchState(searchRequest)
+    val catalogSearchStations = searchState.stations
+    val catalogWorldStations = searchState.worldStations
 
     var catalogRetry by remember { mutableStateOf(0) }
     LaunchedEffect(catalogRepository, browseCountries, catalogRetry) {
@@ -194,14 +205,19 @@ private fun AaltoApp() {
         browseCountries.forEach { code ->
             when (val result = catalogRepository.getStationsByCountry(code, limit = 100)) {
                 is CatalogReadResult.Success -> {
-                    var countryStations = result.snapshot.stations
-                    if (result.snapshot.freshness == CatalogFreshness.STALE) {
+                    val countryStart = loaded.size
+                    loaded += result.snapshot.stations
+                    // Cached stations remain immediately usable during refresh.
+                    catalogStations = loaded.toList()
+                    if (result.snapshot.needsRefresh) {
                         when (val refresh = catalogRepository.refreshCountry(code, limit = 100)) {
-                            is CatalogResult.Success -> countryStations = refresh.value
+                            is CatalogResult.Success -> {
+                                loaded.subList(countryStart, loaded.size).clear()
+                                loaded += refresh.value
+                            }
                             is CatalogResult.Failure -> Unit
                         }
                     }
-                    loaded += countryStations
                     // Show each country as soon as it is there, not after the last one.
                     catalogStations = loaded.toList()
                 }
@@ -213,31 +229,8 @@ private fun AaltoApp() {
         catalogLoading = false
     }
 
-    LaunchedEffect(catalogRepository, browseCountries, searchQuery) {
-        val query = searchQuery.trim()
-        if (query.isBlank()) {
-            catalogSearchStations = emptyList()
-            catalogWorldStations = emptyList()
-            return@LaunchedEffect
-        }
-
-        delay(300)
-        catalogSearchStations = browseCountries.flatMap { code ->
-            when (val result = catalogRepository.searchStations(query, code, limit = 100)) {
-                is CatalogReadResult.Success -> result.snapshot.stations
-                is CatalogReadResult.Failure -> emptyList()
-            }
-        }
-        val home = browseCountries.map { it.uppercase() }.toSet()
-        catalogWorldStations = if (catalogSearchStations.size < WORLD_SEARCH_BELOW) {
-            when (val result = catalogRepository.searchStations(query, null, limit = 40)) {
-                is CatalogReadResult.Success -> result.snapshot.stations
-                    .filter { it.countryCode?.uppercase() !in home }
-                is CatalogReadResult.Failure -> emptyList()
-            }
-        } else {
-            emptyList()
-        }
+    LaunchedEffect(searchLoader, searchRequest, searchRetry) {
+        searchLoader.search(searchRequest).collect { catalogSearchState = it }
     }
 
     val worldRadioStations = remember(catalogWorldStations) {
@@ -561,6 +554,8 @@ private fun AaltoApp() {
                     paddingValues = paddingValues,
                     searchQuery = searchQuery,
                     onSearchQueryChange = { searchQuery = it },
+                    categoryFilterKey = categoryFilterKey,
+                    onCategoryFilterChange = { categoryFilterKey = it },
                     stations = stations,
                     recentStations = recentStations,
                     radioCountryCode = radioCountryCode,
@@ -583,6 +578,12 @@ private fun AaltoApp() {
                     worldStations = worldRadioStations,
                     catalogLoading = catalogLoading,
                     catalogError = catalogError,
+                    searchLoading = searchState.loading,
+                    searchError = searchState.error != null,
+                    onRetrySearch = {
+                        catalogSearchState = CatalogSearchState(searchRequest)
+                        searchRetry += 1
+                    },
                     onRetryCatalog = { catalogRetry += 1 },
                     onStationClick = { station ->
                         stationTrace(

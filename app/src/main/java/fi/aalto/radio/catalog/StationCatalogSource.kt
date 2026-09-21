@@ -31,4 +31,12 @@ interface StationCatalogSource {
         countryCode: String? = null,
         limit: Int = DEFAULT_CATALOG_RESULT_LIMIT
     ): CatalogResult<List<CatalogStation>>
+
+    suspend fun stationsByTag(
+        tag: String,
+        countryCode: String?,
+        limit: Int = DEFAULT_CATALOG_RESULT_LIMIT
+    ): CatalogResult<List<CatalogStation>> = CatalogResult.Failure(
+        CatalogError(CatalogErrorKind.INVALID_REQUEST, "Tag search is not supported")
+    )
 }

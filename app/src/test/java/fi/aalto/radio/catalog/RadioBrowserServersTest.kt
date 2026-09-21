@@ -2,12 +2,24 @@ package fi.aalto.radio.catalog
 
 import fi.aalto.radio.catalog.radiobrowser.DefaultRadioBrowserBaseUrlProvider
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.CancellationException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RadioBrowserServersTest {
+    @Test
+    fun cancelledLookupIsNotTreatedAsServerFailure() = runTest {
+        val cancelled = CancellationException("superseded search")
+        val provider = DefaultRadioBrowserBaseUrlProvider(lookup = { throw cancelled })
+        try {
+            provider.baseUrls()
+            throw AssertionError("Cancellation should propagate")
+        } catch (actual: CancellationException) {
+            assertTrue(actual === cancelled)
+        }
+    }
 
     @Test
     fun lookedUpServersComeFirstThenKnownOnesWithoutDuplicates() {

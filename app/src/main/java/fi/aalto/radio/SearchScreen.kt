@@ -68,6 +68,8 @@ internal fun SearchScreen(
     paddingValues: PaddingValues,
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
+    categoryFilterKey: String,
+    onCategoryFilterChange: (String) -> Unit,
     stations: List<RadioStation>,
     recentStations: List<RadioStation>,
     radioCountryCode: String,
@@ -83,6 +85,9 @@ internal fun SearchScreen(
     worldStations: List<RadioStation> = emptyList(),
     catalogLoading: Boolean,
     catalogError: String?,
+    searchLoading: Boolean = false,
+    searchError: Boolean = false,
+    onRetrySearch: () -> Unit = {},
     onRetryCatalog: () -> Unit = {},
     onStationClick: (RadioStation) -> Unit,
     onStationFavoriteClick: (RadioStation) -> Unit
@@ -91,7 +96,6 @@ internal fun SearchScreen(
     var countryGridOpen by rememberSaveable { mutableStateOf(false) }
     var genreSheetOpen by rememberSaveable { mutableStateOf(false) }
     // Several genres at once, stored as "Pop|Rock" so it survives rotation.
-    var categoryFilterKey by rememberSaveable { mutableStateOf("") }
     val categoryFilter = categoryFilterKey.split('|').filter { it.isNotBlank() }.toSet()
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
@@ -133,7 +137,8 @@ internal fun SearchScreen(
     }
     val isBrowsing = searchQuery.isBlank() && categoryFilter.isEmpty()
     val visibleRecents = if (isBrowsing) recentStations.distinctBy { it.stableId }.take(5) else emptyList()
-    val showSkeleton = catalogLoading && resultStations.isEmpty()
+    val loading = catalogLoading || searchLoading
+    val showSkeleton = loading && resultStations.isEmpty()
 
     fun hideKeyboard() {
         keyboardController?.hide()
@@ -329,11 +334,11 @@ internal fun SearchScreen(
                         selected = if (label == ALL_CATEGORIES) categoryFilter.isEmpty() else label in categoryFilter,
                         onClick = {
                             // "Kaikki" clears; a genre toggles on and off.
-                            categoryFilterKey = when {
+                            onCategoryFilterChange(when {
                                 label == ALL_CATEGORIES -> ""
                                 label in categoryFilter -> (categoryFilter - label).joinToString("|")
                                 else -> (categoryFilter + label).joinToString("|")
-                            }
+                            })
                             hideKeyboard()
                         },
                         label = { Text(label, maxLines = 1) }
@@ -382,12 +387,30 @@ internal fun SearchScreen(
 
         item {
             ListTitle(
-                stringResource(if (isBrowsing) R.string.search_stations else R.string.search_results)
+                stringResource(when {
+                    searchLoading -> R.string.search_loading
+                    isBrowsing -> R.string.search_stations
+                    else -> R.string.search_results
+                })
             )
         }
 
         if (showSkeleton) {
             items(SKELETON_ROWS) { StationRowSkeleton() }
+        }
+
+        if (searchError && !searchLoading) {
+            item(key = "search-error") {
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = stringResource(R.string.search_unavailable),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(onClick = onRetrySearch) { Text(stringResource(R.string.action_retry)) }
+                }
+            }
         }
 
         // The catalog did not load: say so, instead of a short list that looks
@@ -433,7 +456,7 @@ internal fun SearchScreen(
             )
         }
 
-        if (resultStations.isEmpty() && !catalogLoading) {
+        if (resultStations.isEmpty() && !loading && !searchError && catalogError == null) {
             item {
                 Text(
                     text = stringResource(R.string.search_no_results),
@@ -448,7 +471,11 @@ internal fun SearchScreen(
         val elsewhere = if (searchQuery.isBlank()) {
             emptyList()
         } else {
-            worldStations.filter { station -> resultStations.none { it.stableId == station.stableId } }
+            worldStations.filter { station ->
+                stationMatchesQuery(station, searchQuery) &&
+                    (activeCategories.isEmpty() || activeCategories.any { it.matches(station) }) &&
+                    resultStations.none { it.stableId == station.stableId }
+            }
         }
         if (elsewhere.isNotEmpty()) {
             item(key = "world-title") { ListTitle(stringResource(R.string.search_elsewhere)) }
@@ -473,7 +500,7 @@ internal fun SearchScreen(
 
         // A search that did not find it: the one moment the own-address
         // option is worth mentioning.
-        if (searchQuery.isNotBlank() && !catalogLoading) {
+        if (searchQuery.isNotBlank() && !loading && !searchError) {
             item(key = "add-custom-hint") {
                 AddCustomStationRow(style = AddCustomStationStyle.SEARCH_HINT)
             }
@@ -484,10 +511,10 @@ internal fun SearchScreen(
         GenreSheet(
             selected = categoryFilter,
             onToggle = { label ->
-                categoryFilterKey = (if (label in categoryFilter) categoryFilter - label else categoryFilter + label)
-                    .joinToString("|")
+                onCategoryFilterChange((if (label in categoryFilter) categoryFilter - label else categoryFilter + label)
+                    .joinToString("|"))
             },
-            onClear = { categoryFilterKey = "" },
+            onClear = { onCategoryFilterChange("") },
             matchCount = resultStations.size,
             onDismiss = { genreSheetOpen = false }
         )

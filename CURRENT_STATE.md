@@ -373,3 +373,64 @@ with a retry button. Tests: RadioBrowserServersTest. Root cause confirmed: fresh
 - Battery: the service's one-second beat (rewind state, levelling checkpoint) now runs only while something plays; a 30 s beat remains for a network that came back silently. Battery test still to be run (dumpsys batterystats, an hour with the screen off, over Bluetooth and over the speaker).
 - Station folders / lists: JarnoL's idea (6 stations in a named folder) is the same feature as the planned Plus "asemalistat"; to be done after the closed test, not now.
 - Not yet device-tested.
+
+## Radio Browser search reliability (codex/radio-search-reliability, 2026-09-21)
+
+Status: search regression tests and debug/release unit suites PASS (fi_FI).
+Debug APK builds. Full Gradle gate FAIL on existing lint errors (details below).
+PENDING PHYSICAL ACCEPTANCE: no phone or Android Auto device was attached in this session.
+
+Backup before edits: original commit `4377a8ba3e770bf1f594e91fef5327c11e65c077`,
+verified source ZIP and full Git bundle, also retained on GitHub as
+`backup/before-radio-search-2026-09-21`.
+
+- Search had no independent loading/error state and could show old worldwide results.
+  `CatalogSearch.kt`, `MainActivity.kt` and `SearchScreen.kt` now key results to the
+  current query/countries/genres, debounce for 300 ms, preserve successful home results
+  on a worldwide failure, and show a separate error with retry. Cancellation propagates.
+- Genre chips previously filtered only the loaded popular list. `GenreSearchTags.kt`
+  maps existing genre labels to provider tag alternatives; the source also searches tags
+  for typed text. Multiple selected genres retain OR semantics and the existing UI filter.
+- Country cache timestamps did not describe fetch coverage: an Android Auto request for
+  40 rows could satisfy a later phone request for 100. The repository now marks that cache
+  for refill, displays its rows immediately, and prevents smaller refreshes from shrinking
+  a larger shared cache. Fetch coverage is remembered for the current process; short
+  persisted lists are conservatively refilled once when first needed after restart.
+- Search cache keys include query type, requested limit and country. The Room-backed
+  cache keeps up to 32 transient search responses in memory without a database migration.
+- A malformed response now tries the next Radio Browser mirror, as network errors do.
+- English and Finnish search status strings were added. Existing station identities,
+  tap-to-play callbacks, database schema, playback and Sync internals were preserved.
+
+Verification: `CatalogSearchReliabilityTest` (13 cases), `GenresTest`,
+`RadioBrowserServersTest`, `RadioBrowserCatalogTest`, `SearchMergeTest` and
+`CatalogPhase2Test`: 43 cases in the final suites, zero failures/errors/skips.
+The initial focused run passed 42 cases; the final suites also include the added
+Other + positive genre regression, with complete selection filtering owned by the UI. Initial environment blockers
+(JDK/compiler and test dependency networking) were resolved outside the repository.
+
+Final checks with Gradle 8.11.1, JDK 17, SDK 36:
+- `app:assembleDebug`: PASS on the final code.
+- `app:testDebugUnitTest` and `app:testReleaseUnitTest`: each 247 cases,
+  244 PASS, 3 expected manual network reports skipped, no failures/errors.
+  Test JVM uses `-Duser.language=fi -Duser.country=FI`: two unchanged
+  `StationDialMathTest` cases hard-code Finnish country names and fail under en.
+- `app:lintDebug`: FAIL, 19 errors and 67 warnings. Errors: one missing media-search
+  intent filter, two Media3 result constant checks and 16 unstable API opt-ins.
+  All error locations are in AndroidManifest.xml, PlaybackService.kt,
+  playback/StreamFormat.kt and history/StreamTrack.kt; these files are byte-identical
+  to the backed-up original. No lint suppression, baseline or unrelated fix was added.
+- `app:build`: FAIL in the combined gate; lint remains an unresolved blocker.
+  The initial locale-dependent test failures were resolved by the test JVM setting above.
+- `git diff --check`: PASS. Keep this change in draft pending lint cleanup and device review.
+
+Performance: cached country rows stay playable during refresh; provider operations are
+limited to three concurrently per search. Text search fans out to name/state/tag;
+genre aliases add requests and use the bounded memory cache. No audio critical-path changes.
+Physical checks: type and clear a query quickly; change country and genre during a search;
+search offline then retry; play and favourite a result; open Android Auto's popular list
+before opening the phone's larger list; confirm playback continues throughout.
+
+Limits/debt: results are still bounded at 100 per UI query/tag/country request, without
+pagination. Other/Muut remains a local exclusion. Search relevance ordering, Radio Browser
+check-time parsing and click reporting remain separate follow-up work.

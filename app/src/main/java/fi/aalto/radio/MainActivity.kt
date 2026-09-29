@@ -145,6 +145,7 @@ private fun AaltoApp() {
     var catalogSearchStations by remember { mutableStateOf<List<CatalogStation>>(emptyList()) }
     // A search that finds little at home also looks elsewhere ("Berlin", "Radio Bob").
     var catalogWorldStations by remember { mutableStateOf<List<CatalogStation>>(emptyList()) }
+    var catalogRegistrationVersion by remember { mutableStateOf(0) }
     var catalogLoading by remember { mutableStateOf(false) }
     var catalogError by remember { mutableStateOf<String?>(null) }
     var recentStations by remember { mutableStateOf<List<RadioStation>>(emptyList()) }
@@ -250,8 +251,9 @@ private fun AaltoApp() {
     }
     LaunchedEffect(catalogRadioStations) {
         repository.registerCatalogStations(catalogRadioStations)
+        catalogRegistrationVersion++
     }
-    val stations = remember(repository.stations, catalogRadioStations) {
+    val stations = remember(repository.stations, catalogRadioStations, catalogRegistrationVersion) {
         // Built-in stations first, so a catalog duplicate of one is dropped.
         (repository.stations + catalogRadioStations).distinctByListing()
     }

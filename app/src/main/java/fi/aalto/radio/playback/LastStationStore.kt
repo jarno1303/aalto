@@ -27,6 +27,10 @@ internal object LastStationStore {
             .apply()
     }
 
+    fun id(context: Context): String? =
+        context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getString(KEY_ID, null)
+
     fun name(context: Context): String? =
         context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .getString(KEY_NAME, null)

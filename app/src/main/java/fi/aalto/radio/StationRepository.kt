@@ -20,18 +20,77 @@ class StationRepository(
     private val recentLimit: Int = DEFAULT_RECENT_LIMIT
 ) {
     private val catalogStationsById = ConcurrentHashMap<String, RadioStation>()
+    private val builtInStationIds = StationCatalog.allStations.mapTo(hashSetOf()) { it.id }
 
     val stations: List<RadioStation>
-        get() = (StationCatalog.allStations + catalogStationsById.values)
-            .distinctBy { it.id }
+        get() {
+            // A catalog match may enrich a built-in with fallback addresses,
+            // but the built-in keeps its stable id and official primary URL.
+            val builtIns = StationCatalog.allStations.map { builtIn ->
+                catalogStationsById[builtIn.id] ?: builtIn
+            }
+            val catalogOnly = catalogStationsById.values.filterNot { it.id in builtInStationIds }
+            return (builtIns + catalogOnly).distinctBy { it.id }
+        }
 
     fun stationById(stationId: String): RadioStation? {
-        return StationCatalog.stationById(stationId) ?: catalogStationsById[stationId]
+        return catalogStationsById[stationId] ?: StationCatalog.stationById(stationId)
     }
 
     fun registerCatalogStations(stations: Iterable<RadioStation>) {
-        stations.forEach { station -> catalogStationsById[station.id] = station }
+        stations.forEach { station ->
+            catalogStationsById[station.id] = station
+            enrichMatchingBuiltIn(station)?.let { enriched ->
+                catalogStationsById[enriched.id] = enriched
+            }
+        }
     }
+
+    /**
+     * Radio Browser often has more than one healthy address for the same
+     * broadcaster. Exact same-name/country matches can safely enrich Aalto's
+     * built-in station without changing its identity or official primary URL.
+     */
+    private fun enrichMatchingBuiltIn(candidate: RadioStation): RadioStation? {
+        val builtIn = StationCatalog.allStations.firstOrNull { station ->
+            station.countryCode.equals(candidate.countryCode, ignoreCase = true) &&
+                normalizedStationName(station.name) == normalizedStationName(candidate.name)
+        } ?: return null
+
+        val current = catalogStationsById[builtIn.id]
+        val alternatives = (
+            builtIn.streamAlternatives +
+                current?.streamAlternatives.orEmpty() +
+                listOfNotNull(
+                    candidate.preferredStreamUrl,
+                    candidate.lastKnownWorkingStreamUrl,
+                    candidate.streamUrl
+                ) +
+                candidate.streamAlternatives
+            )
+            .map(String::trim)
+            .filter(::isUsableStreamUrl)
+            .distinct()
+            .filterNot { url ->
+                url == builtIn.preferredStreamUrl ||
+                    url == builtIn.streamUrl ||
+                    url == builtIn.lastKnownWorkingStreamUrl
+            }
+
+        return builtIn.copy(
+            streamAlternatives = alternatives,
+            declaredCodec = builtIn.declaredCodec ?: current?.declaredCodec ?: candidate.declaredCodec,
+            declaredBitrateKbps = builtIn.declaredBitrateKbps
+                ?: current?.declaredBitrateKbps
+                ?: candidate.declaredBitrateKbps
+        )
+    }
+
+    private fun normalizedStationName(value: String): String =
+        value.lowercase().filter(Char::isLetterOrDigit)
+
+    private fun isUsableStreamUrl(value: String): Boolean =
+        value.startsWith("http://") || value.startsWith("https://")
 
     fun searchStations(query: String): List<RadioStation> {
         return StationCatalog.search(query)
@@ -95,7 +154,7 @@ class StationRepository(
     private suspend fun registerStoredStations(ids: List<String>) {
         // Own stations are always read again: another device may have changed
         // their address, and the copy in memory would keep the old one.
-        val missing = ids.filter { stationById(it) == null || CustomStations.isCustom(it) }
+        val missing = ids.filter { catalogStationsById[it] == null || CustomStations.isCustom(it) }
         if (missing.isEmpty()) return
         runCatching { withContext(ioDispatcher) { dao.stationsByIds(missing) } }
             .onSuccess { rows -> registerCatalogStations(rows.map { it.toDomain() }) }
@@ -277,10 +336,9 @@ class StationRepository(
     }
 
     private suspend fun ensureStationPersisted(stationId: String) {
-        if (dao.stationExists(stationId) != null) {
-            return
-        }
-
+        // Upsert even when the row already exists. Catalog enrichment can add
+        // fallback URLs after the original row was seeded; persisting the
+        // current in-memory station makes those fallbacks survive restart.
         val station = stationById(stationId) ?: return
         dao.upsertStation(station.toEntity(updatedAt = clock()))
     }

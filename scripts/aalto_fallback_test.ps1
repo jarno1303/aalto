@@ -103,12 +103,13 @@ if ($answer -match '^[kKyY]') {
 }
 
 Section "TEST 3 - last station cold start"
-Write-Host "Valitse Aallossa tavallinen asema ja laita se soimaan."
-Read-Host "Kun asema soi, paina Enter"
+Write-Host "Valitse Haku-valilehdelta katalogiasema, joka EI ole omissa asemissa/suosikeissa."
+Write-Host "Laita se soimaan. Tama testaa vaikeamman cold-start-polun."
+Read-Host "Kun katalogiasema soi, paina Enter"
 adb shell am force-stop $Package
 Start-Sleep -Seconds 2
 adb shell monkey -p $Package -c android.intent.category.LAUNCHER 1 | Out-Null
-Write-Host "ODOTETTU: Aalto avautuu samalle viimeksi kuunnellulle asemalle."
+Write-Host "ODOTETTU: Aalto avautuu samalle ei-suosikkina olevalle katalogiasemalle."
 Read-Host "Kun tarkistus on tehty, paina Enter"
 
 adb reverse --remove "tcp:$Port" 2>$null

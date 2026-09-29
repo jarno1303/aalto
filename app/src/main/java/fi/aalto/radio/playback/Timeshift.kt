@@ -73,6 +73,7 @@ internal object Timeshift {
     private var buffer: TimeshiftBuffer? = null
     private var recorder: TimeshiftRecorder? = null
     private var liveUri: String? = null
+    private var stationId: String? = null
     private var maxSeconds = FREE_SECONDS
     private var plus = false
 
@@ -101,20 +102,30 @@ internal object Timeshift {
     fun detach() {
         stopRecorder()
         host = null
+        stationId = null
         _state.value = TimeshiftState()
     }
 
     fun isTimeshiftUri(uri: String?): Boolean = uri?.startsWith("$SCHEME:") == true
 
-    /** A different station started: forget the old one. Main thread. */
-    fun stationChanged(context: Context) {
-        log("stationChanged: reset buffer")
+    /**
+     * Prepare the rewind buffer for [newStationId].
+     *
+     * Idempotent on purpose: fallback/reconnect changes the stream URL but not
+     * the station identity, so it must not throw away the buffer. A real
+     * station change is reset before the new stream is prepared.
+     */
+    fun prepareStation(context: Context, newStationId: String?) {
+        if (stationId == newStationId) return
+        stationId = newStationId
+        log("prepareStation: id=$newStationId reset buffer")
         stopRecorder()
         liveUri = null
         plus = Plus.access(context).isActive()
         maxSeconds = if (plus) PLUS_SECONDS else FREE_SECONDS
         buffer(context).reset((maxSeconds + MARGIN_SECONDS) * MAX_BYTE_RATE)
         behindMs = 0L
+        lastPublishedAvailable = false
         _state.value = TimeshiftState()
     }
 

@@ -282,4 +282,5 @@
     <string name="custom_search_hint">¿No encuentras la emisora?</string>
     <string name="custom_search_action">Añádela con su dirección de stream</string>
     <string name="search_elsewhere">Otros lugares del mundo</string>
+    <string name="language_system_default">Predeterminado del sistema</string>
 </resources>

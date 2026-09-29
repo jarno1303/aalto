@@ -14,6 +14,7 @@ import androidx.media3.extractor.metadata.id3.TextInformationFrame
  * Internet radio sends this two ways: ICY (icecast, which is nearly all of
  * them) puts "Artist - Title" in one string, and HLS sends ID3 frames.
  */
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 internal object StreamTrack {
 
     data class Announcement(val title: String?, val artist: String?)

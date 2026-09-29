@@ -13,6 +13,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.CommandButton
 import androidx.media3.session.LibraryResult
 import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionError
 import androidx.media3.session.SessionResult
 import androidx.media3.session.MediaConstants
 import androidx.media3.common.util.UnstableApi
@@ -516,7 +517,7 @@ class PlaybackService : MediaLibraryService() {
                 }
                 BrowseActions.ADD_FAVORITE, BrowseActions.REMOVE_FAVORITE -> {
                     val id = args.getString(BrowseActions.KEY_MEDIA_ITEM_ID)
-                        ?: return Futures.immediateFuture(SessionResult(SessionResult.RESULT_ERROR_BAD_VALUE))
+                        ?: return Futures.immediateFuture(SessionResult(SessionError.ERROR_BAD_VALUE))
                     val add = customCommand.customAction == BrowseActions.ADD_FAVORITE
                     setFavorite(id, add)
                     val message = getString(if (add) R.string.auto_added_favorite else R.string.auto_removed_favorite)
@@ -599,7 +600,7 @@ class PlaybackService : MediaLibraryService() {
             if (station != null) {
                 LibraryResult.ofItem(StationMediaItems.build(this@PlaybackService, station), null)
             } else {
-                LibraryResult.ofError(LibraryResult.RESULT_ERROR_BAD_VALUE)
+                LibraryResult.ofError(SessionError.ERROR_BAD_VALUE)
             }
         }
 

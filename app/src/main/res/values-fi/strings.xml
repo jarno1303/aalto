@@ -277,4 +277,5 @@
     <string name="custom_search_hint">Etkö löydä asemaa?</string>
     <string name="custom_search_action">Lisää se striimin osoitteella</string>
     <string name="search_elsewhere">Muualta maailmasta</string>
+    <string name="language_system_default">Järjestelmän oletus</string>
 </resources>

@@ -60,13 +60,13 @@ class StationRepository(
         val current = catalogStationsById[builtIn.id]
         val alternatives = (
             builtIn.streamAlternatives +
-                current?.streamAlternatives.orEmpty() +
                 listOfNotNull(
                     candidate.preferredStreamUrl,
                     candidate.lastKnownWorkingStreamUrl,
                     candidate.streamUrl
                 ) +
-                candidate.streamAlternatives
+                candidate.streamAlternatives +
+                current?.streamAlternatives.orEmpty()
             )
             .map(String::trim)
             .filter(::isUsableStreamUrl)
@@ -347,7 +347,9 @@ class StationRepository(
         // remote custom-station edit may be newer than the in-memory copy;
         // reliability enrichment is allowed to add metadata, not overwrite it.
         val persisted = existing.toDomain()
-        val alternatives = (persisted.streamAlternatives + station.streamAlternatives).distinct()
+        // Fresh catalog data goes before older persisted fallbacks. The player
+        // still puts its last actually-working address ahead of both.
+        val alternatives = (station.streamAlternatives + persisted.streamAlternatives).distinct()
         val codec = persisted.declaredCodec ?: station.declaredCodec
         val bitrate = persisted.declaredBitrateKbps ?: station.declaredBitrateKbps
         if (

@@ -285,4 +285,5 @@
     <string name="custom_search_hint">Can\'t find the station?</string>
     <string name="custom_search_action">Add it with its stream address</string>
     <string name="search_elsewhere">Elsewhere in the world</string>
+    <string name="language_system_default">System default</string>
 </resources>

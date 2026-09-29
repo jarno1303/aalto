@@ -90,6 +90,7 @@ internal object StreamQuality {
         return "$text kHz"
     }
 
+    @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
     fun fromTracks(tracks: Tracks): StreamFormat? {
         val group = tracks.groups.firstOrNull { it.type == C.TRACK_TYPE_AUDIO && it.isSelected } ?: return null
         val index = (0 until group.length).firstOrNull { group.isTrackSelected(it) } ?: 0

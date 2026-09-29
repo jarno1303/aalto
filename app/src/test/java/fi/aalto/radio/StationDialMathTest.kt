@@ -114,8 +114,8 @@ class StationDialMathTest {
         val rock = requireNotNull(StationCatalog.stationById("radio-rock"))
 
         // One genre in Aalto's words, not the raw tags after it (visual pass 2026-09-19).
-        assertEquals("Yle Vega - Puhe & Viihde - Suomi", stationDialTitle(vega))
-        assertEquals("Radio Rock - Rock - Suomi", stationDialTitle(rock))
+        assertEquals("Yle Vega - Puhe & Viihde - ${countryName("FI")}", stationDialTitle(vega))
+        assertEquals("Radio Rock - Rock - ${countryName("FI")}", stationDialTitle(rock))
     }
 
     @Test
@@ -134,7 +134,7 @@ class StationDialMathTest {
         )
         val incomplete = nova.copy(category = "", tags = emptyList(), countryCode = "")
 
-        assertEquals("Nova - Pop - Turkki", stationDialTitle(nova))
+        assertEquals("Nova - Pop - ${countryName("TR")}", stationDialTitle(nova))
         assertEquals("Nova", stationDialTitle(incomplete))
     }
 }

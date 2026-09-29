@@ -8,6 +8,7 @@ import androidx.media3.common.MediaMetadata
 import fi.aalto.radio.RadioStation
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Stream addresses for one station, best first. The list travels with the
@@ -65,6 +66,58 @@ internal object StreamMemory {
             prefs.edit().putString(stationId, url).apply()
         }
     }
+}
+
+/**
+ * Short-lived negative memory for individual stream addresses.
+ *
+ * This is deliberately process-local: ordering a station must not add another
+ * synchronous disk read to the tap -> playback path. The durable positive
+ * signal remains [StreamMemory] (last address that actually reached READY).
+ */
+internal object StreamHealthMemory {
+    private const val FAILURE_COOLDOWN_MS = 10L * 60_000L
+    private val failures = ConcurrentHashMap<String, ConcurrentHashMap<String, Long>>()
+
+    fun order(
+        stationId: String,
+        candidates: List<String>,
+        nowMs: Long = monotonicNowMs()
+    ): List<String> {
+        if (candidates.size < 2) return candidates
+        val stationFailures = failures[stationId] ?: return candidates
+        val healthy = ArrayList<String>(candidates.size)
+        val cooling = ArrayList<String>()
+        candidates.forEach { url ->
+            val failedAt = stationFailures[url]
+            val age = failedAt?.let { nowMs - it }
+            if (age != null && age >= 0L && age < FAILURE_COOLDOWN_MS) {
+                cooling += url
+            } else {
+                healthy += url
+            }
+        }
+        // If every source failed recently, preserve the normal deterministic
+        // order instead of pointlessly shuffling the same set.
+        return if (healthy.isEmpty() || cooling.isEmpty()) candidates else healthy + cooling
+    }
+
+    fun markFailure(stationId: String, url: String, nowMs: Long = monotonicNowMs()) {
+        failures.getOrPut(stationId) { ConcurrentHashMap() }[url] = nowMs
+    }
+
+    fun markSuccess(stationId: String, url: String) {
+        failures[stationId]?.let { stationFailures ->
+            stationFailures.remove(url)
+            if (stationFailures.isEmpty()) failures.remove(stationId, stationFailures)
+        }
+    }
+
+    fun clearForTests() {
+        failures.clear()
+    }
+
+    private fun monotonicNowMs(): Long = System.nanoTime() / 1_000_000L
 }
 
 /** Opens .pls / .m3u playlists and returns the stream addresses inside. */
@@ -135,7 +188,8 @@ internal object StationMediaItems {
      * on this station's tile; null for items that are only played.
      */
     fun build(context: Context, station: RadioStation, browseActions: List<String>? = null): MediaItem {
-        val candidates = StreamCandidates.forStation(station, StreamMemory.get(context, station.id))
+        val rawCandidates = StreamCandidates.forStation(station, StreamMemory.get(context, station.id))
+        val candidates = StreamHealthMemory.order(station.id, rawCandidates)
         val url = candidates.firstOrNull() ?: station.preferredStreamUrl
         return MediaItem.Builder()
             .setMediaId(station.id)

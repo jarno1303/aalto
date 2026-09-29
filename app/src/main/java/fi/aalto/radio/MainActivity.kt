@@ -157,11 +157,17 @@ private fun AaltoApp() {
     var catalogError by remember { mutableStateOf<String?>(null) }
     var recentStations by remember { mutableStateOf<List<RadioStation>>(emptyList()) }
 
+    val startupStationId = remember(context) {
+        LastStationStore.id(context) ?: StationCatalog.DEFAULT_STATION_ID
+    }
+    var startupStationRestoreVersion by remember { mutableStateOf(0) }
     var selectedStationId by rememberSaveable {
-        mutableStateOf(
-            LastStationStore.id(context)
-                ?: StationCatalog.DEFAULT_STATION_ID
-        )
+        mutableStateOf(startupStationId)
+    }
+
+    LaunchedEffect(repository, startupStationId) {
+        repository.restoreStoredStation(startupStationId)
+        startupStationRestoreVersion += 1
     }
 
     // Decided before the favourites migration below runs: only a brand-new
@@ -263,7 +269,12 @@ private fun AaltoApp() {
         repository.registerCatalogStations(catalogRadioStations)
         catalogRegistrationVersion++
     }
-    val stations = remember(repository.stations, catalogRadioStations, catalogRegistrationVersion) {
+    val stations = remember(
+        repository.stations,
+        catalogRadioStations,
+        catalogRegistrationVersion,
+        startupStationRestoreVersion
+    ) {
         // Built-in stations first, so a catalog duplicate of one is dropped.
         (repository.stations + catalogRadioStations).distinctByListing()
     }

@@ -20,6 +20,7 @@ import fi.aalto.radio.alarm.rememberNotificationsEnabled
 import fi.aalto.radio.audio.AudioSheet
 import fi.aalto.radio.history.HistorySheet
 import fi.aalto.radio.history.rememberTrackHistory
+import fi.aalto.radio.playback.LastStationStore
 import fi.aalto.radio.alarm.dayShort
 import fi.aalto.radio.alarm.formatClock
 import java.time.Instant
@@ -157,7 +158,10 @@ private fun AaltoApp() {
     var recentStations by remember { mutableStateOf<List<RadioStation>>(emptyList()) }
 
     var selectedStationId by rememberSaveable {
-        mutableStateOf(StationCatalog.DEFAULT_STATION_ID)
+        mutableStateOf(
+            LastStationStore.id(context)
+                ?: StationCatalog.DEFAULT_STATION_ID
+        )
     }
 
     // Decided before the favourites migration below runs: only a brand-new

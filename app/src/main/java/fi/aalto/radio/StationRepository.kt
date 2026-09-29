@@ -336,11 +336,33 @@ class StationRepository(
     }
 
     private suspend fun ensureStationPersisted(stationId: String) {
-        // Upsert even when the row already exists. Catalog enrichment can add
-        // fallback URLs after the original row was seeded; persisting the
-        // current in-memory station makes those fallbacks survive restart.
         val station = stationById(stationId) ?: return
-        dao.upsertStation(station.toEntity(updatedAt = clock()))
+        val existing = dao.stationsByIds(listOf(stationId)).firstOrNull()
+        if (existing == null) {
+            dao.upsertStation(station.toEntity(updatedAt = clock()))
+            return
+        }
+
+        // Preserve the persisted station identity and primary address. A
+        // remote custom-station edit may be newer than the in-memory copy;
+        // reliability enrichment is allowed to add metadata, not overwrite it.
+        val persisted = existing.toDomain()
+        val alternatives = (persisted.streamAlternatives + station.streamAlternatives).distinct()
+        val codec = persisted.declaredCodec ?: station.declaredCodec
+        val bitrate = persisted.declaredBitrateKbps ?: station.declaredBitrateKbps
+        if (
+            alternatives != persisted.streamAlternatives ||
+            codec != persisted.declaredCodec ||
+            bitrate != persisted.declaredBitrateKbps
+        ) {
+            dao.upsertStation(
+                persisted.copy(
+                    streamAlternatives = alternatives,
+                    declaredCodec = codec,
+                    declaredBitrateKbps = bitrate
+                ).toEntity(updatedAt = clock())
+            )
+        }
     }
 
     companion object {

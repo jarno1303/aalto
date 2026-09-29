@@ -49,7 +49,7 @@ internal fun SettingsDialog(
     onSignIn: () -> Unit,
     onSignOut: () -> Unit,
     onOpenAudio: () -> Unit,
-    onOpenLanguage: (() -> Unit)?,
+    onOpenLanguage: () -> Unit,
     onOpenCountries: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -64,13 +64,11 @@ internal fun SettingsDialog(
             ) {
                 // What someone looks for first when the app is in a language
                 // they cannot read: put it at the top, not in the middle.
-                if (onOpenLanguage != null) {
-                    SettingsRow(
-                        title = stringResource(R.string.language_title),
-                        action = stringResource(R.string.language_open),
-                        onClick = onOpenLanguage
-                    )
-                }
+                SettingsRow(
+                    title = stringResource(R.string.language_title),
+                    action = stringResource(R.string.language_open),
+                    onClick = onOpenLanguage
+                )
                 SettingsRow(
                     title = stringResource(R.string.countries_title),
                     action = stringResource(R.string.audio_open),

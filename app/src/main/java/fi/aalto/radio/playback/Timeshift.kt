@@ -82,6 +82,7 @@ internal object Timeshift {
     /** How far behind live the listener is, in time. */
     private var behindMs = 0L
     private var lastTickMs = 0L
+    private var lastPublishedAvailable = false
 
     /** Song titles met while playing from the ring. Main thread. */
     var titleListener: ((ByteArray) -> Unit)? = null
@@ -107,6 +108,7 @@ internal object Timeshift {
 
     /** A different station started: forget the old one. Main thread. */
     fun stationChanged(context: Context) {
+        log("stationChanged: reset buffer")
         stopRecorder()
         liveUri = null
         plus = Plus.access(context).isActive()
@@ -248,8 +250,15 @@ internal object Timeshift {
         // Whole seconds, so the screen changes only when the number does.
         val behind = if (rewound) (((behindMs + 500) / 1000) * 1000).coerceAtLeast(1_000L) else 0L
         val maxBack = if (rewound) (maxSeconds * 1000L - behindMs).coerceAtLeast(0L) else 0L
+        val available = buf.format != null && kept >= 5_000L
+        if (available != lastPublishedAvailable) {
+            lastPublishedAvailable = available
+            log(
+                "available=$available format=${buf.format} keptMs=$kept head=${buf.head} rate=${buf.byteRate}"
+            )
+        }
         _state.value = TimeshiftState(
-            available = buf.format != null && kept >= 5_000L,
+            available = available,
             behindMs = behind,
             maxBackMs = maxBack,
             atFreeLimit = !plus && rewound && maxBack < 1_000L
@@ -340,12 +349,21 @@ private class RecordingDataSource(
             // Live streams only: no known length, from the start, cuttable format.
             if (length == C.LENGTH_UNSET.toLong() && dataSpec.position == 0L) {
                 val headers = upstream.responseHeaders
-                val format = Timeshift.formatFor(Timeshift.header(headers, "Content-Type"))
+                val contentType = Timeshift.header(headers, "Content-Type")
+                val format = Timeshift.formatFor(contentType)
+                Timeshift.log(
+                    "open live uri=${dataSpec.uri} contentType=$contentType format=$format length=$length"
+                )
                 if (format != null) {
                     val metaint = Timeshift.header(headers, "icy-metaint")?.trim()?.toIntOrNull() ?: 0
                     writer = ring.beginWriter(format)
                     stripper = IcyStripper(metaint)
+                    Timeshift.log("writer started format=$format metaint=$metaint")
                 }
+            } else {
+                Timeshift.log(
+                    "not recording uri=${dataSpec.uri} position=${dataSpec.position} length=$length"
+                )
             }
         }
         return length

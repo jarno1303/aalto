@@ -282,4 +282,5 @@
     <string name="custom_search_hint">Sender nicht gefunden?</string>
     <string name="custom_search_action">Mit seiner Stream-Adresse hinzufügen</string>
     <string name="search_elsewhere">Anderswo auf der Welt</string>
+    <string name="language_system_default">Systemstandard</string>
 </resources>

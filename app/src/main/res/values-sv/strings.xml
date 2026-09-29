@@ -282,4 +282,5 @@
     <string name="custom_search_hint">Hittar du inte stationen?</string>
     <string name="custom_search_action">Lägg till den med streamadressen</string>
     <string name="search_elsewhere">Andra delar av världen</string>
+    <string name="language_system_default">Systemets standard</string>
 </resources>

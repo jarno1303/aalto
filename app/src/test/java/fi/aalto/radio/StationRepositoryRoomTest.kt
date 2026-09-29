@@ -434,6 +434,35 @@ class StationRepositoryRoomTest {
     }
 
     @Test
+    fun lastPlayedStoredStationCanBeRestoredWithoutFavoriteOrCatalogReload() = runTest {
+        val database = inMemoryDatabase()
+        val stored = RadioStation(
+            id = "cold-start-last-station",
+            name = "Cold start station",
+            description = "",
+            initials = "CS",
+            logoColorArgb = 0xFF000000,
+            streamUrl = "https://example.com/cold-start",
+            preferredStreamUrl = "https://example.com/cold-start",
+            countryCode = "FI",
+            tags = emptyList(),
+            category = ""
+        )
+        database.localRadioDao().upsertStation(stored.toEntity(updatedAt = 1L))
+
+        // A fresh repository simulates process death: the station exists only
+        // in Room, not in the in-memory catalog and not in favourites.
+        val freshRepository = repository(database)
+        assertEquals(null, freshRepository.stationById(stored.id))
+
+        val restored = requireNotNull(freshRepository.restoreStoredStation(stored.id))
+
+        assertEquals(stored.id, restored.id)
+        assertEquals(stored.streamUrl, restored.streamUrl)
+        assertEquals(stored.id, freshRepository.stationById(stored.id)?.id)
+    }
+
+    @Test
     fun firstLaunchPickerStartsWithoutDefaultFavorite() = runTest {
         val database = inMemoryDatabase()
         val store = legacyStore()

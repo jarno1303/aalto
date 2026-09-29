@@ -294,6 +294,10 @@ internal class AaltoSessionPlayer(
     // ---- Fallback ----------------------------------------------------------
 
     private fun startTracking(item: MediaItem?, keepWaiting: Boolean = false) {
+        // This listener is registered before the media session. Reset the
+        // timeshift ring here, before RadioPlayer calls prepare(), so a newly
+        // opened stream can never receive an already-invalid writer id.
+        Timeshift.prepareStation(context, item?.mediaId)
         cancelTimeout()
         if (!keepWaiting) waitingSinceMs = 0L
         pausedAtMs = 0L

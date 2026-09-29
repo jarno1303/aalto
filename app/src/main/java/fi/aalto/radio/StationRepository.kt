@@ -47,6 +47,25 @@ class StationRepository(
     }
 
     /**
+     * Restores one station from Room into the in-memory lookup used by the UI.
+     * This is needed on cold start for a last-played catalog/custom station:
+     * its id is known before favourites/catalog flows have repopulated memory.
+     */
+    suspend fun restoreStoredStation(stationId: String): RadioStation? {
+        stationById(stationId)?.let { return it }
+
+        return runCatching {
+            withContext(ioDispatcher) {
+                dao.stationsByIds(listOf(stationId)).firstOrNull()?.toDomain()
+            }
+        }.onSuccess { station ->
+            station?.let { registerCatalogStations(listOf(it)) }
+        }.onFailure { error ->
+            Log.w(TAG, "Stored last station not loaded", error)
+        }.getOrNull()
+    }
+
+    /**
      * Radio Browser often has more than one healthy address for the same
      * broadcaster. Exact same-name/country matches can safely enrich Aalto's
      * built-in station without changing its identity or official primary URL.

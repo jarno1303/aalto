@@ -402,6 +402,38 @@ class StationRepositoryRoomTest {
     }
 
     @Test
+    fun persistingFallbackMetadataDoesNotOverwriteStoredPrimaryStream() = runTest {
+        val database = inMemoryDatabase()
+        val repository = repository(database)
+        val stored = RadioStation(
+            id = "custom-safe-merge",
+            name = "Custom",
+            description = "",
+            initials = "C",
+            logoColorArgb = 0xFF000000,
+            streamUrl = "https://new.example/live",
+            preferredStreamUrl = "https://new.example/live",
+            countryCode = "FI",
+            tags = emptyList(),
+            category = ""
+        )
+        val staleInMemory = stored.copy(
+            streamUrl = "https://old.example/live",
+            preferredStreamUrl = "https://old.example/live",
+            streamAlternatives = listOf("https://backup.example/live")
+        )
+
+        database.localRadioDao().upsertStation(stored.toEntity(updatedAt = 1L))
+        repository.registerCatalogStations(listOf(staleInMemory))
+        repository.addFavorite(stored.id)
+
+        val persisted = database.localRadioDao().stationsByIds(listOf(stored.id)).single().toDomain()
+        assertEquals("https://new.example/live", persisted.streamUrl)
+        assertEquals("https://new.example/live", persisted.preferredStreamUrl)
+        assertTrue(persisted.streamAlternatives.contains("https://backup.example/live"))
+    }
+
+    @Test
     fun firstLaunchPickerStartsWithoutDefaultFavorite() = runTest {
         val database = inMemoryDatabase()
         val store = legacyStore()

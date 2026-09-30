@@ -1,7 +1,11 @@
 package fi.aalto.radio
 
 import android.content.Context
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
@@ -148,92 +152,159 @@ internal fun AaltoThemeMode.isDark(): Boolean = when (this) {
 // THEME
 // =============================================================
 
+/**
+ * Theme changes are user-visible state changes, not screen changes. Keep the
+ * same composition alive and interpolate the Material colours instead of
+ * crossfading two copies of the app (which could duplicate player surfaces).
+ */
+internal const val AALTO_THEME_TRANSITION_MILLIS = 460
+internal const val AALTO_THEME_VEIL_IN_MILLIS = 110
+internal const val AALTO_THEME_VEIL_OUT_MILLIS = 360
+
+private val AaltoLightColorScheme = lightColorScheme(
+    primary = AaltoBlue,
+    onPrimary = Color.White,
+    background = AaltoLightBackground,
+    onBackground = AaltoLightText,
+    surface = AaltoLightSurface,
+    onSurface = AaltoLightText,
+    surfaceVariant = AaltoLightLogoSurface,
+    onSurfaceVariant = AaltoLightMuted,
+    outline = AaltoLightLine,
+    primaryContainer = AaltoLightSelectedSurface,
+    onPrimaryContainer = AaltoLightText,
+    error = AaltoLightError,
+    onError = Color.White,
+    secondary = AaltoBlue,
+    onSecondary = Color.White,
+    secondaryContainer = AaltoLightSelectedSurface,
+    onSecondaryContainer = AaltoLightText,
+    tertiary = AaltoBlue,
+    onTertiary = Color.White,
+    tertiaryContainer = AaltoLightSelectedSurface,
+    onTertiaryContainer = AaltoLightText,
+    outlineVariant = AaltoLightLine,
+    surfaceTint = Color.Transparent,
+    surfaceBright = AaltoLightSurface,
+    surfaceDim = AaltoLightBackground,
+    surfaceContainerLowest = AaltoLightSurface,
+    surfaceContainerLow = AaltoLightSurface,
+    surfaceContainer = AaltoLightSurface,
+    surfaceContainerHigh = AaltoLightSurface,
+    surfaceContainerHighest = AaltoLightLogoSurface,
+    inverseSurface = AaltoLightText,
+    inverseOnSurface = AaltoLightSurface,
+    inversePrimary = AaltoBlue,
+    scrim = Color.Black
+)
+
+private val AaltoDarkColorScheme = darkColorScheme(
+    primary = AaltoBlue,
+    onPrimary = Color.White,
+    background = AaltoDarkBackground,
+    onBackground = AaltoDarkText,
+    surface = AaltoDarkSurface,
+    onSurface = AaltoDarkText,
+    surfaceVariant = AaltoDarkLogoSurface,
+    onSurfaceVariant = AaltoDarkMuted,
+    outline = AaltoDarkLine,
+    primaryContainer = AaltoDarkSelectedSurface,
+    onPrimaryContainer = AaltoDarkText,
+    error = AaltoDarkError,
+    onError = AaltoDarkBackground,
+    secondary = AaltoBlue,
+    onSecondary = Color.White,
+    secondaryContainer = AaltoDarkSelectedSurface,
+    onSecondaryContainer = AaltoDarkText,
+    tertiary = AaltoBlue,
+    onTertiary = Color.White,
+    tertiaryContainer = AaltoDarkSelectedSurface,
+    onTertiaryContainer = AaltoDarkText,
+    outlineVariant = AaltoDarkLine,
+    surfaceTint = Color.Transparent,
+    surfaceBright = AaltoDarkSurface,
+    surfaceDim = AaltoDarkBackground,
+    surfaceContainerLowest = AaltoDarkBackground,
+    surfaceContainerLow = AaltoDarkSurface,
+    surfaceContainer = AaltoDarkSurface,
+    surfaceContainerHigh = AaltoDarkSurface,
+    surfaceContainerHighest = AaltoDarkLogoSurface,
+    inverseSurface = AaltoDarkText,
+    inverseOnSurface = AaltoDarkBackground,
+    inversePrimary = AaltoBlue,
+    scrim = Color.Black
+)
+
+@Composable
+private fun animatedThemeColor(light: Color, dark: Color, darkTheme: Boolean, label: String): Color {
+    return animateColorAsState(
+        targetValue = if (darkTheme) dark else light,
+        animationSpec = tween(
+            durationMillis = AALTO_THEME_TRANSITION_MILLIS,
+            easing = FastOutSlowInEasing
+        ),
+        label = label
+    ).value
+}
+
+@Composable
+private fun animatedAaltoColorScheme(darkTheme: Boolean): ColorScheme {
+    val light = AaltoLightColorScheme
+    val dark = AaltoDarkColorScheme
+    // Start from the target scheme so rarely used Material roles still have
+    // correct light/dark semantics. Every role Aalto renders directly is
+    // interpolated, so the visible screen never flashes to the target palette.
+    val target = if (darkTheme) dark else light
+
+    return target.copy(
+        primary = animatedThemeColor(light.primary, dark.primary, darkTheme, "themePrimary"),
+        onPrimary = animatedThemeColor(light.onPrimary, dark.onPrimary, darkTheme, "themeOnPrimary"),
+        primaryContainer = animatedThemeColor(light.primaryContainer, dark.primaryContainer, darkTheme, "themePrimaryContainer"),
+        onPrimaryContainer = animatedThemeColor(light.onPrimaryContainer, dark.onPrimaryContainer, darkTheme, "themeOnPrimaryContainer"),
+        inversePrimary = animatedThemeColor(light.inversePrimary, dark.inversePrimary, darkTheme, "themeInversePrimary"),
+        secondary = animatedThemeColor(light.secondary, dark.secondary, darkTheme, "themeSecondary"),
+        onSecondary = animatedThemeColor(light.onSecondary, dark.onSecondary, darkTheme, "themeOnSecondary"),
+        secondaryContainer = animatedThemeColor(light.secondaryContainer, dark.secondaryContainer, darkTheme, "themeSecondaryContainer"),
+        onSecondaryContainer = animatedThemeColor(light.onSecondaryContainer, dark.onSecondaryContainer, darkTheme, "themeOnSecondaryContainer"),
+        tertiary = animatedThemeColor(light.tertiary, dark.tertiary, darkTheme, "themeTertiary"),
+        onTertiary = animatedThemeColor(light.onTertiary, dark.onTertiary, darkTheme, "themeOnTertiary"),
+        tertiaryContainer = animatedThemeColor(light.tertiaryContainer, dark.tertiaryContainer, darkTheme, "themeTertiaryContainer"),
+        onTertiaryContainer = animatedThemeColor(light.onTertiaryContainer, dark.onTertiaryContainer, darkTheme, "themeOnTertiaryContainer"),
+        background = animatedThemeColor(light.background, dark.background, darkTheme, "themeBackground"),
+        onBackground = animatedThemeColor(light.onBackground, dark.onBackground, darkTheme, "themeOnBackground"),
+        surface = animatedThemeColor(light.surface, dark.surface, darkTheme, "themeSurface"),
+        onSurface = animatedThemeColor(light.onSurface, dark.onSurface, darkTheme, "themeOnSurface"),
+        surfaceVariant = animatedThemeColor(light.surfaceVariant, dark.surfaceVariant, darkTheme, "themeSurfaceVariant"),
+        onSurfaceVariant = animatedThemeColor(light.onSurfaceVariant, dark.onSurfaceVariant, darkTheme, "themeOnSurfaceVariant"),
+        surfaceTint = animatedThemeColor(light.surfaceTint, dark.surfaceTint, darkTheme, "themeSurfaceTint"),
+        inverseSurface = animatedThemeColor(light.inverseSurface, dark.inverseSurface, darkTheme, "themeInverseSurface"),
+        inverseOnSurface = animatedThemeColor(light.inverseOnSurface, dark.inverseOnSurface, darkTheme, "themeInverseOnSurface"),
+        error = animatedThemeColor(light.error, dark.error, darkTheme, "themeError"),
+        onError = animatedThemeColor(light.onError, dark.onError, darkTheme, "themeOnError"),
+        errorContainer = animatedThemeColor(light.errorContainer, dark.errorContainer, darkTheme, "themeErrorContainer"),
+        onErrorContainer = animatedThemeColor(light.onErrorContainer, dark.onErrorContainer, darkTheme, "themeOnErrorContainer"),
+        outline = animatedThemeColor(light.outline, dark.outline, darkTheme, "themeOutline"),
+        outlineVariant = animatedThemeColor(light.outlineVariant, dark.outlineVariant, darkTheme, "themeOutlineVariant"),
+        scrim = animatedThemeColor(light.scrim, dark.scrim, darkTheme, "themeScrim"),
+        surfaceBright = animatedThemeColor(light.surfaceBright, dark.surfaceBright, darkTheme, "themeSurfaceBright"),
+        surfaceDim = animatedThemeColor(light.surfaceDim, dark.surfaceDim, darkTheme, "themeSurfaceDim"),
+        surfaceContainer = animatedThemeColor(light.surfaceContainer, dark.surfaceContainer, darkTheme, "themeSurfaceContainer"),
+        surfaceContainerHigh = animatedThemeColor(light.surfaceContainerHigh, dark.surfaceContainerHigh, darkTheme, "themeSurfaceContainerHigh"),
+        surfaceContainerHighest = animatedThemeColor(light.surfaceContainerHighest, dark.surfaceContainerHighest, darkTheme, "themeSurfaceContainerHighest"),
+        surfaceContainerLow = animatedThemeColor(light.surfaceContainerLow, dark.surfaceContainerLow, darkTheme, "themeSurfaceContainerLow"),
+        surfaceContainerLowest = animatedThemeColor(light.surfaceContainerLowest, dark.surfaceContainerLowest, darkTheme, "themeSurfaceContainerLowest")
+    )
+}
+
 @Composable
 internal fun AaltoTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
     MaterialTheme(
-        colorScheme = if (darkTheme) {
-            darkColorScheme(
-                primary = AaltoBlue,
-                onPrimary = Color.White,
-                background = AaltoDarkBackground,
-                onBackground = AaltoDarkText,
-                surface = AaltoDarkSurface,
-                onSurface = AaltoDarkText,
-                surfaceVariant = AaltoDarkLogoSurface,
-                onSurfaceVariant = AaltoDarkMuted,
-                outline = AaltoDarkLine,
-                primaryContainer = AaltoDarkSelectedSurface,
-                onPrimaryContainer = AaltoDarkText,
-                error = AaltoDarkError,
-                onError = AaltoDarkBackground,
-                // Every role Material would otherwise fill with its own
-                // lavender default: sheets, dialogs, chips, switches.
-                secondary = AaltoBlue,
-                onSecondary = Color.White,
-                secondaryContainer = AaltoDarkSelectedSurface,
-                onSecondaryContainer = AaltoDarkText,
-                tertiary = AaltoBlue,
-                onTertiary = Color.White,
-                tertiaryContainer = AaltoDarkSelectedSurface,
-                onTertiaryContainer = AaltoDarkText,
-                outlineVariant = AaltoDarkLine,
-                surfaceTint = Color.Transparent,
-                surfaceBright = AaltoDarkSurface,
-                surfaceDim = AaltoDarkBackground,
-                surfaceContainerLowest = AaltoDarkBackground,
-                surfaceContainerLow = AaltoDarkSurface,
-                surfaceContainer = AaltoDarkSurface,
-                surfaceContainerHigh = AaltoDarkSurface,
-                surfaceContainerHighest = AaltoDarkLogoSurface,
-                inverseSurface = AaltoDarkText,
-                inverseOnSurface = AaltoDarkBackground,
-                inversePrimary = AaltoBlue,
-                scrim = Color.Black
-            )
-        } else {
-            lightColorScheme(
-                primary = AaltoBlue,
-                onPrimary = Color.White,
-                background = AaltoLightBackground,
-                onBackground = AaltoLightText,
-                surface = AaltoLightSurface,
-                onSurface = AaltoLightText,
-                surfaceVariant = AaltoLightLogoSurface,
-                onSurfaceVariant = AaltoLightMuted,
-                outline = AaltoLightLine,
-                primaryContainer = AaltoLightSelectedSurface,
-                onPrimaryContainer = AaltoLightText,
-                error = AaltoLightError,
-                onError = Color.White,
-                // Every role Material would otherwise fill with its own
-                // lavender default: sheets, dialogs, chips, switches.
-                secondary = AaltoBlue,
-                onSecondary = Color.White,
-                secondaryContainer = AaltoLightSelectedSurface,
-                onSecondaryContainer = AaltoLightText,
-                tertiary = AaltoBlue,
-                onTertiary = Color.White,
-                tertiaryContainer = AaltoLightSelectedSurface,
-                onTertiaryContainer = AaltoLightText,
-                outlineVariant = AaltoLightLine,
-                surfaceTint = Color.Transparent,
-                surfaceBright = AaltoLightSurface,
-                surfaceDim = AaltoLightBackground,
-                surfaceContainerLowest = AaltoLightSurface,
-                surfaceContainerLow = AaltoLightSurface,
-                surfaceContainer = AaltoLightSurface,
-                surfaceContainerHigh = AaltoLightSurface,
-                surfaceContainerHighest = AaltoLightLogoSurface,
-                inverseSurface = AaltoLightText,
-                inverseOnSurface = AaltoLightSurface,
-                inversePrimary = AaltoBlue,
-                scrim = Color.Black
-            )
-        },
+        colorScheme = animatedAaltoColorScheme(darkTheme),
         typography = AaltoTypography,
         content = content
     )
 }
+

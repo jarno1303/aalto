@@ -122,17 +122,57 @@ internal fun SearchScreen(
         searchableStations,
         activeCountries,
         categoryFilter,
-        searchQuery
+        searchQuery,
+        favoriteIds,
+        recentStations,
+        catalogStations
     ) {
-        searchableStations
+        val filtered = searchableStations
             .filter { it.countryCode.uppercase() in activeCountries }
             // Any of the chosen genres; none chosen means all.
             .filter { station -> activeCategories.isEmpty() || activeCategories.any { it.matches(station) } }
             .filter { searchQuery.isBlank() || stationMatchesQuery(it, searchQuery) }
             .distinctBy { it.stableId }
+
+        DiscoveryRanking.rank(
+            stations = filtered,
+            query = searchQuery,
+            favoriteIds = favoriteIds,
+            recentStations = recentStations,
+            catalogStations = catalogStations
+        )
     }
     val isBrowsing = searchQuery.isBlank() && categoryFilter.isEmpty()
     val visibleRecents = if (isBrowsing) recentStations.distinctBy { it.stableId }.take(5) else emptyList()
+    val discoverySuggestions = remember(
+        isBrowsing,
+        resultStations,
+        selectedStation,
+        favoriteIds,
+        recentStations,
+        catalogStations
+    ) {
+        if (!isBrowsing || recentStations.isEmpty()) {
+            emptyList()
+        } else {
+            DiscoveryRanking.similarStations(
+                candidates = resultStations,
+                selectedStation = selectedStation,
+                favoriteIds = favoriteIds,
+                recentStations = recentStations,
+                catalogStations = catalogStations
+            )
+        }
+    }
+    val suggestionIds = discoverySuggestions.mapTo(hashSetOf()) { it.stableId }
+    val listedStations = if (
+        discoverySuggestions.isNotEmpty() &&
+        resultStations.size > discoverySuggestions.size + 2
+    ) {
+        resultStations.filterNot { it.stableId in suggestionIds }
+    } else {
+        resultStations
+    }
     val showSkeleton = catalogLoading && resultStations.isEmpty()
 
     fun hideKeyboard() {
@@ -380,6 +420,29 @@ internal fun SearchScreen(
             }
         }
 
+        if (discoverySuggestions.isNotEmpty()) {
+            item(key = "similar-title") {
+                ListTitle(stringResource(R.string.search_similar_to, selectedStation.name))
+            }
+            items(
+                items = discoverySuggestions,
+                key = { station -> "similar-${station.stableId}" },
+                contentType = { "station-row" }
+            ) { station ->
+                StationRow(
+                    station = station,
+                    isSelected = station.stableId == selectedStation.stableId,
+                    isPlaying = isPlaying,
+                    isFavorite = station.stableId in favoriteIds,
+                    onClick = {
+                        hideKeyboard()
+                        onStationClick(station)
+                    },
+                    onFavoriteClick = { onStationFavoriteClick(station) }
+                )
+            }
+        }
+
         item {
             ListTitle(
                 stringResource(if (isBrowsing) R.string.search_stations else R.string.search_results)
@@ -414,7 +477,7 @@ internal fun SearchScreen(
         }
 
         items(
-            items = resultStations,
+            items = listedStations,
             key = { station -> station.stableId },
             contentType = { "station-row" }
         ) { station ->

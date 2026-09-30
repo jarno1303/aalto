@@ -32,9 +32,12 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -78,16 +81,22 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val darkTheme = AaltoThemePreferences.mode.isDark()
+            var systemBarsInitialized by remember { mutableStateOf(false) }
 
-            // Content draws behind the system bars; bar icons follow the app theme,
-            // including when the user overrides the system light/dark setting.
+            // The app palette morphs over 320 ms. Move the status/navigation
+            // bar icons at the midpoint so they do not jump before the screen
+            // underneath them has become dark/light enough.
             LaunchedEffect(darkTheme) {
+                if (systemBarsInitialized) {
+                    delay(AALTO_THEME_TRANSITION_MILLIS / 2L)
+                }
                 val style = if (darkTheme) {
                     SystemBarStyle.dark(AndroidColor.TRANSPARENT)
                 } else {
                     SystemBarStyle.light(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT)
                 }
                 enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
+                systemBarsInitialized = true
             }
 
             AaltoTheme(darkTheme = darkTheme) {
@@ -110,6 +119,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun AaltoApp() {
     val context = LocalContext.current
+    val isDarkTheme = AaltoThemePreferences.mode.isDark()
     val repository = remember(context) {
         AaltoAppContainer.stationRepository(context)
     }
@@ -117,6 +127,9 @@ private fun AaltoApp() {
         AaltoAppContainer.stationCatalogRepository(context)
     }
     val coroutineScope = rememberCoroutineScope()
+    val themeVeilAlpha = remember { Animatable(0f) }
+    var themeVeilColor by remember { mutableStateOf(androidx.compose.ui.graphics.Color.Black) }
+    var themeTransitionRunning by remember { mutableStateOf(false) }
     val radioPlayer = rememberRadioPlayer()
     val syncCoordinator = remember(context) { AaltoAppContainer.syncCoordinator(context) }
     val syncState by syncCoordinator.state.collectAsState()
@@ -574,6 +587,42 @@ private fun AaltoApp() {
                     },
                     onStationFavoriteClick = ::toggleFavorite,
                     onOpenSettings = { showSettings = true },
+                    isDarkTheme = isDarkTheme,
+                    onToggleTheme = {
+                        if (!themeTransitionRunning) {
+                            val targetDark = !isDarkTheme
+                            themeVeilColor = if (targetDark) {
+                                androidx.compose.ui.graphics.Color.Black
+                            } else {
+                                androidx.compose.ui.graphics.Color.White
+                            }
+                            coroutineScope.launch {
+                                themeTransitionRunning = true
+                                themeVeilAlpha.snapTo(0f)
+                                // Like Night Screen: cover the old surface gently
+                                // before the visual state changes underneath.
+                                themeVeilAlpha.animateTo(
+                                    targetValue = 0.16f,
+                                    animationSpec = tween(
+                                        durationMillis = AALTO_THEME_VEIL_IN_MILLIS,
+                                        easing = FastOutSlowInEasing
+                                    )
+                                )
+                                AaltoThemePreferences.update(
+                                    context,
+                                    if (targetDark) AaltoThemeMode.DARK else AaltoThemeMode.LIGHT
+                                )
+                                themeVeilAlpha.animateTo(
+                                    targetValue = 0f,
+                                    animationSpec = tween(
+                                        durationMillis = AALTO_THEME_VEIL_OUT_MILLIS,
+                                        easing = FastOutSlowInEasing
+                                    )
+                                )
+                                themeTransitionRunning = false
+                            }
+                        }
+                    },
                     onNightScreen = { nightScreenActive = true },
                     onPrevious = onPrevious,
                     onNext = onNext,
@@ -636,6 +685,15 @@ private fun AaltoApp() {
                     onFind = { selectedTab = TAB_SEARCH }
                 )
             }
+        }
+
+        if (themeVeilAlpha.value > 0.001f) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .zIndex(9f)
+                    .background(themeVeilColor.copy(alpha = themeVeilAlpha.value))
+            )
         }
 
         AnimatedVisibility(

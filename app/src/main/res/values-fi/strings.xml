@@ -45,6 +45,7 @@
     <string name="search_results">Tulokset</string>
     <string name="search_clear">Tyhjennä haku</string>
     <string name="search_recent">Viimeksi kuunnellut</string>
+    <string name="search_similar_to">Samankaltaisia kuin %1$s</string>
     <string name="search_country">Maa: %1$s</string>
     <string name="search_no_results">Ei asemia tällä rajauksella</string>
     <string name="catalog_loading">Ladataan asemia…</string>
@@ -130,6 +131,8 @@
     <string name="theme_system">Järjestelmä</string>
     <string name="theme_light">Vaalea</string>
     <string name="theme_dark">Tumma</string>
+    <string name="theme_quick_dark">Käytä tummaa teemaa</string>
+    <string name="theme_quick_light">Käytä vaaleaa teemaa</string>
 
     <!-- Sync -->
     <string name="sync_title">Aalto Sync</string>

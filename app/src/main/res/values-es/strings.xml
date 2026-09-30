@@ -45,6 +45,7 @@
     <string name="search_results">Resultados</string>
     <string name="search_clear">Borrar búsqueda</string>
     <string name="search_recent">Escuchadas recientemente</string>
+    <string name="search_similar_to">Similares a %1$s</string>
     <string name="search_country">País: %1$s</string>
     <string name="search_no_results">No hay emisoras que coincidan</string>
     <string name="catalog_loading">Cargando emisoras…</string>
@@ -130,6 +131,8 @@
     <string name="theme_system">Sistema</string>
     <string name="theme_light">Claro</string>
     <string name="theme_dark">Oscuro</string>
+    <string name="theme_quick_dark">Usar tema oscuro</string>
+    <string name="theme_quick_light">Usar tema claro</string>
 
     <!-- Sync -->
     <string name="sync_title">Aalto Sync</string>

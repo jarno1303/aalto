@@ -73,6 +73,8 @@ internal fun RadioScreen(
     onStationClick: (RadioStation) -> Unit,
     onStationFavoriteClick: (RadioStation) -> Unit,
     onOpenSettings: () -> Unit,
+    isDarkTheme: Boolean,
+    onToggleTheme: () -> Unit,
     onNightScreen: () -> Unit,
     onPrevious: (() -> Unit)?,
     onNext: (() -> Unit)?,
@@ -165,7 +167,13 @@ internal fun RadioScreen(
                         .weight(1f)
                         .fillMaxHeight()
                 ) {
-                    TopBar(onOpenSettings, onOpenAlarm, alarmLabel)
+                    TopBar(
+                        onOpenSettings = onOpenSettings,
+                        onOpenAlarm = onOpenAlarm,
+                        alarmLabel = alarmLabel,
+                        isDarkTheme = isDarkTheme,
+                        onToggleTheme = onToggleTheme
+                    )
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -227,7 +235,13 @@ internal fun RadioScreen(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(AaltoSpaceXs)
             ) {
-                TopBar(onOpenSettings, onOpenAlarm, alarmLabel)
+                TopBar(
+                        onOpenSettings = onOpenSettings,
+                        onOpenAlarm = onOpenAlarm,
+                        alarmLabel = alarmLabel,
+                        isDarkTheme = isDarkTheme,
+                        onToggleTheme = onToggleTheme
+                    )
 
                 // Folded away: centre the card in the height that is left
                 // instead of leaving a hole under it.

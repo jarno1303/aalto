@@ -294,6 +294,8 @@ internal fun stationMatchesQuery(station: RadioStation, query: String): Boolean 
         append(' ')
         append(station.countryCode)
         append(' ')
+        append(countryName(station.countryCode))
+        append(' ')
         append(station.tags.joinToString(" "))
         append(' ')
         append(station.languages.joinToString(" "))

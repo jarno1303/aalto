@@ -2,6 +2,7 @@ package fi.aalto.radio
 
 import android.content.Context
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
@@ -156,7 +157,9 @@ internal fun AaltoThemeMode.isDark(): Boolean = when (this) {
  * same composition alive and interpolate the Material colours instead of
  * crossfading two copies of the app (which could duplicate player surfaces).
  */
-internal const val AALTO_THEME_TRANSITION_MILLIS = 320
+internal const val AALTO_THEME_TRANSITION_MILLIS = 460
+internal const val AALTO_THEME_VEIL_IN_MILLIS = 110
+internal const val AALTO_THEME_VEIL_OUT_MILLIS = 360
 
 private val AaltoLightColorScheme = lightColorScheme(
     primary = AaltoBlue,
@@ -236,7 +239,10 @@ private val AaltoDarkColorScheme = darkColorScheme(
 private fun animatedThemeColor(light: Color, dark: Color, darkTheme: Boolean, label: String): Color {
     return animateColorAsState(
         targetValue = if (darkTheme) dark else light,
-        animationSpec = tween(durationMillis = AALTO_THEME_TRANSITION_MILLIS),
+        animationSpec = tween(
+            durationMillis = AALTO_THEME_TRANSITION_MILLIS,
+            easing = FastOutSlowInEasing
+        ),
         label = label
     ).value
 }

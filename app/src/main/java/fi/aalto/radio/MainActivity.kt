@@ -78,16 +78,22 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val darkTheme = AaltoThemePreferences.mode.isDark()
+            var systemBarsInitialized by remember { mutableStateOf(false) }
 
-            // Content draws behind the system bars; bar icons follow the app theme,
-            // including when the user overrides the system light/dark setting.
+            // The app palette morphs over 320 ms. Move the status/navigation
+            // bar icons at the midpoint so they do not jump before the screen
+            // underneath them has become dark/light enough.
             LaunchedEffect(darkTheme) {
+                if (systemBarsInitialized) {
+                    delay(AALTO_THEME_TRANSITION_MILLIS / 2L)
+                }
                 val style = if (darkTheme) {
                     SystemBarStyle.dark(AndroidColor.TRANSPARENT)
                 } else {
                     SystemBarStyle.light(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT)
                 }
                 enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
+                systemBarsInitialized = true
             }
 
             AaltoTheme(darkTheme = darkTheme) {
@@ -110,6 +116,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun AaltoApp() {
     val context = LocalContext.current
+    val isDarkTheme = AaltoThemePreferences.mode.isDark()
     val repository = remember(context) {
         AaltoAppContainer.stationRepository(context)
     }
@@ -574,6 +581,13 @@ private fun AaltoApp() {
                     },
                     onStationFavoriteClick = ::toggleFavorite,
                     onOpenSettings = { showSettings = true },
+                    isDarkTheme = isDarkTheme,
+                    onToggleTheme = {
+                        AaltoThemePreferences.update(
+                            context,
+                            if (isDarkTheme) AaltoThemeMode.LIGHT else AaltoThemeMode.DARK
+                        )
+                    },
                     onNightScreen = { nightScreenActive = true },
                     onPrevious = onPrevious,
                     onNext = onNext,

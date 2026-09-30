@@ -4,6 +4,27 @@ import fi.aalto.radio.catalog.CatalogStation
 
 private const val TAG_SEPARATOR = "|"
 
+private object StationListCodec {
+    fun encode(values: List<String>): String =
+        values.joinToString(separator = "") { value -> "${value.length}:$value" }
+
+    fun decode(encoded: String): List<String> {
+        val values = mutableListOf<String>()
+        var cursor = 0
+        while (cursor < encoded.length) {
+            val separator = encoded.indexOf(':', cursor)
+            if (separator <= cursor) return emptyList()
+            val length = encoded.substring(cursor, separator).toIntOrNull() ?: return emptyList()
+            val start = separator + 1
+            val end = start + length
+            if (length < 0 || end > encoded.length) return emptyList()
+            values += encoded.substring(start, end)
+            cursor = end
+        }
+        return values
+    }
+}
+
 object StationIdentity {
     fun fromRadioBrowserStationUuid(stationUuid: String): String {
         return stationUuid.trim()
@@ -26,7 +47,10 @@ fun RadioStation.toEntity(updatedAt: Long): StationEntity {
         tags = tags.joinToString(separator = TAG_SEPARATOR),
         category = category,
         streamHealthStatus = streamHealthStatus,
-        updatedAt = updatedAt
+        updatedAt = updatedAt,
+        streamAlternatives = StationListCodec.encode(streamAlternatives),
+        declaredCodec = declaredCodec,
+        declaredBitrateKbps = declaredBitrateKbps
     )
 }
 
@@ -80,6 +104,9 @@ fun StationEntity.toDomain(): RadioStation {
         countryCode = countryCode.orEmpty(),
         tags = tags?.split(TAG_SEPARATOR)?.filter { it.isNotBlank() }.orEmpty(),
         category = category,
-        streamHealthStatus = streamHealthStatus
+        streamHealthStatus = streamHealthStatus,
+        streamAlternatives = StationListCodec.decode(streamAlternatives),
+        declaredCodec = declaredCodec,
+        declaredBitrateKbps = declaredBitrateKbps
     )
 }

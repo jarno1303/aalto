@@ -254,7 +254,7 @@ class PlaybackService : MediaLibraryService() {
                 // Another station, not the same one from another address.
                 levelStationId = mediaItem?.mediaId
                 AutoLevel.startStation(this@PlaybackService, levelStationId)
-                Timeshift.stationChanged(this@PlaybackService)
+                Timeshift.prepareStation(this@PlaybackService, mediaItem?.mediaId)
             }
             // Each station keeps its own level.
             AudioEffects.applyStationGain(this@PlaybackService, mediaItem?.mediaId)

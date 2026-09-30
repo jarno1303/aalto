@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Aalto</string>
+
+    <!-- Navigation -->
+    <string name="tab_radio">Radio</string>
+    <string name="tab_search">Buscar</string>
+    <string name="tab_favorites">Favoritos</string>
+
+    <!-- Playback state -->
+    <string name="state_playing">Reproduciendo</string>
+    <string name="state_paused">En pausa</string>
+    <string name="state_connecting">Conectando…</string>
+    <string name="state_error">No se pudo conectar con la emisora</string>
+    <string name="action_retry">Intentar de nuevo</string>
+    <string name="action_play">Reproducir</string>
+    <string name="action_pause">Pausar</string>
+    <string name="action_play_station">Reproducir %1$s</string>
+    <string name="action_next_station">Siguiente emisora propia</string>
+    <string name="action_previous_station">Emisora propia anterior</string>
+    <string name="action_open_now_playing">Abrir el reproductor</string>
+    <string name="playback_error_start">No se pudo conectar con la emisora.</string>
+    <string name="playback_error_unavailable">La reproducción no está disponible.</string>
+
+    <!-- Favorites -->
+    <string name="favorite_add">Añadir a favoritos</string>
+    <string name="favorite_remove">Quitar de favoritos</string>
+    <string name="favorites_empty">Aún no hay favoritos</string>
+    <string name="favorites_empty_hint">Toca el corazón de una emisora y aparecerá aquí y en la pantalla de inicio.</string>
+    <string name="favorites_reorder_hint">Mantén pulsado y arrastra para cambiar el orden.</string>
+    <string name="action_find_stations">Buscar emisoras</string>
+
+    <!-- Home -->
+    <string name="home_mine">Mis emisoras</string>
+    <string name="home_popular_hint">Toca un corazón para añadir tus propias emisoras.</string>
+    <string name="home_popular">Emisoras populares</string>
+    <string name="home_hide_list">Ocultar la lista de emisoras</string>
+    <string name="home_show_list">Mostrar la lista de emisoras</string>
+    <string name="home_removed">%1$s eliminada de tus emisoras</string>
+    <string name="action_undo">Deshacer</string>
+
+    <!-- Search -->
+    <string name="search_placeholder">Emisora o género</string>
+    <string name="search_stations">Emisoras</string>
+    <string name="search_results">Resultados</string>
+    <string name="search_clear">Borrar búsqueda</string>
+    <string name="search_recent">Escuchadas recientemente</string>
+    <string name="search_country">País: %1$s</string>
+    <string name="search_no_results">No hay emisoras que coincidan</string>
+    <string name="catalog_loading">Cargando emisoras…</string>
+    <string name="catalog_unavailable">El directorio de emisoras no está disponible ahora. Tus propias emisoras siguen funcionando.</string>
+
+    <!-- Night Screen -->
+    <string name="night_screen_open">Atenuar la pantalla</string>
+    <string name="night_screen_show_controls">Mostrar controles</string>
+    <string name="night_screen_exit">Volver a la vista normal</string>
+    <string name="night_state_playing">Reproduciendo</string>
+    <string name="night_state_error">Reproducción detenida</string>
+    <string name="night_exit_short">Salir</string>
+    <string name="night_hint_tap">Toca la pantalla para ver controles y salir</string>
+    <string name="night_hint_exit">Sal desde la esquina superior o con Atrás</string>
+
+    <!-- Sleep timer -->
+    <string name="sleep_timer">Temporizador de apagado</string>
+    <string name="sleep_timer_off">Desactivado</string>
+    <string name="sleep_timer_minutes">%1$d min</string>
+    <string name="sleep_timer_remaining">Se detiene en %1$d min</string>
+
+    <!-- Wake-up radio -->
+    <string name="alarm_title">Alarma</string>
+    <string name="alarm_settings_title">Radio despertador</string>
+    <string name="alarm_station">Emisora</string>
+    <string name="alarm_no_stations">Añade primero tus propias emisoras.</string>
+    <string name="alarm_snooze">Posponer</string>
+    <string name="alarm_snooze_minutes">Posponer %1$d min</string>
+    <string name="alarm_dismiss">Detener</string>
+    <string name="alarm_continue">Seguir escuchando</string>
+    <string name="alarm_continue_short">Escuchar</string>
+    <string name="alarm_channel">Alarmas</string>
+    <string name="alarm_fallback_note">No se pudo conectar con la emisora – se reproducirá el tono de alarma</string>
+    <string name="alarm_open">Alarma</string>
+    <string name="alarm_next">Alarma %1$s</string>
+    <string name="alarm_tap_for_more">Toca para ver más opciones</string>
+    <string name="alarm_test_now">Probar el sonido</string>
+    <string name="alarm_change_time">Cambiar la hora</string>
+    <string name="alarm_hours">Horas</string>
+    <string name="alarm_minutes">Minutos</string>
+    <string name="alarm_ok">Aceptar</string>
+    <string name="alarm_set">Configurar</string>
+    <string name="alarm_cancel">Cancelar</string>
+    <string name="alarm_done">Listo</string>
+    <string name="alarm_off">Desactivado</string>
+    <string name="alarm_days">Días</string>
+    <string name="alarm_snooze_length">Duración del aplazamiento</string>
+    <string name="alarm_snooze_off">Sin posponer</string>
+    <string name="alarm_volume">Volumen %1$d %%</string>
+    <string name="alarm_volume_hint">La alarma sube el volumen de alarma del teléfono hasta este nivel y lo restaura después.</string>
+    <string name="alarm_days_hint">Si no eliges ningún día, la alarma sonará una vez.</string>
+    <string name="alarm_days_once">Una vez</string>
+    <string name="alarm_days_every">Todos los días</string>
+    <string name="alarm_days_weekdays">Entre semana</string>
+    <string name="alarm_days_weekend">Fines de semana</string>
+    <string name="alarm_rings_in_hours">La alarma sonará en %1$d h %2$d min</string>
+    <string name="alarm_rings_in_minutes">La alarma sonará en %1$d min</string>
+    <string name="alarm_rings_at">La alarma sonará a las %1$s</string>
+    <string name="alarm_upcoming_channel">Próximas alarmas</string>
+    <string name="alarm_upcoming_title">Próxima alarma</string>
+    <string name="alarm_skip_once">Omitir esta vez</string>
+    <string name="alarm_switch_off">Desactivar</string>
+    <string name="alarm_notifications_off">Las notificaciones están desactivadas. En ese caso, la alarma solo se puede detener abriendo Aalto.</string>
+    <string name="alarm_allow_notifications">Permitir notificaciones</string>
+    <string name="alarm_log_title">Eventos recientes</string>
+    <string name="alarm_exact_permission">Permite alarmas exactas para que suene a la hora prevista.</string>
+
+    <!-- Android Auto -->
+    <string name="auto_popular">Populares</string>
+    <string name="auto_recent">Recientes</string>
+    <string name="auto_added_favorite">Añadida a tus emisoras</string>
+    <string name="auto_removed_favorite">Eliminada de tus emisoras</string>
+    <string name="auto_countries">Países</string>
+
+    <!-- Widget -->
+    <string name="widget_description">Emisora en reproducción, reproducir y siguiente emisora propia</string>
+    <string name="widget_empty">Aalto</string>
+    <string name="widget_tap_to_play">Toca para reproducir</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Ajustes</string>
+    <string name="theme_title">Apariencia</string>
+    <string name="theme_system">Sistema</string>
+    <string name="theme_light">Claro</string>
+    <string name="theme_dark">Oscuro</string>
+
+    <!-- Sync -->
+    <string name="sync_title">Aalto Sync</string>
+    <string name="sync_body">Tus propias emisoras en todos tus dispositivos.</string>
+    <string name="sync_sign_in">Iniciar sesión con Google</string>
+    <string name="sync_sign_out">Cerrar sesión</string>
+    <string name="sync_close">Cerrar</string>
+    <string name="sync_status_signed_out">Sesión no iniciada</string>
+    <string name="sync_status_connected">Sincronizado</string>
+    <string name="sync_status_pending">Sincronización pendiente</string>
+    <string name="sync_status_problem">La sincronización no se completó. Se volverá a intentar más tarde.</string>
+    <string name="sync_status_account_mismatch">Las emisoras de este dispositivo pertenecen a otra cuenta de Aalto.</string>
+
+    <!-- UI hints -->
+    <string name="alarm_advanced">Más ajustes</string>
+    <string name="home_hint_long_press">Consejo: mantén pulsada una emisora para ver más opciones.</string>
+    <string name="home_hint_dismiss">Entendido</string>
+
+    <!-- Played songs -->
+    <string name="history_title">Canciones reproducidas</string>
+    <string name="history_clear">Borrar</string>
+    <string name="history_empty">Todavía no hay nada. Cuando una emisora indica qué está sonando, se guarda aquí.</string>
+    <string name="history_search_spotify">Buscar en Spotify</string>
+    <string name="history_search_youtube">Buscar en YouTube</string>
+    <string name="history_open">Canciones reproducidas</string>
+
+    <!-- Sound -->
+    <string name="audio_title">Sonido</string>
+    <string name="audio_settings_row">Volumen de emisora y ecualizador</string>
+    <string name="audio_open">Abrir</string>
+    <string name="audio_equalizer">Ecualizador</string>
+    <string name="audio_preset">Preajuste</string>
+    <string name="audio_preset_custom">Personalizado</string>
+    <string name="audio_unavailable">Este dispositivo no tiene ecualizador. El volumen por emisora sigue funcionando.</string>
+    <string name="audio_station_gain">Volumen de la emisora</string>
+    <string name="audio_station_gain_hint">Compensa una emisora que suena más baja o más alta que las demás. Se recuerda en todos tus dispositivos.</string>
+    <string name="audio_no_station">Elige primero una emisora.</string>
+    <string name="audio_reset">Restablecer</string>
+
+    <!-- Time -->
+    <string name="time_separator">:</string>
+    <!-- Language and travel -->
+    <string name="language_title">Idioma</string>
+    <string name="language_open">Cambiar</string>
+    <string name="travel_hint">Parece que estás en %1$s. ¿Mostrar sus emisoras?</string>
+    <string name="travel_hint_show">Mostrar</string>
+    <string name="travel_hint_decline">Ahora no</string>
+    <string name="countries_title">Países</string>
+    <string name="countries_edit">Editar países…</string>
+    <string name="menu_play">Reproducir</string>
+    <string name="menu_move_first">Mover al principio</string>
+    <string name="menu_remove">Quitar de mis emisoras</string>
+    <string name="action_more_options">Más opciones</string>
+    <string name="history_plus_earlier">Los días anteriores se conservan. Se muestran con Aalto Plus.</string>
+    <string name="audio_equalizer_plus">Los preajustes y bandas del ecualizador forman parte de Aalto Plus.</string>
+    <string name="custom_add">Añadir emisora propia</string>
+    <string name="custom_add_confirm">Añadir</string>
+    <string name="custom_url">Dirección del stream</string>
+    <string name="custom_name">Nombre (opcional)</string>
+    <string name="custom_hint">Aalto comprueba la dirección antes de guardarla.</string>
+    <string name="custom_checking">Comprobando la dirección…</string>
+    <string name="custom_error_invalid">Eso no es una dirección web.</string>
+    <string name="custom_error_not_radio">No se encontró ningún stream de radio en esa dirección.</string>
+    <string name="custom_error_unreachable">La dirección no respondió. Compruébala y revisa tu conexión.</string>
+    <string name="custom_plus_title">Las emisoras propias forman parte de Aalto Plus</string>
+    <string name="custom_plus_body">Con Aalto Plus puedes añadir cualquier dirección de stream como emisora. Funciona en el coche y se sincroniza con tus dispositivos como las demás.</string>
+    <string name="custom_edit">Editar emisora</string>
+    <string name="custom_save">Guardar</string>
+    <string name="search_all_own_countries">Todos mis países</string>
+
+    <!-- First launch -->
+    <string name="onboarding_title">Bienvenido a Aalto</string>
+    <string name="onboarding_promise">Sin anuncios. Ni ahora ni nunca.</string>
+    <string name="onboarding_instruction">Elige las emisoras que escuchas. La radio empezará al tocar Listo.</string>
+    <string name="onboarding_change_country">Cambiar país</string>
+    <string name="onboarding_skip">Omitir</string>
+    <string name="onboarding_find_more">Buscar otras emisoras</string>
+    <string name="onboarding_pick_some">Elige tus emisoras</string>
+    <plurals name="onboarding_done">
+        <item quantity="one">Listo · %1$d emisora</item>
+        <item quantity="other">Listo · %1$d emisoras</item>
+    </plurals>
+    <string name="onboarding_sign_in">¿Ya tienes una cuenta de Aalto? Inicia sesión y tus emisoras volverán</string>
+    <string name="onboarding_offline">No hay conexión con el directorio de emisoras. Estas son las emisoras propias de Aalto.</string>
+    <string name="onboarding_retry">Intentar de nuevo</string>
+    <string name="sync_nudge_message">Protege tus emisoras: inicia sesión y te seguirán a un teléfono nuevo.</string>
+    <string name="sync_nudge_action">Iniciar sesión</string>
+    <string name="alarm_change_station">Cambiar la emisora de la alarma</string>
+    <string name="alarm_change">Cambiar</string>
+    <string name="alarm_volume_label">Volumen</string>
+    <string name="genres_title">Géneros</string>
+    <string name="genres_clear">Borrar</string>
+    <string name="genres_more">Más géneros</string>
+    <string name="genres_show_all">Mostrar todas las emisoras</string>
+    <plurals name="genres_show_matches">
+        <item quantity="one">Mostrar %1$d emisora</item>
+        <item quantity="other">Mostrar %1$d emisoras</item>
+    </plurals>
+    <string name="countries_world_title">Radio de todo el mundo</string>
+    <string name="countries_search">Buscar un país</string>
+    <string name="countries_own">Tus países</string>
+    <string name="countries_all">Todos los países</string>
+    <string name="countries_browse_world">Todos los países…</string>
+    <string name="action_label_timer">Temporizador</string>
+    <string name="action_label_night">Noche</string>
+    <string name="action_label_songs">Canciones</string>
+    <string name="action_label_sound">Sonido</string>
+    <string name="alarm_exact_off">Las alarmas exactas no están permitidas. La alarma puede sonar unos minutos tarde.</string>
+    <string name="alarm_allow_exact">Permitir alarmas exactas</string>
+    <string name="alarm_fullscreen_off">La pantalla de alarma no puede abrirse sobre la pantalla de bloqueo. La alarma seguirá sonando.</string>
+    <string name="alarm_allow_fullscreen">Permitir alarma a pantalla completa</string>
+    <string name="alarm_backup_channel">Alarma de respaldo</string>
+    <string name="alarm_backup_text">¡Despierta! Toca para abrir Aalto.</string>
+    <string name="audio_auto_level">Nivelación automática</string>
+    <string name="audio_auto_level_hint">Aalto mide el volumen de cada emisora y las ajusta al mismo nivel. Tu propio ajuste se añade encima.</string>
+    <string name="audio_auto_level_measuring">Midiendo esta emisora… el nivel se ajusta tras aproximadamente medio minuto.</string>
+    <string name="audio_auto_level_applied">Esta emisora se nivela en %1$s.</string>
+    <string name="audio_auto_level_plus">La nivelación automática forma parte de Aalto Plus: todas las emisoras suenan al mismo volumen.</string>
+    <string name="audio_own_adjustment">Tu ajuste para esta emisora</string>
+    <string name="timeshift_back">Retroceder 30 segundos</string>
+    <string name="timeshift_forward">Avanzar 30 segundos</string>
+    <string name="timeshift_live">En directo</string>
+    <string name="timeshift_behind">−%1$s · Volver al directo</string>
+    <string name="timeshift_go_live">Volver al directo</string>
+    <string name="timeshift_plus">Retroceder más de 30 segundos forma parte de Aalto Plus.</string>
+    <string name="timeshift_hint">Ahora vas %1$s por detrás del directo. Toca «Volver al directo» para regresar.</string>
+    <string name="audio_auto_level_what">Todas las emisoras suenan igual de fuerte, así no necesitas tocar el volumen al cambiar de emisora.</string>
+    <string name="audio_this_station">Esta emisora</string>
+    <string name="audio_auto_level_parts_auto">Nivelación %1$s</string>
+    <string name="audio_auto_level_parts">Nivelación %1$s + tu ajuste %2$s</string>
+    <string name="audio_reference_default">Las emisoras se ajustan al nivel estándar de Aalto.</string>
+    <string name="audio_reference_station">Las emisoras se ajustan al nivel de %1$s.</string>
+    <string name="audio_reference_use_this">Usar esta emisora como nivel</string>
+    <string name="audio_reference_reset">Nivel estándar</string>
+    <string name="audio_own_adjustment_hint">Ajuste fino adicional a la nivelación, por si esta emisora aún parece demasiado baja o alta.</string>
+    <string name="audio_old_gains_title">La nivelación se encarga ahora del volumen</string>
+    <plurals name="audio_old_gains_text">
+        <item quantity="one">%1$d emisora tiene un ajuste de volumen que hiciste antes. La nivelación hace ahora el mismo trabajo, así que la emisora se ajustaría dos veces. ¿Restablecer el ajuste?</item>
+        <item quantity="other">%1$d emisoras tienen ajustes de volumen que hiciste antes. La nivelación hace ahora el mismo trabajo, así que se ajustarían dos veces. ¿Restablecer los ajustes?</item>
+    </plurals>
+    <string name="audio_old_gains_reset">Restablecer</string>
+    <string name="audio_old_gains_keep">Mantener</string>
+    <string name="state_waiting_network">Sin conexión – se reanudará cuando vuelvas a estar en línea</string>
+    <string name="audio_own_stations_title">Tus emisoras</string>
+    <string name="audio_own_stations_all_done">Todas niveladas.</string>
+    <string name="audio_own_stations_progress">%1$d de %2$d niveladas – el resto se mide silenciosamente en segundo plano.</string>
+    <string name="audio_own_stations_waiting">en espera</string>
+    <string name="audio_own_stations_failed">no disponible</string>
+    <string name="custom_add_short">Emisora propia</string>
+    <string name="custom_search_hint">¿No encuentras la emisora?</string>
+    <string name="custom_search_action">Añádela con su dirección de stream</string>
+    <string name="search_elsewhere">Otros lugares del mundo</string>
+    <string name="language_system_default">Predeterminado del sistema</string>
+</resources>

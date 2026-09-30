@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Aalto</string>
+
+    <!-- Navigation -->
+    <string name="tab_radio">Radio</string>
+    <string name="tab_search">Suchen</string>
+    <string name="tab_favorites">Favoriten</string>
+
+    <!-- Playback state -->
+    <string name="state_playing">Läuft gerade</string>
+    <string name="state_paused">Pausiert</string>
+    <string name="state_connecting">Verbindung wird hergestellt…</string>
+    <string name="state_error">Sender nicht erreichbar</string>
+    <string name="action_retry">Erneut versuchen</string>
+    <string name="action_play">Abspielen</string>
+    <string name="action_pause">Pause</string>
+    <string name="action_play_station">%1$s abspielen</string>
+    <string name="action_next_station">Nächster eigener Sender</string>
+    <string name="action_previous_station">Vorheriger eigener Sender</string>
+    <string name="action_open_now_playing">Player öffnen</string>
+    <string name="playback_error_start">Sender nicht erreichbar.</string>
+    <string name="playback_error_unavailable">Wiedergabe ist nicht verfügbar.</string>
+
+    <!-- Favorites -->
+    <string name="favorite_add">Zu Favoriten hinzufügen</string>
+    <string name="favorite_remove">Aus Favoriten entfernen</string>
+    <string name="favorites_empty">Noch keine Favoriten</string>
+    <string name="favorites_empty_hint">Tippe auf das Herz eines Senders. Dann erscheint er hier und auf der Startseite.</string>
+    <string name="favorites_reorder_hint">Gedrückt halten und ziehen, um die Reihenfolge zu ändern.</string>
+    <string name="action_find_stations">Sender finden</string>
+
+    <!-- Home -->
+    <string name="home_mine">Meine Sender</string>
+    <string name="home_popular_hint">Tippe auf ein Herz, um eigene Sender hinzuzufügen.</string>
+    <string name="home_popular">Beliebte Sender</string>
+    <string name="home_hide_list">Senderliste ausblenden</string>
+    <string name="home_show_list">Senderliste anzeigen</string>
+    <string name="home_removed">%1$s aus deinen Sendern entfernt</string>
+    <string name="action_undo">Rückgängig</string>
+
+    <!-- Search -->
+    <string name="search_placeholder">Sender oder Genre</string>
+    <string name="search_stations">Sender</string>
+    <string name="search_results">Ergebnisse</string>
+    <string name="search_clear">Suche löschen</string>
+    <string name="search_recent">Zuletzt gehört</string>
+    <string name="search_country">Land: %1$s</string>
+    <string name="search_no_results">Keine passenden Sender</string>
+    <string name="catalog_loading">Sender werden geladen…</string>
+    <string name="catalog_unavailable">Das Senderverzeichnis ist derzeit nicht verfügbar. Deine eigenen Sender funktionieren weiterhin.</string>
+
+    <!-- Night Screen -->
+    <string name="night_screen_open">Bildschirm abdunkeln</string>
+    <string name="night_screen_show_controls">Bedienelemente anzeigen</string>
+    <string name="night_screen_exit">Zur normalen Ansicht zurück</string>
+    <string name="night_state_playing">Wiedergabe</string>
+    <string name="night_state_error">Wiedergabe gestoppt</string>
+    <string name="night_exit_short">Beenden</string>
+    <string name="night_hint_tap">Für Bedienelemente und Beenden auf den Bildschirm tippen</string>
+    <string name="night_hint_exit">Oben in der Ecke oder mit Zurück beenden</string>
+
+    <!-- Sleep timer -->
+    <string name="sleep_timer">Sleep-Timer</string>
+    <string name="sleep_timer_off">Aus</string>
+    <string name="sleep_timer_minutes">%1$d Min.</string>
+    <string name="sleep_timer_remaining">Stoppt in %1$d Min.</string>
+
+    <!-- Wake-up radio -->
+    <string name="alarm_title">Wecker</string>
+    <string name="alarm_settings_title">Radiowecker</string>
+    <string name="alarm_station">Sender</string>
+    <string name="alarm_no_stations">Füge zuerst eigene Sender hinzu.</string>
+    <string name="alarm_snooze">Schlummern</string>
+    <string name="alarm_snooze_minutes">%1$d Min. schlummern</string>
+    <string name="alarm_dismiss">Stoppen</string>
+    <string name="alarm_continue">Weiterhören</string>
+    <string name="alarm_continue_short">Hören</string>
+    <string name="alarm_channel">Wecker</string>
+    <string name="alarm_fallback_note">Sender nicht erreichbar – Weckton wird abgespielt</string>
+    <string name="alarm_open">Wecker</string>
+    <string name="alarm_next">Wecker %1$s</string>
+    <string name="alarm_tap_for_more">Tippen für weitere Optionen</string>
+    <string name="alarm_test_now">Ton testen</string>
+    <string name="alarm_change_time">Zeit ändern</string>
+    <string name="alarm_hours">Stunden</string>
+    <string name="alarm_minutes">Minuten</string>
+    <string name="alarm_ok">OK</string>
+    <string name="alarm_set">Einstellen</string>
+    <string name="alarm_cancel">Abbrechen</string>
+    <string name="alarm_done">Fertig</string>
+    <string name="alarm_off">Aus</string>
+    <string name="alarm_days">Tage</string>
+    <string name="alarm_snooze_length">Schlummerdauer</string>
+    <string name="alarm_snooze_off">Ohne Schlummern</string>
+    <string name="alarm_volume">Lautstärke %1$d %%</string>
+    <string name="alarm_volume_hint">Der Wecker erhöht die Weckerlautstärke des Telefons auf diesen Wert und stellt sie danach wieder her.</string>
+    <string name="alarm_days_hint">Wenn keine Tage ausgewählt sind, klingelt der Wecker einmal.</string>
+    <string name="alarm_days_once">Einmal</string>
+    <string name="alarm_days_every">Täglich</string>
+    <string name="alarm_days_weekdays">Werktags</string>
+    <string name="alarm_days_weekend">Wochenenden</string>
+    <string name="alarm_rings_in_hours">Wecker klingelt in %1$d Std. %2$d Min.</string>
+    <string name="alarm_rings_in_minutes">Wecker klingelt in %1$d Min.</string>
+    <string name="alarm_rings_at">Wecker klingelt %1$s</string>
+    <string name="alarm_upcoming_channel">Bevorstehende Wecker</string>
+    <string name="alarm_upcoming_title">Bevorstehender Wecker</string>
+    <string name="alarm_skip_once">Dieses Mal überspringen</string>
+    <string name="alarm_switch_off">Ausschalten</string>
+    <string name="alarm_notifications_off">Benachrichtigungen sind ausgeschaltet. Der Wecker kann dann nur durch Öffnen von Aalto gestoppt werden.</string>
+    <string name="alarm_allow_notifications">Benachrichtigungen erlauben</string>
+    <string name="alarm_log_title">Letzte Ereignisse</string>
+    <string name="alarm_exact_permission">Erlaube exakte Wecker, damit der Wecker pünktlich klingelt.</string>
+
+    <!-- Android Auto -->
+    <string name="auto_popular">Beliebt</string>
+    <string name="auto_recent">Zuletzt</string>
+    <string name="auto_added_favorite">Zu deinen Sendern hinzugefügt</string>
+    <string name="auto_removed_favorite">Aus deinen Sendern entfernt</string>
+    <string name="auto_countries">Länder</string>
+
+    <!-- Widget -->
+    <string name="widget_description">Aktueller Sender, Wiedergabe und nächster eigener Sender</string>
+    <string name="widget_empty">Aalto</string>
+    <string name="widget_tap_to_play">Zum Abspielen tippen</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Einstellungen</string>
+    <string name="theme_title">Darstellung</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Hell</string>
+    <string name="theme_dark">Dunkel</string>
+
+    <!-- Sync -->
+    <string name="sync_title">Aalto Sync</string>
+    <string name="sync_body">Deine eigenen Sender auf jedem Gerät.</string>
+    <string name="sync_sign_in">Mit Google anmelden</string>
+    <string name="sync_sign_out">Abmelden</string>
+    <string name="sync_close">Schließen</string>
+    <string name="sync_status_signed_out">Nicht angemeldet</string>
+    <string name="sync_status_connected">Synchronisiert</string>
+    <string name="sync_status_pending">Synchronisierung ausstehend</string>
+    <string name="sync_status_problem">Synchronisierung fehlgeschlagen. Später wird es erneut versucht.</string>
+    <string name="sync_status_account_mismatch">Die Sender dieses Geräts gehören zu einem anderen Aalto-Konto.</string>
+
+    <!-- UI hints -->
+    <string name="alarm_advanced">Weitere Einstellungen</string>
+    <string name="home_hint_long_press">Tipp: Halte einen Sender gedrückt, um weitere Optionen zu sehen.</string>
+    <string name="home_hint_dismiss">Verstanden</string>
+
+    <!-- Played songs -->
+    <string name="history_title">Gespielte Titel</string>
+    <string name="history_clear">Löschen</string>
+    <string name="history_empty">Noch nichts. Wenn ein Sender den aktuellen Titel übermittelt, wird er hier gespeichert.</string>
+    <string name="history_search_spotify">Auf Spotify suchen</string>
+    <string name="history_search_youtube">Auf YouTube suchen</string>
+    <string name="history_open">Gespielte Titel</string>
+
+    <!-- Sound -->
+    <string name="audio_title">Klang</string>
+    <string name="audio_settings_row">Senderlautstärke und Equalizer</string>
+    <string name="audio_open">Öffnen</string>
+    <string name="audio_equalizer">Equalizer</string>
+    <string name="audio_preset">Voreinstellung</string>
+    <string name="audio_preset_custom">Benutzerdefiniert</string>
+    <string name="audio_unavailable">Dieses Gerät hat keinen Equalizer. Die Lautstärke pro Sender funktioniert trotzdem.</string>
+    <string name="audio_station_gain">Senderlautstärke</string>
+    <string name="audio_station_gain_hint">Gleicht einen Sender aus, der leiser oder lauter als die anderen ist. Wird auf allen deinen Geräten gespeichert.</string>
+    <string name="audio_no_station">Wähle zuerst einen Sender.</string>
+    <string name="audio_reset">Zurücksetzen</string>
+
+    <!-- Time -->
+    <string name="time_separator">:</string>
+    <!-- Language and travel -->
+    <string name="language_title">Sprache</string>
+    <string name="language_open">Ändern</string>
+    <string name="travel_hint">Du scheinst in %1$s zu sein. Sender von dort anzeigen?</string>
+    <string name="travel_hint_show">Anzeigen</string>
+    <string name="travel_hint_decline">Nicht jetzt</string>
+    <string name="countries_title">Länder</string>
+    <string name="countries_edit">Länder bearbeiten…</string>
+    <string name="menu_play">Abspielen</string>
+    <string name="menu_move_first">Nach oben verschieben</string>
+    <string name="menu_remove">Aus meinen Sendern entfernen</string>
+    <string name="action_more_options">Weitere Optionen</string>
+    <string name="history_plus_earlier">Frühere Tage werden gespeichert. Mit Aalto Plus werden sie angezeigt.</string>
+    <string name="audio_equalizer_plus">Equalizer-Voreinstellungen und Frequenzbänder sind Teil von Aalto Plus.</string>
+    <string name="custom_add">Eigenen Sender hinzufügen</string>
+    <string name="custom_add_confirm">Hinzufügen</string>
+    <string name="custom_url">Stream-Adresse</string>
+    <string name="custom_name">Name (optional)</string>
+    <string name="custom_hint">Aalto prüft die Adresse vor dem Speichern.</string>
+    <string name="custom_checking">Adresse wird geprüft…</string>
+    <string name="custom_error_invalid">Das ist keine Webadresse.</string>
+    <string name="custom_error_not_radio">Unter dieser Adresse wurde kein Radiostream gefunden.</string>
+    <string name="custom_error_unreachable">Die Adresse hat nicht geantwortet. Prüfe sie und deine Verbindung.</string>
+    <string name="custom_plus_title">Eigene Sender sind Teil von Aalto Plus</string>
+    <string name="custom_plus_body">Mit Aalto Plus kannst du jede Stream-Adresse als Sender hinzufügen. Sie läuft im Auto und wird wie die anderen Sender mit deinen Geräten synchronisiert.</string>
+    <string name="custom_edit">Sender bearbeiten</string>
+    <string name="custom_save">Speichern</string>
+    <string name="search_all_own_countries">Alle meine Länder</string>
+
+    <!-- First launch -->
+    <string name="onboarding_title">Willkommen bei Aalto</string>
+    <string name="onboarding_promise">Keine Werbung. Jetzt nicht und niemals.</string>
+    <string name="onboarding_instruction">Wähle die Sender, die du hörst. Das Radio startet, wenn du auf Fertig tippst.</string>
+    <string name="onboarding_change_country">Land ändern</string>
+    <string name="onboarding_skip">Überspringen</string>
+    <string name="onboarding_find_more">Andere Sender finden</string>
+    <string name="onboarding_pick_some">Wähle deine Sender</string>
+    <plurals name="onboarding_done">
+        <item quantity="one">Fertig · %1$d Sender</item>
+        <item quantity="other">Fertig · %1$d Sender</item>
+    </plurals>
+    <string name="onboarding_sign_in">Du hast schon ein Aalto-Konto? Melde dich an und deine Sender sind wieder da</string>
+    <string name="onboarding_offline">Keine Verbindung zum Senderverzeichnis. Hier sind Aaltos eigene Sender.</string>
+    <string name="onboarding_retry">Erneut versuchen</string>
+    <string name="sync_nudge_message">Sichere deine Sender: Melde dich an, dann folgen sie dir auf ein neues Telefon.</string>
+    <string name="sync_nudge_action">Anmelden</string>
+    <string name="alarm_change_station">Weckersender ändern</string>
+    <string name="alarm_change">Ändern</string>
+    <string name="alarm_volume_label">Lautstärke</string>
+    <string name="genres_title">Genres</string>
+    <string name="genres_clear">Löschen</string>
+    <string name="genres_more">Weitere Genres</string>
+    <string name="genres_show_all">Alle Sender anzeigen</string>
+    <plurals name="genres_show_matches">
+        <item quantity="one">%1$d Sender anzeigen</item>
+        <item quantity="other">%1$d Sender anzeigen</item>
+    </plurals>
+    <string name="countries_world_title">Radio aus aller Welt</string>
+    <string name="countries_search">Land suchen</string>
+    <string name="countries_own">Deine Länder</string>
+    <string name="countries_all">Alle Länder</string>
+    <string name="countries_browse_world">Alle Länder…</string>
+    <string name="action_label_timer">Timer</string>
+    <string name="action_label_night">Nacht</string>
+    <string name="action_label_songs">Titel</string>
+    <string name="action_label_sound">Klang</string>
+    <string name="alarm_exact_off">Exakte Wecker sind nicht erlaubt. Der Wecker kann einige Minuten zu spät klingeln.</string>
+    <string name="alarm_allow_exact">Exakte Wecker erlauben</string>
+    <string name="alarm_fullscreen_off">Der Weckerbildschirm kann nicht über dem Sperrbildschirm geöffnet werden. Der Wecker klingelt trotzdem.</string>
+    <string name="alarm_allow_fullscreen">Vollbild-Wecker erlauben</string>
+    <string name="alarm_backup_channel">Ersatzwecker</string>
+    <string name="alarm_backup_text">Aufwachen! Tippe, um Aalto zu öffnen.</string>
+    <string name="audio_auto_level">Automatischer Lautstärkeausgleich</string>
+    <string name="audio_auto_level_hint">Aalto misst die Lautstärke jedes Senders und bringt alle auf dasselbe Niveau. Deine eigene Anpassung wird zusätzlich angewendet.</string>
+    <string name="audio_auto_level_measuring">Dieser Sender wird gemessen… der Pegel wird nach etwa einer halben Minute eingestellt.</string>
+    <string name="audio_auto_level_applied">Dieser Sender wird um %1$s ausgeglichen.</string>
+    <string name="audio_auto_level_plus">Automatischer Lautstärkeausgleich ist Teil von Aalto Plus: Alle Sender spielen mit derselben Lautstärke.</string>
+    <string name="audio_own_adjustment">Deine Anpassung für diesen Sender</string>
+    <string name="timeshift_back">30 Sekunden zurück</string>
+    <string name="timeshift_forward">30 Sekunden vor</string>
+    <string name="timeshift_live">Live</string>
+    <string name="timeshift_behind">−%1$s · Zurück zu Live</string>
+    <string name="timeshift_go_live">Zurück zum Live-Stream</string>
+    <string name="timeshift_plus">Mehr als 30 Sekunden zurückzuspulen ist Teil von Aalto Plus.</string>
+    <string name="timeshift_hint">Du bist jetzt %1$s hinter dem Live-Stream. Tippe auf „Zurück zum Live-Stream“, um zurückzukehren.</string>
+    <string name="audio_auto_level_what">Alle Sender spielen gleich laut, sodass du beim Senderwechsel die Lautstärke nicht ändern musst.</string>
+    <string name="audio_this_station">Dieser Sender</string>
+    <string name="audio_auto_level_parts_auto">Ausgleich %1$s</string>
+    <string name="audio_auto_level_parts">Ausgleich %1$s + deine Anpassung %2$s</string>
+    <string name="audio_reference_default">Sender werden auf Aaltos Standardpegel gebracht.</string>
+    <string name="audio_reference_station">Sender werden auf den Pegel von %1$s gebracht.</string>
+    <string name="audio_reference_use_this">Diesen Sender als Pegel verwenden</string>
+    <string name="audio_reference_reset">Standardpegel</string>
+    <string name="audio_own_adjustment_hint">Feinabstimmung zusätzlich zum Ausgleich, falls dieser Sender immer noch zu leise oder zu laut wirkt.</string>
+    <string name="audio_old_gains_title">Der Ausgleich übernimmt jetzt die Lautstärke</string>
+    <plurals name="audio_old_gains_text">
+        <item quantity="one">%1$d Sender hat eine frühere Lautstärkeanpassung. Der Ausgleich erledigt jetzt dieselbe Aufgabe, daher würde der Sender doppelt angepasst. Anpassung zurücksetzen?</item>
+        <item quantity="other">%1$d Sender haben frühere Lautstärkeanpassungen. Der Ausgleich erledigt jetzt dieselbe Aufgabe, daher würden sie doppelt angepasst. Anpassungen zurücksetzen?</item>
+    </plurals>
+    <string name="audio_old_gains_reset">Zurücksetzen</string>
+    <string name="audio_old_gains_keep">Behalten</string>
+    <string name="state_waiting_network">Keine Verbindung – läuft weiter, sobald du wieder online bist</string>
+    <string name="audio_own_stations_title">Deine Sender</string>
+    <string name="audio_own_stations_all_done">Alle ausgeglichen.</string>
+    <string name="audio_own_stations_progress">%1$d von %2$d ausgeglichen – der Rest wird leise im Hintergrund gemessen.</string>
+    <string name="audio_own_stations_waiting">wartet</string>
+    <string name="audio_own_stations_failed">nicht erreichbar</string>
+    <string name="custom_add_short">Eigener Sender</string>
+    <string name="custom_search_hint">Sender nicht gefunden?</string>
+    <string name="custom_search_action">Mit seiner Stream-Adresse hinzufügen</string>
+    <string name="search_elsewhere">Anderswo auf der Welt</string>
+    <string name="language_system_default">Systemstandard</string>
+</resources>

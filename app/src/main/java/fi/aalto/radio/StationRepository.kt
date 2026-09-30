@@ -20,18 +20,96 @@ class StationRepository(
     private val recentLimit: Int = DEFAULT_RECENT_LIMIT
 ) {
     private val catalogStationsById = ConcurrentHashMap<String, RadioStation>()
+    private val builtInStationIds = StationCatalog.allStations.mapTo(hashSetOf()) { it.id }
 
     val stations: List<RadioStation>
-        get() = (StationCatalog.allStations + catalogStationsById.values)
-            .distinctBy { it.id }
+        get() {
+            // A catalog match may enrich a built-in with fallback addresses,
+            // but the built-in keeps its stable id and official primary URL.
+            val builtIns = StationCatalog.allStations.map { builtIn ->
+                catalogStationsById[builtIn.id] ?: builtIn
+            }
+            val catalogOnly = catalogStationsById.values.filterNot { it.id in builtInStationIds }
+            return (builtIns + catalogOnly).distinctBy { it.id }
+        }
 
     fun stationById(stationId: String): RadioStation? {
-        return StationCatalog.stationById(stationId) ?: catalogStationsById[stationId]
+        return catalogStationsById[stationId] ?: StationCatalog.stationById(stationId)
     }
 
     fun registerCatalogStations(stations: Iterable<RadioStation>) {
-        stations.forEach { station -> catalogStationsById[station.id] = station }
+        stations.forEach { station ->
+            catalogStationsById[station.id] = station
+            enrichMatchingBuiltIn(station)?.let { enriched ->
+                catalogStationsById[enriched.id] = enriched
+            }
+        }
     }
+
+    /**
+     * Restores one station from Room into the in-memory lookup used by the UI.
+     * This is needed on cold start for a last-played catalog/custom station:
+     * its id is known before favourites/catalog flows have repopulated memory.
+     */
+    suspend fun restoreStoredStation(stationId: String): RadioStation? {
+        stationById(stationId)?.let { return it }
+
+        return runCatching {
+            withContext(ioDispatcher) {
+                dao.stationsByIds(listOf(stationId)).firstOrNull()?.toDomain()
+            }
+        }.onSuccess { station ->
+            station?.let { registerCatalogStations(listOf(it)) }
+        }.onFailure { error ->
+            Log.w(TAG, "Stored last station not loaded", error)
+        }.getOrNull()
+    }
+
+    /**
+     * Radio Browser often has more than one healthy address for the same
+     * broadcaster. Exact same-name/country matches can safely enrich Aalto's
+     * built-in station without changing its identity or official primary URL.
+     */
+    private fun enrichMatchingBuiltIn(candidate: RadioStation): RadioStation? {
+        val builtIn = StationCatalog.allStations.firstOrNull { station ->
+            station.countryCode.equals(candidate.countryCode, ignoreCase = true) &&
+                normalizedStationName(station.name) == normalizedStationName(candidate.name)
+        } ?: return null
+
+        val current = catalogStationsById[builtIn.id]
+        val alternatives = (
+            builtIn.streamAlternatives +
+                listOfNotNull(
+                    candidate.preferredStreamUrl,
+                    candidate.lastKnownWorkingStreamUrl,
+                    candidate.streamUrl
+                ) +
+                candidate.streamAlternatives +
+                current?.streamAlternatives.orEmpty()
+            )
+            .map(String::trim)
+            .filter(::isUsableStreamUrl)
+            .distinct()
+            .filterNot { url ->
+                url == builtIn.preferredStreamUrl ||
+                    url == builtIn.streamUrl ||
+                    url == builtIn.lastKnownWorkingStreamUrl
+            }
+
+        return builtIn.copy(
+            streamAlternatives = alternatives,
+            declaredCodec = builtIn.declaredCodec ?: current?.declaredCodec ?: candidate.declaredCodec,
+            declaredBitrateKbps = builtIn.declaredBitrateKbps
+                ?: current?.declaredBitrateKbps
+                ?: candidate.declaredBitrateKbps
+        )
+    }
+
+    private fun normalizedStationName(value: String): String =
+        value.lowercase().filter(Char::isLetterOrDigit)
+
+    private fun isUsableStreamUrl(value: String): Boolean =
+        value.startsWith("http://") || value.startsWith("https://")
 
     fun searchStations(query: String): List<RadioStation> {
         return StationCatalog.search(query)
@@ -95,7 +173,7 @@ class StationRepository(
     private suspend fun registerStoredStations(ids: List<String>) {
         // Own stations are always read again: another device may have changed
         // their address, and the copy in memory would keep the old one.
-        val missing = ids.filter { stationById(it) == null || CustomStations.isCustom(it) }
+        val missing = ids.filter { catalogStationsById[it] == null || CustomStations.isCustom(it) }
         if (missing.isEmpty()) return
         runCatching { withContext(ioDispatcher) { dao.stationsByIds(missing) } }
             .onSuccess { rows -> registerCatalogStations(rows.map { it.toDomain() }) }
@@ -277,12 +355,35 @@ class StationRepository(
     }
 
     private suspend fun ensureStationPersisted(stationId: String) {
-        if (dao.stationExists(stationId) != null) {
+        val station = stationById(stationId) ?: return
+        val existing = dao.stationsByIds(listOf(stationId)).firstOrNull()
+        if (existing == null) {
+            dao.upsertStation(station.toEntity(updatedAt = clock()))
             return
         }
 
-        val station = stationById(stationId) ?: return
-        dao.upsertStation(station.toEntity(updatedAt = clock()))
+        // Preserve the persisted station identity and primary address. A
+        // remote custom-station edit may be newer than the in-memory copy;
+        // reliability enrichment is allowed to add metadata, not overwrite it.
+        val persisted = existing.toDomain()
+        // Fresh catalog data goes before older persisted fallbacks. The player
+        // still puts its last actually-working address ahead of both.
+        val alternatives = (station.streamAlternatives + persisted.streamAlternatives).distinct()
+        val codec = persisted.declaredCodec ?: station.declaredCodec
+        val bitrate = persisted.declaredBitrateKbps ?: station.declaredBitrateKbps
+        if (
+            alternatives != persisted.streamAlternatives ||
+            codec != persisted.declaredCodec ||
+            bitrate != persisted.declaredBitrateKbps
+        ) {
+            dao.upsertStation(
+                persisted.copy(
+                    streamAlternatives = alternatives,
+                    declaredCodec = codec,
+                    declaredBitrateKbps = bitrate
+                ).toEntity(updatedAt = clock())
+            )
+        }
     }
 
     companion object {

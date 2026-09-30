@@ -1,5 +1,6 @@
 package fi.aalto.radio
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -26,7 +27,16 @@ data class StationEntity(
     val tags: String?,
     val category: String,
     val streamHealthStatus: String?,
-    val updatedAt: Long
+    val updatedAt: Long,
+    /**
+     * Additional known addresses for the same station. Length-prefixed
+     * encoding is used by StationMappers so URLs are not constrained by a
+     * separator character.
+     */
+    @ColumnInfo(defaultValue = "''")
+    val streamAlternatives: String = "",
+    val declaredCodec: String? = null,
+    val declaredBitrateKbps: Int? = null
 )
 
 @Entity(

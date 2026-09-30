@@ -1,6 +1,7 @@
 package fi.aalto.radio
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color as AndroidColor
@@ -19,6 +20,7 @@ import fi.aalto.radio.alarm.rememberNotificationsEnabled
 import fi.aalto.radio.audio.AudioSheet
 import fi.aalto.radio.history.HistorySheet
 import fi.aalto.radio.history.rememberTrackHistory
+import fi.aalto.radio.playback.LastStationStore
 import fi.aalto.radio.alarm.dayShort
 import fi.aalto.radio.alarm.formatClock
 import java.time.Instant
@@ -65,6 +67,10 @@ private const val TAB_FAVORITES = 2
 private const val WORLD_SEARCH_BELOW = 5
 
 class MainActivity : ComponentActivity() {
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLanguage.wrap(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         AaltoPerf.markAppStart()
         super.onCreate(savedInstanceState)
@@ -119,6 +125,7 @@ private fun AaltoApp() {
     var showHistory by rememberSaveable { mutableStateOf(false) }
     var showAudio by rememberSaveable { mutableStateOf(false) }
     var showCountries by rememberSaveable { mutableStateOf(false) }
+    var showLanguage by rememberSaveable { mutableStateOf(false) }
     var ownCountries by remember { mutableStateOf(OwnCountriesPreference.get(context)) }
     val trackHistory = rememberTrackHistory()
     val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
@@ -145,12 +152,22 @@ private fun AaltoApp() {
     var catalogSearchStations by remember { mutableStateOf<List<CatalogStation>>(emptyList()) }
     // A search that finds little at home also looks elsewhere ("Berlin", "Radio Bob").
     var catalogWorldStations by remember { mutableStateOf<List<CatalogStation>>(emptyList()) }
+    var catalogRegistrationVersion by remember { mutableStateOf(0) }
     var catalogLoading by remember { mutableStateOf(false) }
     var catalogError by remember { mutableStateOf<String?>(null) }
     var recentStations by remember { mutableStateOf<List<RadioStation>>(emptyList()) }
 
+    val startupStationId = remember(context) {
+        LastStationStore.id(context) ?: StationCatalog.DEFAULT_STATION_ID
+    }
+    var startupStationRestoreVersion by remember { mutableStateOf(0) }
     var selectedStationId by rememberSaveable {
-        mutableStateOf(StationCatalog.DEFAULT_STATION_ID)
+        mutableStateOf(startupStationId)
+    }
+
+    LaunchedEffect(repository, startupStationId) {
+        repository.restoreStoredStation(startupStationId)
+        startupStationRestoreVersion += 1
     }
 
     // Decided before the favourites migration below runs: only a brand-new
@@ -250,8 +267,14 @@ private fun AaltoApp() {
     }
     LaunchedEffect(catalogRadioStations) {
         repository.registerCatalogStations(catalogRadioStations)
+        catalogRegistrationVersion++
     }
-    val stations = remember(repository.stations, catalogRadioStations) {
+    val stations = remember(
+        repository.stations,
+        catalogRadioStations,
+        catalogRegistrationVersion,
+        startupStationRestoreVersion
+    ) {
         // Built-in stations first, so a catalog duplicate of one is dropped.
         (repository.stations + catalogRadioStations).distinctByListing()
     }
@@ -844,6 +867,20 @@ private fun AaltoApp() {
         )
     }
 
+    if (showLanguage) {
+        LanguageDialog(
+            selectedTag = AppLanguage.selectedTag(context),
+            onSelect = { tag ->
+                showLanguage = false
+                AppLanguage.set(context, tag)
+            },
+            onDismiss = {
+                showLanguage = false
+                showSettings = true
+            }
+        )
+    }
+
     if (showSettings) {
         SettingsDialog(
             themeMode = AaltoThemePreferences.mode,
@@ -863,18 +900,9 @@ private fun AaltoApp() {
                 showSettings = false
                 showCountries = true
             },
-            onOpenLanguage = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                {
-                    runCatching {
-                        context.startActivity(
-                            Intent(Settings.ACTION_APP_LOCALE_SETTINGS)
-                                .setData(android.net.Uri.fromParts("package", context.packageName, null))
-                        )
-                    }
-                    Unit
-                }
-            } else {
-                null
+            onOpenLanguage = {
+                showSettings = false
+                showLanguage = true
             },
             onDismiss = { showSettings = false }
         )

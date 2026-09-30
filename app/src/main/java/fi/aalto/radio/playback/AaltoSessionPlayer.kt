@@ -91,7 +91,10 @@ internal class AaltoSessionPlayer(
                     retriesForCandidate = 0
                     val id = currentId
                     val url = candidates.getOrNull(candidateIndex)
-                    if (id != null && url != null) StreamMemory.put(context, id, url)
+                    if (id != null && url != null) {
+                        StreamMemory.put(context, id, url)
+                        StreamHealthMemory.markSuccess(id, url)
+                    }
                 }
                 else -> cancelTimeout()
             }
@@ -121,10 +124,13 @@ internal class AaltoSessionPlayer(
             if (canRecover()) {
                 recovering = true
                 handler.post(::recover)
-            } else if (waitingSinceMs == 0L) {
-                // Every address failed: from now on, a returning network
-                // brings the station back by itself (retryIfWaitingForNetwork).
-                waitingSinceMs = android.os.SystemClock.elapsedRealtime()
+            } else {
+                markCurrentCandidateFailed()
+                if (waitingSinceMs == 0L) {
+                    // Every address failed: from now on, a returning network
+                    // brings the station back by itself (retryIfWaitingForNetwork).
+                    waitingSinceMs = android.os.SystemClock.elapsedRealtime()
+                }
             }
         }
     }
@@ -288,6 +294,10 @@ internal class AaltoSessionPlayer(
     // ---- Fallback ----------------------------------------------------------
 
     private fun startTracking(item: MediaItem?, keepWaiting: Boolean = false) {
+        // This listener is registered before the media session. Reset the
+        // timeshift ring here, before RadioPlayer calls prepare(), so a newly
+        // opened stream can never receive an already-invalid writer id.
+        Timeshift.prepareStation(context, item?.mediaId)
         cancelTimeout()
         if (!keepWaiting) waitingSinceMs = 0L
         pausedAtMs = 0L
@@ -302,6 +312,23 @@ internal class AaltoSessionPlayer(
     }
 
     private fun hasNextCandidate(): Boolean = candidateIndex + 1 < candidates.size
+
+    private fun markCurrentCandidateFailed() {
+        val stationId = currentId ?: return
+        val url = candidates.getOrNull(candidateIndex) ?: return
+        // Do not punish a stream because the whole phone was offline. A
+        // failure only becomes a negative signal when Android still has a
+        // validated network.
+        if (!hasValidatedNetwork()) return
+        StreamHealthMemory.markFailure(stationId, url)
+    }
+
+    private fun hasValidatedNetwork(): Boolean = runCatching {
+        val connectivity = context.getSystemService(android.net.ConnectivityManager::class.java)
+        val network = connectivity?.activeNetwork ?: return@runCatching false
+        val capabilities = connectivity.getNetworkCapabilities(network) ?: return@runCatching false
+        capabilities.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+    }.getOrDefault(false)
 
     private fun canRecover(): Boolean {
         val failed = candidates.getOrNull(candidateIndex) ?: return false
@@ -338,6 +365,7 @@ internal class AaltoSessionPlayer(
             }
             return
         }
+        markCurrentCandidateFailed()
         applyCandidate(if (hasNextCandidate()) candidateIndex + 1 else candidateIndex)
     }
 

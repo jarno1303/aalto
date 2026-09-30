@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import java.util.UUID
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -286,6 +287,179 @@ class StationRepositoryRoomTest {
             database.localRadioDao().recentStationIds(10)
         )
         assertEquals(3, database.localRadioDao().recentStationCount())
+    }
+
+    @Test
+    fun catalogFallbacksSurviveDatabaseReopen() = runTest {
+        val databaseName = uniqueDatabaseName()
+        val store = legacyStore()
+        var database = fileDatabase(databaseName)
+        var repository = repository(database, store)
+        val station = RadioStation(
+            id = "catalog-fallback-test",
+            radioBrowserStationUuid = "rb-fallback-test",
+            name = "Fallback Test",
+            description = "",
+            initials = "FT",
+            logoColorArgb = 0xFF000000,
+            streamUrl = "https://primary.example/live",
+            preferredStreamUrl = "https://primary.example/live",
+            countryCode = "FI",
+            tags = emptyList(),
+            category = "",
+            streamAlternatives = listOf(
+                "https://backup-one.example/live",
+                "https://backup-two.example/live"
+            ),
+            declaredCodec = "AAC",
+            declaredBitrateKbps = 128
+        )
+
+        repository.prepareLocalData(seedDefaultFavorites = false)
+        repository.registerCatalogStations(listOf(station))
+        repository.addFavorite(station.id)
+
+        database.close()
+        openDatabases.remove(database)
+        database = fileDatabase(databaseName)
+        repository = repository(database, store)
+
+        repository.observeFavoriteIds().first()
+        val restored = requireNotNull(repository.stationById(station.id))
+        assertEquals(station.streamAlternatives, restored.streamAlternatives)
+        assertEquals("AAC", restored.declaredCodec)
+        assertEquals(128, restored.declaredBitrateKbps)
+    }
+
+    @Test
+    fun matchingCatalogStationEnrichesBuiltInWithoutReplacingOfficialPrimary() = runTest {
+        val database = inMemoryDatabase()
+        val repository = repository(database)
+        val official = requireNotNull(StationCatalog.stationById("ylex"))
+        val catalogMatch = RadioStation(
+            id = "radio-browser-ylex",
+            radioBrowserStationUuid = "rb-ylex",
+            name = "YleX",
+            description = "",
+            initials = "YX",
+            logoColorArgb = 0xFF000000,
+            streamUrl = "https://catalog.example/ylex",
+            preferredStreamUrl = "https://catalog.example/ylex",
+            countryCode = "FI",
+            tags = emptyList(),
+            category = "",
+            streamAlternatives = listOf("https://backup.example/ylex"),
+            declaredCodec = "AAC",
+            declaredBitrateKbps = 192
+        )
+
+        repository.registerCatalogStations(listOf(catalogMatch))
+
+        val enriched = requireNotNull(repository.stationById("ylex"))
+        assertEquals(official.streamUrl, enriched.streamUrl)
+        assertEquals(official.preferredStreamUrl, enriched.preferredStreamUrl)
+        assertTrue(enriched.streamAlternatives.contains(catalogMatch.streamUrl))
+        assertTrue(enriched.streamAlternatives.contains("https://backup.example/ylex"))
+        assertEquals("AAC", enriched.declaredCodec)
+        assertEquals(192, enriched.declaredBitrateKbps)
+    }
+
+    @Test
+    fun enrichedBuiltInFallbacksSurviveDatabaseReopen() = runTest {
+        val databaseName = uniqueDatabaseName()
+        val store = legacyStore()
+        var database = fileDatabase(databaseName)
+        var repository = repository(database, store)
+        val catalogMatch = RadioStation(
+            id = "radio-browser-ylex-persisted",
+            radioBrowserStationUuid = "rb-ylex-persisted",
+            name = "YleX",
+            description = "",
+            initials = "YX",
+            logoColorArgb = 0xFF000000,
+            streamUrl = "https://catalog.example/ylex-persisted",
+            preferredStreamUrl = "https://catalog.example/ylex-persisted",
+            countryCode = "FI",
+            tags = emptyList(),
+            category = "",
+            streamAlternatives = listOf("https://backup.example/ylex-persisted")
+        )
+
+        repository.prepareLocalData(seedDefaultFavorites = false)
+        repository.registerCatalogStations(listOf(catalogMatch))
+        repository.addFavorite("ylex")
+
+        database.close()
+        openDatabases.remove(database)
+        database = fileDatabase(databaseName)
+        repository = repository(database, store)
+
+        repository.observeFavoriteIds().first()
+        val restored = requireNotNull(repository.stationById("ylex"))
+        assertTrue(restored.streamAlternatives.contains(catalogMatch.streamUrl))
+        assertTrue(restored.streamAlternatives.contains("https://backup.example/ylex-persisted"))
+        assertEquals(StationCatalog.stationById("ylex")?.streamUrl, restored.streamUrl)
+    }
+
+    @Test
+    fun persistingFallbackMetadataDoesNotOverwriteStoredPrimaryStream() = runTest {
+        val database = inMemoryDatabase()
+        val repository = repository(database)
+        val stored = RadioStation(
+            id = "custom-safe-merge",
+            name = "Custom",
+            description = "",
+            initials = "C",
+            logoColorArgb = 0xFF000000,
+            streamUrl = "https://new.example/live",
+            preferredStreamUrl = "https://new.example/live",
+            countryCode = "FI",
+            tags = emptyList(),
+            category = ""
+        )
+        val staleInMemory = stored.copy(
+            streamUrl = "https://old.example/live",
+            preferredStreamUrl = "https://old.example/live",
+            streamAlternatives = listOf("https://backup.example/live")
+        )
+
+        database.localRadioDao().upsertStation(stored.toEntity(updatedAt = 1L))
+        repository.registerCatalogStations(listOf(staleInMemory))
+        repository.addFavorite(stored.id)
+
+        val persisted = database.localRadioDao().stationsByIds(listOf(stored.id)).single().toDomain()
+        assertEquals("https://new.example/live", persisted.streamUrl)
+        assertEquals("https://new.example/live", persisted.preferredStreamUrl)
+        assertTrue(persisted.streamAlternatives.contains("https://backup.example/live"))
+    }
+
+    @Test
+    fun lastPlayedStoredStationCanBeRestoredWithoutFavoriteOrCatalogReload() = runTest {
+        val database = inMemoryDatabase()
+        val stored = RadioStation(
+            id = "cold-start-last-station",
+            name = "Cold start station",
+            description = "",
+            initials = "CS",
+            logoColorArgb = 0xFF000000,
+            streamUrl = "https://example.com/cold-start",
+            preferredStreamUrl = "https://example.com/cold-start",
+            countryCode = "FI",
+            tags = emptyList(),
+            category = ""
+        )
+        database.localRadioDao().upsertStation(stored.toEntity(updatedAt = 1L))
+
+        // A fresh repository simulates process death: the station exists only
+        // in Room, not in the in-memory catalog and not in favourites.
+        val freshRepository = repository(database)
+        assertEquals(null, freshRepository.stationById(stored.id))
+
+        val restored = requireNotNull(freshRepository.restoreStoredStation(stored.id))
+
+        assertEquals(stored.id, restored.id)
+        assertEquals(stored.streamUrl, restored.streamUrl)
+        assertEquals(stored.id, freshRepository.stationById(stored.id)?.id)
     }
 
     @Test

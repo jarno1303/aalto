@@ -73,6 +73,7 @@ internal object Timeshift {
     private var buffer: TimeshiftBuffer? = null
     private var recorder: TimeshiftRecorder? = null
     private var liveUri: String? = null
+    private var stationId: String? = null
     private var maxSeconds = FREE_SECONDS
     private var plus = false
 
@@ -82,6 +83,7 @@ internal object Timeshift {
     /** How far behind live the listener is, in time. */
     private var behindMs = 0L
     private var lastTickMs = 0L
+    private var lastPublishedAvailable = false
 
     /** Song titles met while playing from the ring. Main thread. */
     var titleListener: ((ByteArray) -> Unit)? = null
@@ -100,19 +102,30 @@ internal object Timeshift {
     fun detach() {
         stopRecorder()
         host = null
+        stationId = null
         _state.value = TimeshiftState()
     }
 
     fun isTimeshiftUri(uri: String?): Boolean = uri?.startsWith("$SCHEME:") == true
 
-    /** A different station started: forget the old one. Main thread. */
-    fun stationChanged(context: Context) {
+    /**
+     * Prepare the rewind buffer for [newStationId].
+     *
+     * Idempotent on purpose: fallback/reconnect changes the stream URL but not
+     * the station identity, so it must not throw away the buffer. A real
+     * station change is reset before the new stream is prepared.
+     */
+    fun prepareStation(context: Context, newStationId: String?) {
+        if (stationId == newStationId) return
+        stationId = newStationId
+        log("prepareStation: id=$newStationId reset buffer")
         stopRecorder()
         liveUri = null
         plus = Plus.access(context).isActive()
         maxSeconds = if (plus) PLUS_SECONDS else FREE_SECONDS
         buffer(context).reset((maxSeconds + MARGIN_SECONDS) * MAX_BYTE_RATE)
         behindMs = 0L
+        lastPublishedAvailable = false
         _state.value = TimeshiftState()
     }
 
@@ -248,8 +261,15 @@ internal object Timeshift {
         // Whole seconds, so the screen changes only when the number does.
         val behind = if (rewound) (((behindMs + 500) / 1000) * 1000).coerceAtLeast(1_000L) else 0L
         val maxBack = if (rewound) (maxSeconds * 1000L - behindMs).coerceAtLeast(0L) else 0L
+        val available = buf.format != null && kept >= 5_000L
+        if (available != lastPublishedAvailable) {
+            lastPublishedAvailable = available
+            log(
+                "available=$available format=${buf.format} keptMs=$kept head=${buf.head} rate=${buf.byteRate}"
+            )
+        }
         _state.value = TimeshiftState(
-            available = buf.format != null && kept >= 5_000L,
+            available = available,
             behindMs = behind,
             maxBackMs = maxBack,
             atFreeLimit = !plus && rewound && maxBack < 1_000L
@@ -340,12 +360,21 @@ private class RecordingDataSource(
             // Live streams only: no known length, from the start, cuttable format.
             if (length == C.LENGTH_UNSET.toLong() && dataSpec.position == 0L) {
                 val headers = upstream.responseHeaders
-                val format = Timeshift.formatFor(Timeshift.header(headers, "Content-Type"))
+                val contentType = Timeshift.header(headers, "Content-Type")
+                val format = Timeshift.formatFor(contentType)
+                Timeshift.log(
+                    "open live uri=${dataSpec.uri} contentType=$contentType format=$format length=$length"
+                )
                 if (format != null) {
                     val metaint = Timeshift.header(headers, "icy-metaint")?.trim()?.toIntOrNull() ?: 0
                     writer = ring.beginWriter(format)
                     stripper = IcyStripper(metaint)
+                    Timeshift.log("writer started format=$format metaint=$metaint")
                 }
+            } else {
+                Timeshift.log(
+                    "not recording uri=${dataSpec.uri} position=${dataSpec.position} length=$length"
+                )
             }
         }
         return length

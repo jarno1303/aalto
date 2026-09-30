@@ -131,6 +131,8 @@
     <string name="theme_system">Sistema</string>
     <string name="theme_light">Claro</string>
     <string name="theme_dark">Escuro</string>
+    <string name="theme_quick_dark">Usar tema escuro</string>
+    <string name="theme_quick_light">Usar tema claro</string>
 
     <!-- Sync -->
     <string name="sync_title">Aalto Sync</string>

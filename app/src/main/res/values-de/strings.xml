@@ -131,6 +131,8 @@
     <string name="theme_system">System</string>
     <string name="theme_light">Hell</string>
     <string name="theme_dark">Dunkel</string>
+    <string name="theme_quick_dark">Dunkles Design verwenden</string>
+    <string name="theme_quick_light">Helles Design verwenden</string>
 
     <!-- Sync -->
     <string name="sync_title">Aalto Sync</string>

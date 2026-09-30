@@ -49,6 +49,7 @@
     <string name="search_results">Results</string>
     <string name="search_clear">Clear the search</string>
     <string name="search_recent">Recently played</string>
+    <string name="search_similar_to">Similar to %1$s</string>
     <string name="search_country">Country: %1$s</string>
     <string name="search_no_results">No stations match this</string>
     <string name="catalog_loading">Loading stations…</string>

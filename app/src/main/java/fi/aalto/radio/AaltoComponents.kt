@@ -41,6 +41,8 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.outlined.Alarm
+import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Radio
 import androidx.compose.material.icons.outlined.Settings
@@ -185,7 +187,9 @@ internal fun RowScope.AaltoNavigationItem(
 internal fun TopBar(
     onOpenSettings: () -> Unit,
     onOpenAlarm: (() -> Unit)? = null,
-    alarmLabel: String? = null
+    alarmLabel: String? = null,
+    isDarkTheme: Boolean = false,
+    onToggleTheme: (() -> Unit)? = null
 ) {
     Row(
         modifier = Modifier
@@ -249,6 +253,36 @@ internal fun TopBar(
                         style = MaterialTheme.typography.labelLarge,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
+
+        if (onToggleTheme != null) {
+            val haptics = LocalHapticFeedback.current
+            val iconRotation by animateFloatAsState(
+                targetValue = if (isDarkTheme) 180f else 0f,
+                animationSpec = tween(durationMillis = AALTO_THEME_TRANSITION_MILLIS),
+                label = "quickThemeIconRotation"
+            )
+            IconButton(
+                onClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onToggleTheme()
+                }
+            ) {
+                Crossfade(
+                    targetState = isDarkTheme,
+                    animationSpec = tween(durationMillis = AALTO_THEME_TRANSITION_MILLIS / 2),
+                    label = "quickThemeIcon"
+                ) { dark ->
+                    Icon(
+                        imageVector = if (dark) Icons.Outlined.LightMode else Icons.Outlined.DarkMode,
+                        contentDescription = stringResource(
+                            if (dark) R.string.theme_quick_light else R.string.theme_quick_dark
+                        ),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.graphicsLayer { rotationZ = iconRotation }
                     )
                 }
             }

@@ -45,6 +45,7 @@
     <string name="search_results">Resultat</string>
     <string name="search_clear">Rensa sökningen</string>
     <string name="search_recent">Senast spelade</string>
+    <string name="search_similar_to">Liknande %1$s</string>
     <string name="search_country">Land: %1$s</string>
     <string name="search_no_results">Inga stationer matchar</string>
     <string name="catalog_loading">Laddar stationer…</string>
